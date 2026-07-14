@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import '../../data/models/video_analysis_model.dart';
+import '../../../../core/providers/settings_provider.dart';
+
+class AllGrammarPage extends ConsumerStatefulWidget {
+  const AllGrammarPage({super.key});
+
+  @override
+  ConsumerState<AllGrammarPage> createState() => _AllGrammarPageState();
+}
+
+class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final FlutterTts _flutterTts = FlutterTts();
+
+  List<VideoAnalysis> _videoAnalyses = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+    _loadAllGrammars();
+  }
+
+  Future<void> _initTts() async {
+    await _flutterTts.setLanguage("en-US");
+    await _flutterTts.setSpeechRate(0.45);
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.trim().isNotEmpty) await _flutterTts.speak(text);
+  }
+
+  Future<void> _loadAllGrammars() async {
+    try {
+      // دریافت تمام ویدیوهای پردازش شده
+      final response = await _supabase
+          .from('video_analysis')
+          .select('video_id, grammar_points');
+
+      if (mounted) {
+        setState(() {
+          _videoAnalyses = (response as List).map((data) {
+            return VideoAnalysis(
+              videoId: data['video_id'],
+              summary: '', // در این صفحه نیازی به خلاصه نداریم
+              fullTranscriptTranslation: '',
+              grammarPoints: (data['grammar_points'] as List)
+                  .map((e) => GrammarPoint.fromJson(e))
+                  .toList(),
+              vocabulary: [], // نیازی به لغات نداریم
+            );
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _flutterTts.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPersian = ref.watch(isPersianProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          isPersian ? 'گنجینه گرامرها' : 'Grammar Vault',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _videoAnalyses.isEmpty
+          ? Center(
+              child: Text(
+                isPersian
+                    ? 'هنوز گرامری ثبت نشده است.'
+                    : 'No grammar points found.',
+                style: const TextStyle(color: Colors.grey),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadAllGrammars,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _videoAnalyses.length,
+                itemBuilder: (context, index) {
+                  final video = _videoAnalyses[index];
+                  // اگر ویدیویی نکته گرامری نداشت، نشان داده نشود
+                  if (video.grammarPoints.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ExpansionTile(
+                      initiallyExpanded: index == 0, // اولین مورد باز باشد
+                      leading: Icon(
+                        Icons.smart_display_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                      title: Text(
+                        'Lesson from Video: ${video.videoId.substring(0, 6)}...',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${video.grammarPoints.length} ${isPersian ? 'نکته گرامری' : 'Grammar points'}',
+                      ),
+                      childrenPadding: const EdgeInsets.all(16),
+                      children: video.grammarPoints.map((grammar) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                grammar.structureName,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              const Divider(height: 24),
+                              Text(
+                                "👶 ${grammar.persianExplanation}",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.6,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        grammar.exampleFromTranscript,
+                                        style: const TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.volume_up,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      onPressed: () =>
+                                          _speak(grammar.exampleFromTranscript),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+}
