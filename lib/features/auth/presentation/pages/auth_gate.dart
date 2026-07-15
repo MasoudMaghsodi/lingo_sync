@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/app_messenger.dart';
-import 'package:lingo_sync/main_navagitions.dart';
+import 'package:lingo_sync/main_navigations.dart';
 
-import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../application/auth_controller.dart';
 import '../../domain/auth_status.dart';
 import '../pages/awaiting_approval_page.dart';
