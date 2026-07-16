@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:lingo_sync/core/config/app_config.dart';
+import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/result/result.dart';
+import 'package:lingo_sync/core/services/error_handler_service.dart';
 import '../models/word_analysis_model.dart';
 import '../models/video_analysis_model.dart';
 
@@ -18,131 +23,231 @@ class DictionaryRepository {
   final Box _flashcardsBox = Hive.box('flashcards_cache');
   final Box _pendingSyncBox = Hive.box('pending_sync');
 
-  // 🚀 آی‌پی سرور هوش مصنوعی جدیدت را اینجا وارد کن
-  final String _aiServerUrl = 'http://194.246.82.160:3002/api';
-
   DictionaryRepository(this._supabase);
+
+  /// Base URL for the AI Express backend, read from .env via [AppConfig].
+  String get _aiServerUrl => AppConfig.aiServerBaseUrl;
+
+  /// Extracts an 11-character YouTube video id from a URL, or null if the
+  /// URL doesn't match / the captured group is missing. Never force-unwraps
+  /// a possibly-null regex group.
+  String? _extractYoutubeVideoId(String url) {
+    final regExp = RegExp(
+      r"^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*",
+    );
+    final match = regExp.firstMatch(url);
+    final group7 = match?.group(7);
+    if (group7 != null && group7.length == 11) return group7;
+    return null;
+  }
+
+  /// Reads an `{"error": "..."}` shaped body defensively — AI server error
+  /// responses are always JSON, but proxies/timeouts can return HTML or an
+  /// empty body, and this must never crash on `jsonDecode` in that case.
+  String _extractServerErrorMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['error'] != null) {
+        return decoded['error'].toString();
+      }
+    } catch (_) {
+      // Body wasn't valid JSON — fall through to a generic message.
+    }
+    return 'AI server returned an unreadable error response.';
+  }
+
+  /// Wraps a raw HTTP call so connectivity failures (timeouts, DNS, socket
+  /// errors) surface as a retryable [NetworkException] — this is what lets
+  /// [ErrorHandlerService.executeWithRetry] decide whether to retry.
+  /// Non-2xx responses are treated as [ApiException] (a business error from
+  /// the AI server, e.g. an invalid word) and are deliberately NOT
+  /// retryable.
+  Future<http.Response> _postJson(
+    String endpoint,
+    Map<String, dynamic> body, {
+    required Duration timeout,
+  }) async {
+    http.Response response;
+    try {
+      response = await http
+          .post(
+            Uri.parse('$_aiServerUrl$endpoint'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(timeout);
+    } on TimeoutException {
+      throw NetworkException(
+        'Request to $endpoint timed out',
+        isRetryable: true,
+      );
+    } catch (e) {
+      throw NetworkException(
+        'Failed to reach AI server at $endpoint: $e',
+        isRetryable: true,
+      );
+    }
+
+    if (response.statusCode != 200) {
+      throw ApiException(
+        _extractServerErrorMessage(response.body),
+        endpoint: endpoint,
+        statusCode: response.statusCode,
+      );
+    }
+
+    return response;
+  }
 
   // ==========================================
   // جستجوی لغت (تغییر یافته به سرور اختصاصی Node.js)
   // ==========================================
-  Future<WordAnalysis> fetchWordAnalysis(String word) async {
-    final cleanWord = word.trim().toLowerCase();
+  Future<Result<WordAnalysis>> fetchWordAnalysis(String word) async {
+    try {
+      final cleanWord = word.trim().toLowerCase();
 
-    // 1. چک کردن کش دیتابیس گلوبال
-    final cachedData = await _supabase
-        .from('global_dictionary')
-        .select()
-        .eq('word', cleanWord)
-        .maybeSingle();
-    if (cachedData != null) {
-      return WordAnalysis.fromJson(cachedData['ai_analysis']);
+      // 1. چک کردن کش دیتابیس گلوبال
+      final cachedData = await _supabase
+          .from('global_dictionary')
+          .select()
+          .eq('word', cleanWord)
+          .maybeSingle();
+      if (cachedData != null) {
+        return Result<WordAnalysis>.success(
+          WordAnalysis.fromJson(cachedData['ai_analysis']),
+        );
+      }
+
+      // 2. درخواست به سرور اختصاصی Node.js (با تلاش مجدد خودکار روی خطای شبکه)
+      final response = await errorHandler.executeWithRetry(
+        operation: () => _postJson('/analyze_word', {
+          'word': cleanWord,
+        }, timeout: const Duration(seconds: 30)),
+        context: 'DictionaryRepository.fetchWordAnalysis',
+      );
+
+      final aiResult = WordAnalysis.fromJson(jsonDecode(response.body));
+
+      await _supabase.from('global_dictionary').upsert({
+        'word': cleanWord,
+        'ai_analysis': aiResult.toJson(),
+      });
+      return Result<WordAnalysis>.success(aiResult);
+    } catch (e, st) {
+      return Result<WordAnalysis>.failure(
+        errorHandler.toAppException(
+          e,
+          st,
+          context: 'DictionaryRepository.fetchWordAnalysis',
+        ),
+      );
     }
-
-    // 2. درخواست به سرور اختصاصی Node.js
-    final response = await http
-        .post(
-          Uri.parse('$_aiServerUrl/analyze_word'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'word': cleanWord}),
-        )
-        .timeout(const Duration(seconds: 30));
-
-    if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['error']);
-    }
-
-    final aiResult = WordAnalysis.fromJson(jsonDecode(response.body));
-
-    await _supabase.from('global_dictionary').upsert({
-      'word': cleanWord,
-      'ai_analysis': aiResult.toJson(),
-    });
-    return aiResult;
   }
 
   // ==========================================
   // پردازش ویدیو (تغییر یافته به سرور اختصاصی Node.js)
   // ==========================================
-  Future<VideoAnalysis> processYoutubeVideo(String url) async {
-    final regExp = RegExp(
-      r"^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*",
-    );
-    final match = regExp.firstMatch(url);
-    final videoId = (match != null && match.group(7)!.length == 11)
-        ? match.group(7)!
-        : null;
+  Future<Result<VideoAnalysis>> processYoutubeVideo(String url) async {
+    try {
+      final videoId = _extractYoutubeVideoId(url);
 
-    if (videoId != null) {
-      final cachedData = await _supabase
-          .from('video_analysis')
-          .select()
-          .eq('video_id', videoId)
-          .maybeSingle();
-      if (cachedData != null) return VideoAnalysis.fromJson(cachedData);
+      if (videoId != null) {
+        final cachedData = await _supabase
+            .from('video_analysis')
+            .select()
+            .eq('video_id', videoId)
+            .maybeSingle();
+        if (cachedData != null) {
+          return Result<VideoAnalysis>.success(
+            VideoAnalysis.fromJson(cachedData),
+          );
+        }
+      }
+
+      final response = await errorHandler.executeWithRetry(
+        operation: () => _postJson('/process_youtube', {
+          'videoUrl': url,
+        }, timeout: const Duration(seconds: 60)),
+        context: 'DictionaryRepository.processYoutubeVideo',
+      );
+
+      final videoAnalysis = VideoAnalysis.fromJson(jsonDecode(response.body));
+
+      // ذخیره در دیتابیس برای نفر بعدی
+      await _supabase.from('video_analysis').upsert({
+        'video_id': videoAnalysis.videoId,
+        'summary': videoAnalysis.summary,
+        'full_transcript_translation': videoAnalysis.fullTranscriptTranslation,
+        'grammar_points': videoAnalysis.grammarPoints
+            .map(
+              (e) => {
+                'structure_name': e.structureName,
+                'persian_explanation': e.persianExplanation,
+                'example_from_transcript': e.exampleFromTranscript,
+              },
+            )
+            .toList(),
+        'vocabulary': videoAnalysis.vocabulary.map((e) => e.toJson()).toList(),
+      });
+
+      return Result<VideoAnalysis>.success(videoAnalysis);
+    } catch (e, st) {
+      return Result<VideoAnalysis>.failure(
+        errorHandler.toAppException(
+          e,
+          st,
+          context: 'DictionaryRepository.processYoutubeVideo',
+        ),
+      );
     }
-
-    final response = await http
-        .post(
-          Uri.parse('$_aiServerUrl/process_youtube'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'videoUrl': url}),
-        )
-        .timeout(const Duration(seconds: 60));
-
-    if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['error']);
-    }
-
-    final videoAnalysis = VideoAnalysis.fromJson(jsonDecode(response.body));
-
-    // ذخیره در دیتابیس برای نفر بعدی
-    await _supabase.from('video_analysis').upsert({
-      'video_id': videoAnalysis.videoId,
-      'summary': videoAnalysis.summary,
-      'full_transcript_translation': videoAnalysis.fullTranscriptTranslation,
-      'grammar_points': videoAnalysis.grammarPoints
-          .map(
-            (e) => {
-              'structure_name': e.structureName,
-              'persian_explanation': e.persianExplanation,
-              'example_from_transcript': e.exampleFromTranscript,
-            },
-          )
-          .toList(),
-      'vocabulary': videoAnalysis.vocabulary.map((e) => e.toJson()).toList(),
-    });
-
-    return videoAnalysis;
   }
 
   // ==========================================
-  // متدهای قدرتمند جعبه لایتنر شما (بدون تغییر و دست‌نخورده)
+  // متدهای قدرتمند جعبه لایتنر شما
   // ==========================================
-  Future<void> saveToPersonalFlashcards(
+  Future<Result<void>> saveToPersonalFlashcards(
     WordAnalysis wordData, {
     String folder = 'General',
   }) async {
     final user = _supabase.auth.currentUser;
-    if (user == null) throw Exception('کاربر لاگین نیست');
+    if (user == null) {
+      return Result<void>.failure(
+        const AuthException('No authenticated user', code: 'not_authenticated'),
+      );
+    }
 
-    final globalRes = await _supabase
-        .from('global_dictionary')
-        .upsert({
-          'word': wordData.word.toLowerCase(),
-          'ai_analysis': wordData.toJson(),
-        }, onConflict: 'word')
-        .select('id')
-        .single();
+    try {
+      final globalRes = await _supabase
+          .from('global_dictionary')
+          .upsert({
+            'word': wordData.word.toLowerCase(),
+            'ai_analysis': wordData.toJson(),
+          }, onConflict: 'word')
+          .select('id')
+          .single();
 
-    await _supabase.from('flashcards').insert({
-      'user_id': user.id, 'word_id': globalRes['id'],
-      'folder_name': folder, // پوشه‌بندی برای لغات و گرامر
-      'repetition': 0, 'interval': 0, 'ease_factor': 2.5,
-      'next_review_date': DateTime.now().toUtc().toIso8601String(),
-    });
+      await _supabase.from('flashcards').insert({
+        'user_id': user.id, 'word_id': globalRes['id'],
+        'folder_name': folder, // پوشه‌بندی برای لغات و گرامر
+        'repetition': 0, 'interval': 0, 'ease_factor': 2.5,
+        'next_review_date': DateTime.now().toUtc().toIso8601String(),
+      });
+      return Result<void>.success(null);
+    } catch (e, st) {
+      return Result<void>.failure(
+        errorHandler.toAppException(
+          e,
+          st,
+          context: 'DictionaryRepository.saveToPersonalFlashcards',
+        ),
+      );
+    }
   }
 
+  // Unchanged for now — the local-cache-first + fire-and-forget remote sync
+  // design here (and its known "stale until reopened" race condition) is
+  // addressed together with the flashcard schema split in a later
+  // refactor phase, not as part of this error-handling unification.
   Future<List<Map<String, dynamic>>> getDueFlashcards(String userId) async {
     final cacheKey = 'due_$userId';
     final cachedData = _flashcardsBox.get(cacheKey);

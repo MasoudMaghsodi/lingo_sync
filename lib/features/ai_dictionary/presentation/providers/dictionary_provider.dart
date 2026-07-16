@@ -22,16 +22,17 @@ class Dictionary extends _$Dictionary {
       final result = await ref
           .read(dictionaryRepositoryProvider)
           .fetchWordAnalysis(word);
-      state = AsyncValue.data(result);
+      state = AsyncValue.data(result.getOrThrow());
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
 
   Future<void> saveWordToFlashcards(WordAnalysis wordData) async {
-    await ref
+    final result = await ref
         .read(dictionaryRepositoryProvider)
         .saveToPersonalFlashcards(wordData);
+    result.getOrThrow();
   }
 }
 
@@ -51,7 +52,7 @@ class VideoProcessing extends _$VideoProcessing {
       final result = await ref
           .read(dictionaryRepositoryProvider)
           .processYoutubeVideo(url);
-      state = AsyncValue.data(result);
+      state = AsyncValue.data(result.getOrThrow());
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -80,9 +81,10 @@ class VideoProcessing extends _$VideoProcessing {
         final taskId = task['id'] as int;
 
         try {
-          await ref
+          final result = await ref
               .read(dictionaryRepositoryProvider)
               .processYoutubeVideo(videoUrl);
+          result.getOrThrow();
           await supabase
               .from('daily_tasks')
               .update({'is_ai_processed': true})

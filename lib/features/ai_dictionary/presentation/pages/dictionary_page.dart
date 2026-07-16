@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/services/error_handler_service.dart';
 // import '../../../../core/providers/pomodoro_provider.dart';
 import '../providers/dictionary_provider.dart';
 import '../../data/models/word_analysis_model.dart';
@@ -66,11 +68,11 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
       }
     } catch (e) {
       if (mounted) {
+        final message = e is AppException
+            ? errorHandler.getUserMessage(e)
+            : 'خطا در ذخیره';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در ذخیره'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
         );
       }
     }
@@ -85,10 +87,14 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
 
     ref.listen(videoProcessingProvider, (previous, next) {
       if (next.hasError && !next.isLoading) {
+        final error = next.error;
+        final message = error is AppException
+            ? errorHandler.getUserMessage(error)
+            : 'خطا در پردازش ویدیو. دوباره تلاش کنید.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'خطا: ${next.error}',
+              message,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: theme.colorScheme.error,
@@ -276,10 +282,15 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                       loading: () =>
                           const Center(child: CircularProgressIndicator()),
                       error: (error, _) => Center(
-                        child: Text(
-                          error.toString(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: theme.colorScheme.error),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            error is AppException
+                                ? errorHandler.getUserMessage(error)
+                                : 'خطا در دریافت اطلاعات لغت. دوباره تلاش کنید.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
                         ),
                       ),
                       data: (WordAnalysis? wordData) {

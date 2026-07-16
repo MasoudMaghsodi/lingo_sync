@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/features/ai_mentor/data/mentor_state.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_audio_service.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_socket_service.dart';
@@ -9,8 +10,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'ai_mentor_controller.g.dart';
-
-const _mentorSocketUrl = 'wss://safer.privatepath.ir/ws';
 
 // Deliberately NOT keepAlive — this controller (and the socket + mic it
 // owns) should only exist while the mentor sheet is open. The moment the
@@ -54,7 +53,7 @@ class AiMentorController extends _$AiMentorController {
   Future<void> _connect() async {
     state = state.copyWith(phase: MentorPhase.connecting);
     try {
-      await _socket.connect(Uri.parse(_mentorSocketUrl));
+      await _socket.connect(Uri.parse(AppConfig.mentorSocketUrl));
       _sendSetup();
     } catch (_) {
       _handleDisconnect();

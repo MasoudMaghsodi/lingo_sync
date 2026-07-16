@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/config/app_config.dart';
 import 'core/logging/app_logger.dart';
 import 'core/logging/log_level.dart';
 import 'core/providers/app_providers.dart';
@@ -14,10 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize logger FIRST - before any other operations
-  initializeLogger(
-    minimumLevel: LogLevel.debug,
-    enableConsoleOutput: true,
-  );
+  initializeLogger(minimumLevel: LogLevel.debug, enableConsoleOutput: true);
   logger.info('Application starting');
 
   // 1. راه‌اندازی دیتابیس آفلاین فلاتر
@@ -51,8 +49,8 @@ Future<void> main() async {
 
   try {
     await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,
-      publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      url: AppConfig.supabaseUrl,
+      publishableKey: AppConfig.supabaseAnonKey,
     );
     logger.info('Supabase initialized');
   } catch (e, st) {

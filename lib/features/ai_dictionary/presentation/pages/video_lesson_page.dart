@@ -1,10 +1,9 @@
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/providers/dictionary_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -145,7 +144,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     });
     try {
       final response = await http.post(
-        Uri.parse('http://194.246.82.160:3002/api/ask_video_ai'),
+        Uri.parse('${AppConfig.aiServerBaseUrl}/ask_video_ai'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'videoId': widget.videoData.videoId,
@@ -796,11 +795,11 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                     Color levelColor = Colors.grey;
                     if (entry.key.contains('A')) {
                       levelColor = Colors.green;
-                    } else if (entry.key.contains('B'))
+                    } else if (entry.key.contains('B')) {
                       levelColor = Colors.blue;
-                    else if (entry.key.contains('C'))
+                    } else if (entry.key.contains('C')) {
                       levelColor = Colors.orange;
-
+                    }
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(

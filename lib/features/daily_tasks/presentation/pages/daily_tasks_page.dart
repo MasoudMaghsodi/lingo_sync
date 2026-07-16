@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/services/error_handler_service.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/daily_tasks_provider.dart';
 import '../providers/selected_day_provider.dart';
@@ -195,9 +197,17 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                   ),
                 ),
                 error: (error, stack) => Center(
-                  child: Text(
-                    'خطا: $error',
-                    style: TextStyle(color: theme.colorScheme.error),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      error is AppException
+                          ? errorHandler.getUserMessage(error)
+                          : (isPersian
+                                ? 'مشکلی در دریافت اطلاعات پیش آمد.'
+                                : 'Something went wrong while loading your tasks.'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ),
                 ),
                 data: (tasks) {
