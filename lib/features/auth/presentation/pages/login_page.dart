@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/logging/app_logger.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../application/auth_providers.dart';
@@ -34,6 +35,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isValidName(String name) =>
       RegExp(r"^[a-zA-Z\s\u0600-\u06FF]+$").hasMatch(name);
 
+  /// Maps a data-layer [AuthFailureReason] to a user-facing message. This
+  /// stays as a switch (rather than plain AppLocalizations keys) because
+  /// it's a mapping *from an enum*, not a raw UI string — but every branch
+  /// still reads from AppLocalizations so the actual text lives in one
+  /// place.
   String _describeFailure(AuthFailure failure, bool isPersian) {
     switch (failure.reason) {
       case AuthFailureReason.invalidCredentials:
@@ -51,9 +57,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ? 'خطا در ارتباط با سرور. دوباره تلاش کنید.'
             : 'Network error. Please try again.';
       case AuthFailureReason.unknown:
-        return isPersian
-            ? 'خطای نامشخصی رخ داد.'
-            : 'An unknown error occurred.';
+        return AppLocalizations.getString('unexpected_error', isPersian);
     }
   }
 
@@ -123,7 +127,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isPersian ? 'خطای نامشخص' : 'An unexpected error occurred',
+            AppLocalizations.getString('unexpected_error', isPersian),
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
           duration: const Duration(seconds: 5),
@@ -140,8 +144,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         actions: [
           IconButton(
             icon: Icon(
@@ -192,9 +194,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isPersian
-                        ? 'بهترین مسیر تسلط بر زبان'
-                        : 'The Ultimate Path to Fluency',
+                    AppLocalizations.getString('login_tagline', isPersian),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(
@@ -250,9 +250,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     child: TextFormField(
                                       controller: _nameController,
                                       decoration: InputDecoration(
-                                        labelText: isPersian
-                                            ? 'نام و نام خانوادگی'
-                                            : 'Full Name',
+                                        labelText: AppLocalizations.getString(
+                                          'full_name_label',
+                                          isPersian,
+                                        ),
                                         prefixIcon: Icon(
                                           Icons.person_outline,
                                           color: theme.colorScheme.primary,
@@ -271,14 +272,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                         if (_isLoginMode) return null;
                                         if (value == null ||
                                             value.trim().length < 3) {
-                                          return isPersian
-                                              ? 'نام باید حداقل ۳ حرف باشد'
-                                              : 'Name must be at least 3 characters';
+                                          return AppLocalizations.getString(
+                                            'name_min_length_error',
+                                            isPersian,
+                                          );
                                         }
                                         if (!_isValidName(value)) {
-                                          return isPersian
-                                              ? 'فقط حروف مجاز است'
-                                              : 'Only letters allowed';
+                                          return AppLocalizations.getString(
+                                            'letters_only_error',
+                                            isPersian,
+                                          );
                                         }
                                         return null;
                                       },
@@ -289,7 +292,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
-                              labelText: isPersian ? 'ایمیل' : 'Email',
+                              labelText: AppLocalizations.getString(
+                                'email_label',
+                                isPersian,
+                              ),
                               prefixIcon: Icon(
                                 Icons.email_outlined,
                                 color: theme.colorScheme.primary,
@@ -307,9 +313,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   !RegExp(
                                     r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                                   ).hasMatch(value)) {
-                                return isPersian
-                                    ? 'فرمت ایمیل نامعتبر است'
-                                    : 'Invalid email format';
+                                return AppLocalizations.getString(
+                                  'invalid_email_error',
+                                  isPersian,
+                                );
                               }
                               return null;
                             },
@@ -319,7 +326,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             controller: _passwordController,
                             obscureText: _isObscure,
                             decoration: InputDecoration(
-                              labelText: isPersian ? 'رمز عبور' : 'Password',
+                              labelText: AppLocalizations.getString(
+                                'password_label',
+                                isPersian,
+                              ),
                               prefixIcon: Icon(
                                 Icons.lock_outline,
                                 color: theme.colorScheme.primary,
@@ -344,9 +354,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             validator: (value) {
                               if (value == null || value.length < 8) {
-                                return isPersian
-                                    ? 'حداقل ۸ کاراکتر الزامیست'
-                                    : 'Min 8 characters required';
+                                return AppLocalizations.getString(
+                                  'password_min_length_error',
+                                  isPersian,
+                                );
                               }
                               return null;
                             },
@@ -354,18 +365,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           const SizedBox(height: 24),
                           ElevatedButton(
                             onPressed: _isLoading ? null : _authenticate,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 4,
-                              shadowColor: theme.colorScheme.primary.withValues(
-                                alpha: 0.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
                             child: _isLoading
                                 ? const SizedBox(
                                     height: 20,
@@ -377,10 +376,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   )
                                 : Text(
                                     _isLoginMode
-                                        ? (isPersian ? 'ورود به حساب' : 'Login')
-                                        : (isPersian
-                                              ? 'ایجاد حساب جدید'
-                                              : 'Create Account'),
+                                        ? AppLocalizations.getString(
+                                            'login_button',
+                                            isPersian,
+                                          )
+                                        : AppLocalizations.getString(
+                                            'create_account_button',
+                                            isPersian,
+                                          ),
                                     style: const TextStyle(
                                       fontSize: 17,
                                       fontWeight: FontWeight.bold,
@@ -494,14 +497,14 @@ class _AuthModeToggle extends StatelessWidget {
             children: [
               Expanded(
                 child: _ToggleLabel(
-                  text: isPersian ? 'ورود' : 'Login',
+                  text: AppLocalizations.getString('login_toggle', isPersian),
                   active: isLoginMode,
                   onTap: () => onChanged(true),
                 ),
               ),
               Expanded(
                 child: _ToggleLabel(
-                  text: isPersian ? 'ثبت‌نام' : 'Sign up',
+                  text: AppLocalizations.getString('signup_toggle', isPersian),
                   active: !isLoginMode,
                   onTap: () => onChanged(false),
                 ),

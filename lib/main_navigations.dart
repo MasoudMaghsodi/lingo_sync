@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/dictionary_page.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/flashcards_page.dart';
@@ -91,20 +92,20 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.check_box_outlined),
-            label: isPersian ? 'تسک‌ها' : 'Tasks',
+            label: AppLocalizations.getString('nav_tasks', isPersian),
           ),
           NavigationDestination(
             icon: const Icon(Icons.search),
-            label: isPersian ? 'دیکشنری' : 'Dictionary',
+            label: AppLocalizations.getString('nav_dictionary', isPersian),
           ),
           const NavigationDestination(icon: SizedBox.shrink(), label: ''),
           NavigationDestination(
             icon: const Icon(Icons.style_outlined),
-            label: isPersian ? 'مرور' : 'Review',
+            label: AppLocalizations.getString('nav_review', isPersian),
           ),
           NavigationDestination(
             icon: const Icon(Icons.leaderboard_outlined),
-            label: isPersian ? 'رتبه‌بندی' : 'Leaderboard',
+            label: AppLocalizations.getString('nav_leaderboard', isPersian),
           ),
         ],
       ),

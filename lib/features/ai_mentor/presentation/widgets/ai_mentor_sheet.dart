@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/features/ai_mentor/controller/ai_mentor_controller.dart';
 import 'package:lingo_sync/features/ai_mentor/data/mentor_state.dart';
 
@@ -39,19 +40,17 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
   String _statusText(MentorPhase phase, bool isPersian) {
     switch (phase) {
       case MentorPhase.connecting:
-        return isPersian ? 'در حال اتصال...' : 'Connecting...';
+        return AppLocalizations.getString('connecting', isPersian);
       case MentorPhase.settingUp:
-        return isPersian ? 'در حال آماده‌سازی...' : 'Initializing...';
+        return AppLocalizations.getString('initializing', isPersian);
       case MentorPhase.receivingAudio:
-        return isPersian ? 'استاد صحبت می‌کند' : 'Mentor is speaking';
+        return AppLocalizations.getString('mentor_speaking', isPersian);
       case MentorPhase.aiDisconnected:
-        return isPersian
-            ? 'سشن پایان یافت (لمس برای شروع مجدد)'
-            : 'Session Ended (Tap to restart)';
+        return AppLocalizations.getString('mentor_session_ended', isPersian);
       case MentorPhase.disconnected:
-        return isPersian ? 'اینترنت قطع شد!' : 'No Internet Connection!';
+        return AppLocalizations.getString('mentor_no_internet', isPersian);
       case MentorPhase.ready:
-        return isPersian ? 'استاد می‌شنود...' : 'Mentor is listening...';
+        return AppLocalizations.getString('mentor_listening', isPersian);
     }
   }
 

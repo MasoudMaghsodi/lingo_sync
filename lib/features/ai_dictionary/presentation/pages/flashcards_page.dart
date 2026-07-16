@@ -66,16 +66,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          AppLocalizations.getString('smart_anki', isPersian),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: Text(AppLocalizations.getString('smart_anki', isPersian)),
         actions: [
           // 🚀 دکمه جدید گنجینه گرامر
           IconButton(
@@ -83,7 +74,10 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
               Icons.rule_folder_outlined,
               color: theme.colorScheme.primary,
             ),
-            tooltip: isPersian ? 'گنجینه گرامر' : 'Grammar Vault',
+            tooltip: AppLocalizations.getString(
+              'grammar_vault_title',
+              isPersian,
+            ),
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.push(
@@ -98,7 +92,10 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
               Icons.inventory_2_outlined,
               color: theme.colorScheme.primary,
             ),
-            tooltip: isPersian ? 'آرشیو کل لغات' : 'Archive',
+            tooltip: AppLocalizations.getString(
+              'archive_all_tooltip',
+              isPersian,
+            ),
             onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.push(
@@ -113,238 +110,236 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
       ),
       body: Stack(
         children: [
-          Directionality(
-            textDirection: isPersian ? TextDirection.rtl : TextDirection.ltr,
-            child: flashcardsState.when(
-              loading: () => Center(
-                child: CircularProgressIndicator(
-                  color: theme.colorScheme.primary,
-                ),
+          flashcardsState.when(
+            loading: () => Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
               ),
-              error: (error, _) => Center(
-                child: Text(
-                  'خطا در بارگذاری اطلاعات',
-                  style: TextStyle(color: theme.colorScheme.error),
+            ),
+            error: (error, _) => Center(
+              child: Text(
+                AppLocalizations.getString(
+                  'flashcards_loading_error',
+                  isPersian,
                 ),
+                style: TextStyle(color: theme.colorScheme.error),
               ),
-              data: (flashcards) {
-                if (flashcards.isEmpty) {
-                  return RefreshIndicator(
-                    onRefresh: _handleRefresh,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.3,
-                        ),
-                        Icon(
-                          Icons.done_all_rounded,
-                          size: 80,
-                          color: Colors.green.withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Center(
-                          child: Text(
-                            isPersian
-                                ? 'تمام لغات امروز را مرور کردی!'
-                                : 'All caught up for today!',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final currentCard = flashcards.first;
-                final globalDict = currentCard['global_dictionary'] ?? {};
-                final aiAnalysis = globalDict['ai_analysis'] ?? {};
-                final word =
-                    aiAnalysis['word'] ?? globalDict['word'] ?? 'Unknown';
-
+            ),
+            data: (flashcards) {
+              if (flashcards.isEmpty) {
                 return RefreshIndicator(
                   onRefresh: _handleRefresh,
-                  child: CustomScrollView(
+                  child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                '${flashcards.length} ${isPersian ? 'کارت باقی‌مانده' : 'cards left'}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    if (!_isFlipped) {
-                                      HapticFeedback.selectionClick();
-                                      setState(() => _isFlipped = true);
-                                    }
-                                  },
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 500),
-                                    transitionBuilder:
-                                        (
-                                          Widget child,
-                                          Animation<double> animation,
-                                        ) {
-                                          final rotateAnim =
-                                              Tween(
-                                                begin: pi,
-                                                end: 0.0,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: animation,
-                                                  curve: Curves.easeInOut,
-                                                ),
-                                              );
-                                          return AnimatedBuilder(
-                                            animation: rotateAnim,
-                                            child: child,
-                                            builder: (context, widget) {
-                                              final isUnder =
-                                                  (ValueKey(_isFlipped) !=
-                                                  widget?.key);
-                                              var tilt =
-                                                  ((animation.value - 0.5)
-                                                          .abs() -
-                                                      0.5) *
-                                                  0.003;
-                                              tilt *= isUnder ? -1.0 : 1.0;
-                                              final value = isUnder
-                                                  ? min(
-                                                      rotateAnim.value,
-                                                      pi / 2,
-                                                    )
-                                                  : rotateAnim.value;
-                                              return Transform(
-                                                transform: Matrix4.rotationY(
-                                                  value,
-                                                )..setEntry(3, 0, tilt),
-                                                alignment: Alignment.center,
-                                                child: widget,
-                                              );
-                                            },
-                                          );
-                                        },
-                                    child: _isFlipped
-                                        ? _buildCardBack(
-                                            word,
-                                            aiAnalysis,
-                                            theme,
-                                            isPersian,
-                                            key: const ValueKey(true),
-                                          )
-                                        : _buildCardFront(
-                                            word,
-                                            theme,
-                                            isPersian,
-                                            key: const ValueKey(false),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-                              AnimatedOpacity(
-                                opacity: _isFlipped ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 200),
-                                child: IgnorePointer(
-                                  ignoring: !_isFlipped,
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red.shade50,
-                                            foregroundColor: Colors.red,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          onPressed: () => _handleReview(
-                                            currentCard['id'],
-                                            false,
-                                            currentCard,
-                                          ),
-                                          icon: const Icon(Icons.close),
-                                          label: Text(
-                                            AppLocalizations.getString(
-                                              'forgot',
-                                              isPersian,
-                                            ),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            elevation: 5,
-                                            shadowColor: Colors.green
-                                                .withValues(alpha: 0.5),
-                                          ),
-                                          onPressed: () => _handleReview(
-                                            currentCard['id'],
-                                            true,
-                                            currentCard,
-                                          ),
-                                          icon: const Icon(Icons.check),
-                                          label: Text(
-                                            AppLocalizations.getString(
-                                              'remembered',
-                                              isPersian,
-                                            ),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                            ],
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.3,
+                      ),
+                      Icon(
+                        Icons.done_all_rounded,
+                        size: 80,
+                        color: Colors.green.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          AppLocalizations.getString(
+                            'flashcards_all_done',
+                            isPersian,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
                           ),
                         ),
                       ),
                     ],
                   ),
                 );
-              },
-            ),
+              }
+
+              final currentCard = flashcards.first;
+              final globalDict = currentCard['global_dictionary'] ?? {};
+              final aiAnalysis = globalDict['ai_analysis'] ?? {};
+              final word =
+                  aiAnalysis['word'] ?? globalDict['word'] ?? 'Unknown';
+
+              return RefreshIndicator(
+                onRefresh: _handleRefresh,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${flashcards.length} '
+                              '${AppLocalizations.getString('cards_left_suffix', isPersian)}',
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (!_isFlipped) {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _isFlipped = true);
+                                  }
+                                },
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 500),
+                                  transitionBuilder:
+                                      (
+                                        Widget child,
+                                        Animation<double> animation,
+                                      ) {
+                                        final rotateAnim =
+                                            Tween(begin: pi, end: 0.0).animate(
+                                              CurvedAnimation(
+                                                parent: animation,
+                                                curve: Curves.easeInOut,
+                                              ),
+                                            );
+                                        return AnimatedBuilder(
+                                          animation: rotateAnim,
+                                          child: child,
+                                          builder: (context, widget) {
+                                            final isUnder =
+                                                (ValueKey(_isFlipped) !=
+                                                widget?.key);
+                                            var tilt =
+                                                ((animation.value - 0.5).abs() -
+                                                    0.5) *
+                                                0.003;
+                                            tilt *= isUnder ? -1.0 : 1.0;
+                                            final value = isUnder
+                                                ? min(rotateAnim.value, pi / 2)
+                                                : rotateAnim.value;
+                                            return Transform(
+                                              transform: Matrix4.rotationY(
+                                                value,
+                                              )..setEntry(3, 0, tilt),
+                                              alignment: Alignment.center,
+                                              child: widget,
+                                            );
+                                          },
+                                        );
+                                      },
+                                  child: _isFlipped
+                                      ? _buildCardBack(
+                                          word,
+                                          aiAnalysis,
+                                          theme,
+                                          isPersian,
+                                          key: const ValueKey(true),
+                                        )
+                                      : _buildCardFront(
+                                          word,
+                                          theme,
+                                          isPersian,
+                                          key: const ValueKey(false),
+                                        ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            AnimatedOpacity(
+                              opacity: _isFlipped ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: IgnorePointer(
+                                ignoring: !_isFlipped,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red.shade50,
+                                          foregroundColor: Colors.red,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        onPressed: () => _handleReview(
+                                          currentCard['id'],
+                                          false,
+                                          currentCard,
+                                        ),
+                                        icon: const Icon(Icons.close),
+                                        label: Text(
+                                          AppLocalizations.getString(
+                                            'forgot',
+                                            isPersian,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          elevation: 5,
+                                          shadowColor: Colors.green.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                        ),
+                                        onPressed: () => _handleReview(
+                                          currentCard['id'],
+                                          true,
+                                          currentCard,
+                                        ),
+                                        icon: const Icon(Icons.check),
+                                        label: Text(
+                                          AppLocalizations.getString(
+                                            'remembered',
+                                            isPersian,
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -396,9 +391,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
           ),
           const SizedBox(height: 48),
           Text(
-            isPersian
-                ? 'برای دیدن جواب روی کارت ضربه بزنید'
-                : 'Tap to reveal answer',
+            AppLocalizations.getString('tap_to_reveal', isPersian),
             style: const TextStyle(color: Colors.white54, fontSize: 14),
           ),
         ],
@@ -493,7 +486,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
             const SizedBox(height: 24),
             if (examples.isNotEmpty) ...[
               Text(
-                isPersian ? 'مثال:' : 'Example:',
+                AppLocalizations.getString('example', isPersian),
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,

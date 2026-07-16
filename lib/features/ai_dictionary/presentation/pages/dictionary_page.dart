@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 // import '../../../../core/providers/pomodoro_provider.dart';
+import '../../../../core/providers/settings_provider.dart';
 import '../providers/dictionary_provider.dart';
 import '../../data/models/word_analysis_model.dart';
 import 'video_lesson_page.dart';
@@ -54,14 +56,17 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
 
   void _saveWordToAnki(WordAnalysis wordData) async {
     HapticFeedback.lightImpact();
+    final isPersian = ref.read(isPersianProvider);
     try {
       await ref
           .read(dictionaryProvider.notifier)
           .saveWordToFlashcards(wordData);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('به جعبه لایتنر اضافه شد!'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.getString('added_to_flashcards', isPersian),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -70,7 +75,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
       if (mounted) {
         final message = e is AppException
             ? errorHandler.getUserMessage(e)
-            : 'خطا در ذخیره';
+            : AppLocalizations.getString('save_error', isPersian);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message), backgroundColor: Colors.red),
         );
@@ -81,6 +86,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isPersian = ref.watch(isPersianProvider);
     final searchState = ref.watch(dictionaryProvider);
     final videoState = ref.watch(videoProcessingProvider);
     final isProcessingVideo = videoState.isLoading;
@@ -90,7 +96,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
         final error = next.error;
         final message = error is AppException
             ? errorHandler.getUserMessage(error)
-            : 'خطا در پردازش ویدیو. دوباره تلاش کنید.';
+            : AppLocalizations.getString('ai_connection_error', isPersian);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -123,9 +129,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
             letterSpacing: 1.2,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         // actions: [
         //   // 🚀 دکمه پومودورو در نوار بالایی برای فعال‌سازی راحت
         //   IconButton(
@@ -175,9 +178,12 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                               size: 28,
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'درسنامه ویدیویی هوشمند',
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.getString(
+                                'dictionary_video_section_title',
+                                isPersian,
+                              ),
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -188,7 +194,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                         TextField(
                           controller: _ytController,
                           decoration: InputDecoration(
-                            hintText: 'لینک یوتیوب را وارد کنید...',
+                            hintText: AppLocalizations.getString(
+                              'dictionary_youtube_hint',
+                              isPersian,
+                            ),
                             prefixIcon: const Icon(Icons.link),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -203,13 +212,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                           height: 50,
                           child: ElevatedButton(
                             onPressed: isProcessingVideo ? null : _analyzeVideo,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
                             child: isProcessingVideo
                                 ? const SizedBox(
                                     height: 24,
@@ -219,9 +221,12 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text(
-                                    'استخراج خلاصه، گرامر و لغات',
-                                    style: TextStyle(
+                                : Text(
+                                    AppLocalizations.getString(
+                                      'dictionary_extract_button',
+                                      isPersian,
+                                    ),
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -241,7 +246,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                       fontSize: 18,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'جستجوی پیشرفته لغت...',
+                      hintText: AppLocalizations.getString(
+                        'dictionary_search_hint',
+                        isPersian,
+                      ),
                       filled: true,
                       prefixIcon: Icon(
                         Icons.search,
@@ -287,7 +295,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                           child: Text(
                             error is AppException
                                 ? errorHandler.getUserMessage(error)
-                                : 'خطا در دریافت اطلاعات لغت. دوباره تلاش کنید.',
+                                : AppLocalizations.getString(
+                                    'save_error',
+                                    isPersian,
+                                  ),
                             textAlign: TextAlign.center,
                             style: TextStyle(color: theme.colorScheme.error),
                           ),
@@ -295,14 +306,17 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                       ),
                       data: (WordAnalysis? wordData) {
                         if (wordData == null) {
-                          return const Center(
+                          return Center(
                             child: Text(
-                              'کلمه‌ای را جستجو کنید تا جادوی هوش مصنوعی را ببینید.',
-                              style: TextStyle(color: Colors.grey),
+                              AppLocalizations.getString(
+                                'dictionary_search_placeholder',
+                                isPersian,
+                              ),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           );
                         }
-                        return _buildWordResult(wordData, theme);
+                        return _buildWordResult(wordData, theme, isPersian);
                       },
                     ),
                   ),
@@ -315,7 +329,11 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
     );
   }
 
-  Widget _buildWordResult(WordAnalysis wordData, ThemeData theme) {
+  Widget _buildWordResult(
+    WordAnalysis wordData,
+    ThemeData theme,
+    bool isPersian,
+  ) {
     return ListView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 40),
@@ -364,7 +382,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
         ElevatedButton.icon(
           onPressed: () => _saveWordToAnki(wordData),
           icon: const Icon(Icons.bookmark_add_rounded),
-          label: const Text('افزودن به مرور (Anki)'),
+          label: Text(AppLocalizations.getString('add_to_review', isPersian)),
           style: ElevatedButton.styleFrom(
             backgroundColor: theme.colorScheme.secondary,
             foregroundColor: Colors.white,
@@ -372,7 +390,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
           ),
         ),
         const SizedBox(height: 32),
-        _buildSectionTitle('معنی / Definition', theme),
+        _buildSectionTitle(
+          AppLocalizations.getString('dictionary_definition_title', isPersian),
+          theme,
+        ),
         Text(
           wordData.englishMeaning,
           style: const TextStyle(
@@ -389,7 +410,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
 
         if (wordData.examples.isNotEmpty) ...[
           const SizedBox(height: 32),
-          _buildSectionTitle('مثال‌ها / Examples', theme),
+          _buildSectionTitle(
+            AppLocalizations.getString('dictionary_examples_title', isPersian),
+            theme,
+          ),
           ...wordData.examples.map(
             (ex) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -415,7 +439,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
 
         if (wordData.synonymsByLevel.isNotEmpty) ...[
           const SizedBox(height: 32),
-          _buildSectionTitle('مترادف‌ها (لانگ‌پرس = افزودن به انکی)', theme),
+          _buildSectionTitle(
+            AppLocalizations.getString('dictionary_synonyms_hint', isPersian),
+            theme,
+          ),
           Wrap(
             spacing: 8,
             runSpacing: 8,

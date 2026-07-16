@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../application/auth_controller.dart';
 
@@ -23,9 +24,10 @@ class AwaitingApprovalPage extends ConsumerWidget {
                 _PulsingIcon(color: theme.colorScheme.primary),
                 const SizedBox(height: 28),
                 Text(
-                  isPersian
-                      ? 'در انتظار تایید ادمین'
-                      : 'Awaiting Admin Approval',
+                  AppLocalizations.getString(
+                    'awaiting_approval_title',
+                    isPersian,
+                  ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,
@@ -35,9 +37,10 @@ class AwaitingApprovalPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isPersian
-                      ? 'حساب شما ساخته شد.\nبه‌محض تایید مدیریت، این صفحه خودکار باز می‌شود.'
-                      : 'Your account has been created.\nThis page will unlock automatically once approved.',
+                  AppLocalizations.getString(
+                    'awaiting_approval_body',
+                    isPersian,
+                  ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14.5,
@@ -50,7 +53,7 @@ class AwaitingApprovalPage extends ConsumerWidget {
                   onPressed: () =>
                       ref.read(authControllerProvider.notifier).signOut(),
                   icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: Text(isPersian ? 'خروج از حساب' : 'Logout'),
+                  label: Text(AppLocalizations.getString('logout', isPersian)),
                   style: TextButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
                   ),

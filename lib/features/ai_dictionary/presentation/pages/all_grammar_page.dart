@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../data/models/video_analysis_model.dart';
 import '../../../../core/providers/settings_provider.dart';
 
@@ -77,26 +79,22 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isPersian ? 'گنجینه گرامرها' : 'Grammar Vault',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          AppLocalizations.getString('grammar_vault_title', isPersian),
         ),
-        centerTitle: true,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _videoAnalyses.isEmpty
           ? Center(
               child: Text(
-                isPersian
-                    ? 'هنوز گرامری ثبت نشده است.'
-                    : 'No grammar points found.',
+                AppLocalizations.getString('no_grammar_points', isPersian),
                 style: const TextStyle(color: Colors.grey),
               ),
             )
           : RefreshIndicator(
               onRefresh: _loadAllGrammars,
               child: ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppConstants.standardPadding),
                 itemCount: _videoAnalyses.length,
                 itemBuilder: (context, index) {
                   final video = _videoAnalyses[index];
@@ -106,9 +104,8 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                   }
 
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                    margin: EdgeInsets.only(
+                      bottom: AppConstants.standardPadding,
                     ),
                     child: ExpansionTile(
                       initiallyExpanded: index == 0, // اولین مورد باز باشد
@@ -124,16 +121,23 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         ),
                       ),
                       subtitle: Text(
-                        '${video.grammarPoints.length} ${isPersian ? 'نکته گرامری' : 'Grammar points'}',
+                        '${video.grammarPoints.length} '
+                        '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
                       ),
-                      childrenPadding: const EdgeInsets.all(16),
+                      childrenPadding: EdgeInsets.all(
+                        AppConstants.standardPadding,
+                      ),
                       children: video.grammarPoints.map((grammar) {
                         return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          padding: const EdgeInsets.all(16),
+                          margin: EdgeInsets.only(
+                            bottom: AppConstants.standardPadding,
+                          ),
+                          padding: EdgeInsets.all(AppConstants.standardPadding),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.standardBorderRadius,
+                            ),
                             border: Border.all(
                               color: theme.colorScheme.primary.withValues(
                                 alpha: 0.2,
@@ -166,7 +170,9 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                                   color: theme.colorScheme.primary.withValues(
                                     alpha: 0.1,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.standardBorderRadius,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [

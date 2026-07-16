@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/providers/pomodoro_provider.dart';
 
@@ -56,13 +57,8 @@ class _FloatingPomodoroState extends ConsumerState<FloatingPomodoro> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
           title: Text(
-            isPersian ? 'تنظیم زمان تمرکز' : 'Set Focus Time',
-            style: TextStyle(color: theme.colorScheme.primary),
+            AppLocalizations.getString('pomodoro_set_focus_time', isPersian),
           ),
           content: TextField(
             controller: _timeController,
@@ -70,23 +66,16 @@ class _FloatingPomodoroState extends ConsumerState<FloatingPomodoro> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             autofocus: true,
             decoration: InputDecoration(
-              hintText: isPersian
-                  ? 'دقیقه را وارد کنید (مثلا ۲۵)'
-                  : 'Enter minutes (e.g. 25)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+              hintText: AppLocalizations.getString(
+                'pomodoro_enter_minutes_hint',
+                isPersian,
               ),
-              filled: true,
-              fillColor: theme.colorScheme.surface,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                isPersian ? 'انصراف' : 'Cancel',
-                style: const TextStyle(color: Colors.grey),
-              ),
+              child: Text(AppLocalizations.getString('cancel', isPersian)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -96,11 +85,7 @@ class _FloatingPomodoroState extends ConsumerState<FloatingPomodoro> {
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(isPersian ? 'ذخیره' : 'Save'),
+              child: Text(AppLocalizations.getString('save', isPersian)),
             ),
           ],
         );
@@ -372,7 +357,7 @@ class _PomodoroPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  isPersian ? 'تمرکز' : 'Focus',
+                  AppLocalizations.getString('pomodoro_focus_label', isPersian),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -393,7 +378,7 @@ class _PomodoroPanel extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               pomodoro.isFinished
-                  ? (isPersian ? 'تمام شد! 🎉' : 'Done! 🎉')
+                  ? AppLocalizations.getString('pomodoro_done_label', isPersian)
                   : formatTime(pomodoro.remainingSeconds),
               style: TextStyle(
                 fontSize: 30,

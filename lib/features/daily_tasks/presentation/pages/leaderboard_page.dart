@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
 
 // ==== Data layer (unchanged) ====
@@ -74,14 +75,11 @@ class LeaderboardPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isPersian ? 'مسیر صعود' : 'The Ascent',
+              AppLocalizations.getString('leaderboard_title', isPersian),
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 18,
@@ -90,9 +88,7 @@ class LeaderboardPage extends ConsumerWidget {
               ),
             ),
             Text(
-              isPersian
-                  ? 'رتبه‌بندی زنده‌ی زبان‌آموزها'
-                  : 'Live learner rankings',
+              AppLocalizations.getString('leaderboard_subtitle', isPersian),
               style: TextStyle(
                 fontSize: 11,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
@@ -110,59 +106,56 @@ class LeaderboardPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: Directionality(
-        textDirection: isPersian ? TextDirection.rtl : TextDirection.ltr,
-        child: leaderboardState.when(
-          loading: () => Center(
-            child: CircularProgressIndicator(color: theme.colorScheme.primary),
-          ),
-          error: (err, stack) =>
-              _ErrorState(isPersian: isPersian, error: err, theme: theme),
-          data: (users) {
-            if (users.isEmpty) {
-              return _EmptyState(isPersian: isPersian, theme: theme);
-            }
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    // Fixed outer height, but each peak fills it via Expanded
-                    // instead of a hardcoded bar height — no more overflow
-                    // regardless of name length or font scaling.
-                    height: 300,
-                    child: _SummitPodium(
-                      users: users,
+      body: leaderboardState.when(
+        loading: () => Center(
+          child: CircularProgressIndicator(color: theme.colorScheme.primary),
+        ),
+        error: (err, stack) =>
+            _ErrorState(isPersian: isPersian, error: err, theme: theme),
+        data: (users) {
+          if (users.isEmpty) {
+            return _EmptyState(isPersian: isPersian, theme: theme);
+          }
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  // Fixed outer height, but each peak fills it via Expanded
+                  // instead of a hardcoded bar height — no more overflow
+                  // regardless of name length or font scaling.
+                  height: 300,
+                  child: _SummitPodium(
+                    users: users,
+                    isPersian: isPersian,
+                    theme: theme,
+                    isDark: isDark,
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.only(top: 8),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index < 3) return const SizedBox.shrink();
+                    final user = users[index];
+                    final isMe =
+                        user['id'] ==
+                        Supabase.instance.client.auth.currentUser?.id;
+                    return _ClimberRow(
+                      rank: index + 1,
+                      user: user,
+                      isMe: isMe,
                       isPersian: isPersian,
                       theme: theme,
-                      isDark: isDark,
-                    ),
-                  ),
+                    );
+                  }, childCount: users.length),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.only(top: 8),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      if (index < 3) return const SizedBox.shrink();
-                      final user = users[index];
-                      final isMe =
-                          user['id'] ==
-                          Supabase.instance.client.auth.currentUser?.id;
-                      return _ClimberRow(
-                        rank: index + 1,
-                        user: user,
-                        isMe: isMe,
-                        isPersian: isPersian,
-                        theme: theme,
-                      );
-                    }, childCount: users.length),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 110)),
-              ],
-            );
-          },
-        ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            ],
+          );
+        },
       ),
     );
   }
@@ -491,7 +484,8 @@ class _ClimberRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        '$streak ${isPersian ? "روز" : "days"}',
+                        '$streak '
+                        '${AppLocalizations.getString('days_suffix', isPersian)}',
                         style: TextStyle(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.55,
@@ -549,9 +543,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              isPersian
-                  ? 'هنوز کسی مسیر رو شروع نکرده'
-                  : 'No one has started climbing yet',
+              AppLocalizations.getString('leaderboard_empty_title', isPersian),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
@@ -561,9 +553,10 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              isPersian
-                  ? 'اولین امتیازت اولین قدم رو ثبت می‌کنه'
-                  : 'Your first point starts the leaderboard',
+              AppLocalizations.getString(
+                'leaderboard_empty_subtitle',
+                isPersian,
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
@@ -602,9 +595,7 @@ class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              isPersian
-                  ? 'رتبه‌بندی لود نشد'
-                  : 'Couldn\'t load the leaderboard',
+              AppLocalizations.getString('leaderboard_error_title', isPersian),
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w700,

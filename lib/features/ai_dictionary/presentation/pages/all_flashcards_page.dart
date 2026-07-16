@@ -131,11 +131,16 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(isPersian ? 'ایجاد پوشه جدید' : 'Create Folder'),
+          title: Text(
+            AppLocalizations.getString('create_folder_title', isPersian),
+          ),
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
-              hintText: isPersian ? 'نام پوشه' : 'Folder Name',
+              hintText: AppLocalizations.getString(
+                'folder_name_hint',
+                isPersian,
+              ),
             ),
           ),
           actions: [
@@ -180,9 +185,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isPersian
-                    ? 'مدیریت پوشه: $folderName'
-                    : 'Manage Folder: $folderName',
+                '${AppLocalizations.getString('manage_folder_title', isPersian)}: $folderName',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -191,7 +194,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
               const SizedBox(height: 24),
               ListTile(
                 leading: const Icon(Icons.edit_rounded, color: Colors.blue),
-                title: Text(isPersian ? 'تغییر نام' : 'Rename'),
+                title: Text(AppLocalizations.getString('rename', isPersian)),
                 onTap: () {
                   Navigator.pop(context);
                   _renameFolderDialog(folderName, isPersian);
@@ -200,9 +203,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
               ListTile(
                 leading: const Icon(Icons.delete_rounded, color: Colors.red),
                 title: Text(
-                  isPersian
-                      ? 'حذف پوشه (انتقال لغات به General)'
-                      : 'Delete (Move words to General)',
+                  AppLocalizations.getString('delete_folder_action', isPersian),
                   style: const TextStyle(color: Colors.red),
                 ),
                 onTap: () {
@@ -223,11 +224,13 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(isPersian ? 'تغییر نام پوشه' : 'Rename Folder'),
+          title: Text(
+            AppLocalizations.getString('rename_folder_title', isPersian),
+          ),
           content: TextField(
             controller: controller,
             decoration: InputDecoration(
-              hintText: isPersian ? 'نام جدید' : 'New Name',
+              hintText: AppLocalizations.getString('new_name_hint', isPersian),
             ),
           ),
           actions: [
@@ -298,7 +301,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                isPersian ? 'انتقال به پوشه:' : 'Move to folder:',
+                AppLocalizations.getString('move_to_folder_title', isPersian),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -328,8 +331,13 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                         if (mounted) {
                           // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('خطا در انتقال'),
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.getString(
+                                  'move_error',
+                                  isPersian,
+                                ),
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -354,11 +362,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          AppLocalizations.getString('archive', isPersian),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        title: Text(AppLocalizations.getString('archive', isPersian)),
         actions: [
           IconButton(
             icon: const Icon(Icons.create_new_folder_outlined),
@@ -519,9 +523,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
                           child: ExpansionTile(
                             leading: CircleAvatar(
                               backgroundColor: theme.colorScheme.primary
@@ -572,9 +573,10 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                                           Icons.drive_file_move_outline,
                                           color: theme.colorScheme.secondary,
                                         ),
-                                        tooltip: isPersian
-                                            ? 'انتقال پوشه'
-                                            : 'Move',
+                                        tooltip: AppLocalizations.getString(
+                                          'move_tooltip',
+                                          isPersian,
+                                        ),
                                         onPressed: () => _moveCardToFolder(
                                           card,
                                           theme,

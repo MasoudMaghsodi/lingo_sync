@@ -1,12 +1,16 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingo_sync/core/config/app_config.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/providers/dictionary_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/video_analysis_model.dart';
 import '../../data/models/word_analysis_model.dart';
 
@@ -80,6 +84,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   Future<void> _saveNote() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
+    final isPersian = ref.read(isPersianProvider);
     setState(() => _isSavingNote = true);
     try {
       await Supabase.instance.client.from('user_notes').upsert({
@@ -90,8 +95,8 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('یادداشت ذخیره شد.'),
+          SnackBar(
+            content: Text(AppLocalizations.getString('note_saved', isPersian)),
             backgroundColor: Colors.green,
           ),
         );
@@ -99,8 +104,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در ذخیره یادداشت'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.getString('note_save_error', isPersian),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -126,11 +133,14 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   Future<void> _askAi() async {
     final question = _aiQuestionController.text.trim();
     if (question.isEmpty) return;
+    final isPersian = ref.read(isPersianProvider);
     if (!await _canAskAi()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('محدودیت ۲ سوال در ساعت!'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.getString('ai_question_limit', isPersian),
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -158,7 +168,11 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _aiResponse = 'خطا در ارتباط با هوش مصنوعی: $e');
+        final prefix = AppLocalizations.getString(
+          'ai_connection_error',
+          isPersian,
+        );
+        setState(() => _aiResponse = '$prefix: $e');
       }
     } finally {
       if (mounted) setState(() => _isAskingAi = false);
@@ -166,6 +180,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   }
 
   void _saveGrammarToAnki(GrammarPoint grammar) async {
+    final isPersian = ref.read(isPersianProvider);
     final tempWord = WordAnalysis(
       word: grammar.structureName,
       partOfSpeech: 'Grammar',
@@ -189,8 +204,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('گرامر به لایتنر اضافه شد'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.getString('grammar_added', isPersian),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -198,8 +215,8 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('خطا در ذخیره'),
+          SnackBar(
+            content: Text(AppLocalizations.getString('save_error', isPersian)),
             backgroundColor: Colors.red,
           ),
         );
@@ -208,6 +225,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   }
 
   void _openAiChatSheet() {
+    final isPersian = ref.read(isPersianProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -248,7 +266,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'پرسش از منتور AI',
+                              AppLocalizations.getString(
+                                'ask_ai_mentor_title',
+                                isPersian,
+                              ),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -258,9 +279,12 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'محدودیت: ۲ پرسش در ساعت.\nفقط سوالات مرتبط با همین ویدیو!',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.getString(
+                            'ai_question_limit_notice',
+                            isPersian,
+                          ),
+                          style: const TextStyle(
                             color: Colors.redAccent,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -271,7 +295,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                           controller: _aiQuestionController,
                           maxLines: 3,
                           decoration: InputDecoration(
-                            hintText: 'منظور از این اصطلاح در ویدیو چه بود؟...',
+                            hintText: AppLocalizations.getString(
+                              'ai_question_hint',
+                              isPersian,
+                            ),
                             filled: true,
                             fillColor: theme.colorScheme.surface,
                             border: OutlineInputBorder(
@@ -288,11 +315,6 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                                   await _askAi();
                                   setSheetState(() => _isAskingAi = false);
                                 },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
                           child: _isAskingAi
                               ? const SizedBox(
                                   width: 24,
@@ -301,9 +323,14 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text(
-                                  'ارسال پرسش',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                              : Text(
+                                  AppLocalizations.getString(
+                                    'send_question',
+                                    isPersian,
+                                  ),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                         ),
                         const SizedBox(height: 16),
@@ -329,7 +356,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'پاسخ هوش مصنوعی:',
+                                      AppLocalizations.getString(
+                                        'ai_answer_label',
+                                        isPersian,
+                                      ),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: theme.colorScheme.primary,
@@ -383,28 +413,40 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isPersian = ref.watch(isPersianProvider);
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          title: const Text(
-            'درسنامه ویدیویی',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            AppLocalizations.getString('video_lesson_title', isPersian),
           ),
-          centerTitle: true,
-          elevation: 0,
-          backgroundColor: Colors.transparent,
           bottom: TabBar(
             isScrollable: true,
             labelColor: theme.colorScheme.primary,
             indicatorColor: theme.colorScheme.primary,
             unselectedLabelColor: Colors.grey,
-            tabs: const [
-              Tab(icon: Icon(Icons.article_outlined), text: 'خلاصه و یادداشت'),
-              Tab(icon: Icon(Icons.subtitles_outlined), text: 'ترنسکریپت'),
-              Tab(icon: Icon(Icons.child_care_rounded), text: 'گرامر کودکانه'),
-              Tab(icon: Icon(Icons.school_outlined), text: 'لغات'),
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.article_outlined),
+                text: AppLocalizations.getString(
+                  'tab_summary_notes',
+                  isPersian,
+                ),
+              ),
+              Tab(
+                icon: const Icon(Icons.subtitles_outlined),
+                text: AppLocalizations.getString('tab_transcript', isPersian),
+              ),
+              Tab(
+                icon: const Icon(Icons.child_care_rounded),
+                text: AppLocalizations.getString('tab_grammar', isPersian),
+              ),
+              Tab(
+                icon: const Icon(Icons.school_outlined),
+                text: AppLocalizations.getString('tab_vocabulary', isPersian),
+              ),
             ],
           ),
         ),
@@ -412,24 +454,27 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
           onPressed: _openAiChatSheet,
           backgroundColor: theme.colorScheme.primary,
           icon: const Icon(Icons.psychology, color: Colors.white),
-          label: const Text(
-            'گپ با AI',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          label: Text(
+            AppLocalizations.getString('chat_with_ai', isPersian),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         body: TabBarView(
           children: [
-            _buildSummaryTab(theme),
+            _buildSummaryTab(theme, isPersian),
             _buildTranscriptTab(theme),
-            _buildGrammarTab(theme),
-            _buildVocabularyTab(theme),
+            _buildGrammarTab(theme, isPersian),
+            _buildVocabularyTab(theme, isPersian),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryTab(ThemeData theme) {
+  Widget _buildSummaryTab(ThemeData theme, bool isPersian) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20.0),
@@ -440,9 +485,12 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
             children: [
               Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
-              const Text(
-                'خلاصه هوشمند',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.getString('smart_summary_title', isPersian),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -474,9 +522,12 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
             children: [
               Icon(Icons.edit_note_rounded, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
-              const Text(
-                'یادداشت شخصی شما',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.getString('personal_notes_title', isPersian),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -501,8 +552,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                 maxLines: 8,
                 style: const TextStyle(fontSize: 16, height: 1.8),
                 decoration: InputDecoration(
-                  hintText:
-                      'نکات مهم این ویدیو را اینجا بنویسید...\n\n- نکته اول\n- نکته دوم',
+                  hintText: AppLocalizations.getString('note_hint', isPersian),
                   hintStyle: TextStyle(
                     color: Colors.grey.withValues(alpha: 0.5),
                   ),
@@ -521,19 +571,13 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                     height: 16,
                     child: CircularProgressIndicator(color: Colors.white),
                   )
-                : const Text(
-                    'ذخیره یادداشت در سرور',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                : Text(
+                    AppLocalizations.getString('save_note_button', isPersian),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 2,
-            ),
           ),
           const SizedBox(height: 80),
         ],
@@ -572,7 +616,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     );
   }
 
-  Widget _buildGrammarTab(ThemeData theme) {
+  Widget _buildGrammarTab(ThemeData theme, bool isPersian) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
@@ -614,7 +658,9 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                     ElevatedButton.icon(
                       onPressed: () => _saveGrammarToAnki(grammar),
                       icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-                      label: const Text('افزودن به انکی'),
+                      label: Text(
+                        AppLocalizations.getString('add_to_anki', isPersian),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: theme.colorScheme.primary.withValues(
                           alpha: 0.1,
@@ -633,7 +679,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                   child: Divider(),
                 ),
                 Text(
-                  "👶 توضیحات کودکانه:\n${grammar.persianExplanation}",
+                  '${AppLocalizations.getString('childlike_explanation_prefix', isPersian)}\n${grammar.persianExplanation}',
                   style: const TextStyle(fontSize: 16, height: 1.8),
                 ),
                 const SizedBox(height: 24),
@@ -647,9 +693,12 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'مثال در ویدیو:',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.getString(
+                          'example_in_video',
+                          isPersian,
+                        ),
+                        style: const TextStyle(
                           fontSize: 13,
                           color: Colors.grey,
                           fontWeight: FontWeight.bold,
@@ -690,7 +739,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     );
   }
 
-  Widget _buildVocabularyTab(ThemeData theme) {
+  Widget _buildVocabularyTab(ThemeData theme, bool isPersian) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
@@ -741,7 +790,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                             Icons.bookmark_add_rounded,
                             color: Colors.green,
                           ),
-                          tooltip: 'افزودن به جعبه لایتنر',
+                          tooltip: AppLocalizations.getString(
+                            'add_to_leitner_tooltip',
+                            isPersian,
+                          ),
                           onPressed: () async {
                             try {
                               await ref
@@ -749,8 +801,13 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                                   .saveWordToFlashcards(word);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('به لایتنر اضافه شد!'),
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.getString(
+                                        'added_to_flashcards',
+                                        isPersian,
+                                      ),
+                                    ),
                                     backgroundColor: Colors.green,
                                   ),
                                 );
@@ -779,9 +836,9 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                   padding: EdgeInsets.symmetric(vertical: 16.0),
                   child: Divider(),
                 ),
-                const Text(
-                  'مترادف‌ها بر اساس سطح (لانگ‌پرس = افزودن):',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.getString('synonyms_level_hint', isPersian),
+                  style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
@@ -795,11 +852,11 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                     Color levelColor = Colors.grey;
                     if (entry.key.contains('A')) {
                       levelColor = Colors.green;
-                    } else if (entry.key.contains('B')) {
+                    } else if (entry.key.contains('B'))
                       levelColor = Colors.blue;
-                    } else if (entry.key.contains('C')) {
+                    else if (entry.key.contains('C'))
                       levelColor = Colors.orange;
-                    }
+
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -821,7 +878,8 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '${entry.value.word} به لایتنر اضافه شد',
+                                '${entry.value.word} '
+                                '${AppLocalizations.getString('word_added_to_leitner', isPersian)}',
                               ),
                             ),
                           );

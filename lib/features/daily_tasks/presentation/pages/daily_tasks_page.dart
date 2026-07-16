@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/daily_tasks_provider.dart';
@@ -41,7 +43,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
       final position = (day - 1) * 65.0; // عرض تقریبی هر آیتم
       _scrollController.animateTo(
         position,
-        duration: const Duration(milliseconds: 300),
+        duration: AppConstants.animationDuration,
         curve: Curves.easeInOut,
       );
     }
@@ -88,7 +90,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
         title: Column(
           children: [
             Text(
-              isPersian ? 'برنامه ۵۰ روزه تافل' : '50-Day TOEFL Plan',
+              AppLocalizations.getString('tasks_title', isPersian),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -101,275 +103,279 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
             ),
           ],
         ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
       ),
-      body: Directionality(
-        textDirection: isPersian ? TextDirection.rtl : TextDirection.ltr,
-        child: Column(
-          children: [
-            // هدر روزها (Timeline)
-            Container(
-              height: 75,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListView.builder(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                itemCount: 49,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemBuilder: (context, index) {
-                  final day = index + 1;
-                  final isSelected = day == selectedDay;
-                  return GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      ref.read(selectedDayProvider.notifier).setDay(day);
-                      _scrollToDay(day);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: isSelected ? 65 : 55,
-                      margin: EdgeInsets.only(
-                        left: isPersian ? 8 : 0,
-                        right: isPersian ? 0 : 8,
+      body: Column(
+        children: [
+          // هدر روزها (Timeline)
+          Container(
+            height: 75,
+            margin: EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
+            child: ListView.builder(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              itemCount: 49,
+              padding: EdgeInsets.symmetric(
+                horizontal: AppConstants.standardPadding,
+              ),
+              itemBuilder: (context, index) {
+                final day = index + 1;
+                final isSelected = day == selectedDay;
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    ref.read(selectedDayProvider.notifier).setDay(day);
+                    _scrollToDay(day);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    width: isSelected ? 65 : 55,
+                    margin: EdgeInsets.only(
+                      left: isPersian ? AppConstants.smallPadding : 0,
+                      right: isPersian ? 0 : AppConstants.smallPadding,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.largeBorderRadius,
                       ),
-                      decoration: BoxDecoration(
+                      border: Border.all(
                         color: isSelected
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : Colors.grey.withValues(alpha: 0.2),
-                          width: 1.5,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: theme.colorScheme.primary.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                            : Colors.grey.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.3,
                                 ),
-                              ]
-                            : [],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isPersian ? 'روز' : 'Day',
-                            style: TextStyle(
-                              color: isSelected ? Colors.white70 : Colors.grey,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          AppLocalizations.getString('day', isPersian),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white70 : Colors.grey,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$day',
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : theme.colorScheme.onSurface,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$day',
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : theme.colorScheme.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1, thickness: 1),
+
+          // لیست تسک‌ها با انیمیشن
+          Expanded(
+            child: tasksState.when(
+              loading: () => Center(
+                child: CircularProgressIndicator(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              error: (error, stack) => Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppConstants.largePadding),
+                  child: Text(
+                    error is AppException
+                        ? errorHandler.getUserMessage(error)
+                        : AppLocalizations.getString(
+                            'tasks_loading_error',
+                            isPersian,
+                          ),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              ),
+              data: (tasks) {
+                if (tasks.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.weekend_rounded,
+                          size: 80,
+                          color: Colors.grey.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          AppLocalizations.getString('no_tasks', isPersian),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   );
-                },
-              ),
-            ),
-            const Divider(height: 1, thickness: 1),
+                }
 
-            // لیست تسک‌ها با انیمیشن
-            Expanded(
-              child: tasksState.when(
-                loading: () => Center(
-                  child: CircularProgressIndicator(
-                    color: theme.colorScheme.primary,
+                return ListView.builder(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: AppConstants.standardPadding,
                   ),
-                ),
-                error: (error, stack) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      error is AppException
-                          ? errorHandler.getUserMessage(error)
-                          : (isPersian
-                                ? 'مشکلی در دریافت اطلاعات پیش آمد.'
-                                : 'Something went wrong while loading your tasks.'),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-                ),
-                data: (tasks) {
-                  if (tasks.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.weekend_rounded,
-                            size: 80,
-                            color: Colors.grey.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            isPersian
-                                ? 'برای این روز تسکی تعریف نشده.'
-                                : 'No tasks defined for this day.',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 16,
-                            ),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return AnimatedContainer(
+                      duration: AppConstants.animationDuration,
+                      margin: EdgeInsets.only(
+                        bottom: AppConstants.standardPadding,
+                      ),
+                      decoration: BoxDecoration(
+                        color: task.isCompleted
+                            ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                            : theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.largeBorderRadius,
+                        ),
+                        border: Border.all(
+                          color: task.isCompleted
+                              ? Colors.green.withValues(alpha: 0.5)
+                              : Colors.grey.withValues(alpha: 0.2),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: task.isCompleted
-                              ? theme.colorScheme.primary.withValues(
-                                  alpha: 0.05,
-                                )
-                              : theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: task.isCompleted
-                                ? Colors.green.withValues(alpha: 0.5)
-                                : Colors.grey.withValues(alpha: 0.2),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.largeBorderRadius,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref
+                                .read(dailyTasksProvider(selectedDay).notifier)
+                                .toggleTask(task);
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.all(
+                              AppConstants.standardPadding,
                             ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(20),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              ref
-                                  .read(
-                                    dailyTasksProvider(selectedDay).notifier,
-                                  )
-                                  .toggleTask(task);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                children: [
-                                  // آیکون نوع تسک
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.primary
-                                          .withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      _getIconForTaskType(task.taskType),
-                                      color: theme.colorScheme.primary,
-                                      size: 24,
-                                    ),
+                            child: Row(
+                              children: [
+                                // آیکون نوع تسک
+                                Container(
+                                  padding: EdgeInsets.all(
+                                    AppConstants.smallPadding + 4,
                                   ),
-                                  const SizedBox(width: 16),
-
-                                  // اطلاعات تسک
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          task.title,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            decoration: task.isCompleted
-                                                ? TextDecoration.lineThrough
-                                                : null,
-                                            color: task.isCompleted
-                                                ? Colors.grey
-                                                : theme.colorScheme.onSurface,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          task.description,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withValues(
+                                      alpha: 0.1,
                                     ),
+                                    shape: BoxShape.circle,
                                   ),
+                                  child: Icon(
+                                    _getIconForTaskType(task.taskType),
+                                    color: theme.colorScheme.primary,
+                                    size: 24,
+                                  ),
+                                ),
+                                SizedBox(width: AppConstants.standardPadding),
 
-                                  // دکمه تیک با انیمیشن
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOutBack,
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
+                                // اطلاعات تسک
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: task.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          color: task.isCompleted
+                                              ? Colors.grey
+                                              : theme.colorScheme.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        task.description,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // دکمه تیک با انیمیشن
+                                AnimatedContainer(
+                                  duration: AppConstants.animationDuration,
+                                  curve: Curves.easeInOutBack,
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: task.isCompleted
+                                        ? Colors.green
+                                        : Colors.transparent,
+                                    border: Border.all(
                                       color: task.isCompleted
                                           ? Colors.green
-                                          : Colors.transparent,
-                                      border: Border.all(
-                                        color: task.isCompleted
-                                            ? Colors.green
-                                            : Colors.grey.shade400,
-                                        width: 2,
-                                      ),
+                                          : Colors.grey.shade400,
+                                      width: 2,
                                     ),
-                                    child: task.isCompleted
-                                        ? const Icon(
-                                            Icons.check_rounded,
-                                            color: Colors.white,
-                                            size: 20,
-                                          )
-                                        : null,
                                   ),
-                                ],
-                              ),
+                                  child: task.isCompleted
+                                      ? const Icon(
+                                          Icons.check_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        )
+                                      : null,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
