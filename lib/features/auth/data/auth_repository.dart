@@ -1,6 +1,9 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:lingo_sync/core/logging/app_logger.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import '../domain/auth_failure.dart';
 
 /// Wraps Supabase Auth plus the minimal profile bootstrap that has to
@@ -9,12 +12,13 @@ import '../domain/auth_failure.dart';
 /// Authentication (who are you) and authorization (are you allowed in)
 /// change for different reasons and shouldn't live in the same class.
 class AuthRepository {
-  final SupabaseClient _supabase;
+  final supabase.SupabaseClient _supabase;
 
   AuthRepository(this._supabase);
 
-  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
-  User? get currentUser => _supabase.auth.currentUser;
+  Stream<supabase.AuthState> get authStateChanges =>
+      _supabase.auth.onAuthStateChange;
+  supabase.User? get currentUser => _supabase.auth.currentUser;
 
   Future<Either<AuthFailure, AuthResponse>> signUp({
     required String email,
@@ -39,8 +43,23 @@ class AuthRepository {
             'id': user.id,
             'full_name': fullName,
           });
-        } catch (_) {
-          // Intentionally swallowed — see comment above.
+        } on DatabaseException catch (e) {
+          logger.warning(
+            'Failed to create profile row after signup',
+            context: 'AuthRepository.signUp',
+            error: e,
+            stackTrace: e.stackTrace,
+            data: {'userId': user.id},
+          );
+          // Non-fatal - account created successfully, profile can be repaired
+        } catch (e, st) {
+          logger.warning(
+            'Unexpected error creating profile row',
+            context: 'AuthRepository.signUp',
+            error: e is Exception ? e : Exception(e.toString()),
+            stackTrace: st,
+            data: {'userId': user.id},
+          );
         }
       }
 

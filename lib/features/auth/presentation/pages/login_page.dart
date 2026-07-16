@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/providers/settings_provider.dart';
+import 'package:lingo_sync/core/logging/app_logger.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../application/auth_providers.dart';
 import '../../domain/auth_failure.dart';
 
@@ -60,37 +61,75 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    final repo = ref.read(authRepositoryProvider);
-    final result = _isLoginMode
-        ? await repo.signIn(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          )
-        : await repo.signUp(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-            fullName: _nameController.text.trim(),
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final result = _isLoginMode
+          ? await repo.signIn(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            )
+          : await repo.signUp(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+              fullName: _nameController.text.trim(),
+            );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      final isPersian = ref.read(isPersianProvider);
+      result.match(
+        (failure) {
+          logger.warning(
+            'Authentication failed',
+            context: 'LoginPage._authenticate',
+            data: {
+              'mode': _isLoginMode ? 'signin' : 'signup',
+              'reason': failure.reason.toString(),
+            },
           );
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_describeFailure(failure, isPersian)),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        },
+        (_) {
+          logger.info(
+            'Authentication successful',
+            context: 'LoginPage._authenticate',
+            data: {'mode': _isLoginMode ? 'signin' : 'signup'},
+          );
+          // Nothing else to do here — AuthController is listening to the
+          // auth stream and will move the app to the right screen on its
+          // own the moment Supabase confirms the session.
+        },
+      );
+    } catch (e, st) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    final isPersian = ref.read(isPersianProvider);
-    result.match(
-      (failure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_describeFailure(failure, isPersian)),
-            backgroundColor: Theme.of(context).colorScheme.error,
+      logger.error(
+        'Unexpected error during authentication',
+        context: 'LoginPage._authenticate',
+        error: e is Exception ? e : Exception(e.toString()),
+        stackTrace: st,
+      );
+
+      final isPersian = ref.read(isPersianProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPersian ? 'خطای نامشخص' : 'An unexpected error occurred',
           ),
-        );
-      },
-      (_) {
-        // Nothing else to do here — AuthController is listening to the
-        // auth stream and will move the app to the right screen on its
-        // own the moment Supabase confirms the session.
-      },
-    );
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
