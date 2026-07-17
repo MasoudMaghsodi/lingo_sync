@@ -17,13 +17,44 @@ class MainNavigation extends ConsumerStatefulWidget {
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentIndex = 0;
-  final List<Widget> _pages = const [
-    DailyTasksPage(),
-    DictionaryPage(),
-    SizedBox.shrink(), // فضای خالی برای دکمه شناور وسط
-    FlashcardsPage(),
-    LeaderboardPage(),
+
+  // Which tabs have ever been shown. A tab's real page widget is only
+  // constructed the first time its index becomes active — before that we
+  // render an empty placeholder instead.
+  //
+  // This matters because every tab lives inside an IndexedStack, and
+  // IndexedStack builds ALL of its children up front (even the ones not
+  // currently visible) so their state survives switching tabs. Without
+  // this guard, a tab like LeaderboardPage — which subscribes to a
+  // Supabase realtime stream the moment it's built — starts that
+  // subscription immediately on app launch, before the widget tree has
+  // even finished its first build. If the stream's first value arrives in
+  // that same window, Riverpod ends up trying to schedule a rebuild while
+  // Flutter is still mid-build, throwing
+  // "setState() or markNeedsBuild() called during build."
+  //
+  // Building each tab lazily — only once the user actually switches to it
+  // — sidesteps that race entirely, and as a bonus means tabs the user
+  // never visits never even subscribe to their providers.
+  final Set<int> _builtIndices = {0};
+
+  static final List<Widget Function()> _pageBuilders = [
+    () => const DailyTasksPage(),
+    () => const DictionaryPage(),
+    () => const SizedBox.shrink(), // فضای خالی برای دکمه شناور وسط
+    () => const FlashcardsPage(),
+    () => const LeaderboardPage(),
   ];
+
+  void _selectTab(int index) {
+    if (index == 2) {
+      return; // جلوگیری از کرش وقتی روی فضای خالی وسط کلیک می‌شود
+    }
+    setState(() {
+      _currentIndex = index;
+      _builtIndices.add(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +64,15 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     return Scaffold(
       body: Stack(
         children: [
-          IndexedStack(index: _currentIndex, children: _pages),
+          IndexedStack(
+            index: _currentIndex,
+            children: List.generate(
+              _pageBuilders.length,
+              (index) => _builtIndices.contains(index)
+                  ? _pageBuilders[index]()
+                  : const SizedBox.shrink(),
+            ),
+          ),
           const FloatingPomodoro(),
         ],
       ),
@@ -81,14 +120,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (index == 2) {
-            return; // جلوگیری از کرش وقتی روی فضای خالی وسط کلیک می‌شود
-          }
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onDestinationSelected: _selectTab,
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.check_box_outlined),

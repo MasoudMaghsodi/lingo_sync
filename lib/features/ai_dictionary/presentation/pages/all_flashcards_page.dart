@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:flutter/services.dart';
 import '../../data/models/word_analysis_model.dart';
 import '../../../../core/providers/settings_provider.dart';
@@ -16,7 +16,6 @@ class AllFlashcardsPage extends ConsumerStatefulWidget {
 
 class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final FlutterTts _flutterTts = FlutterTts();
 
   List<Map<String, dynamic>> _allCards = [];
   List<Map<String, dynamic>> _filteredCards = [];
@@ -31,18 +30,10 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   @override
   void initState() {
     super.initState();
-    _initTts();
     _loadAllCards();
   }
 
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.45);
-  }
-
-  Future<void> _speak(String text) async {
-    await _flutterTts.speak(text);
-  }
+  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
 
   Future<void> _loadAllCards() async {
     final userId = _supabase.auth.currentUser?.id;

@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/repositories/dictionary_repository.dart';
+import '../../data/repositories/flashcard_sync_repository.dart';
 
 part 'flashcards_provider.g.dart';
 
@@ -11,9 +12,26 @@ class Flashcards extends _$Flashcards {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return [];
 
-    return await ref
-        .read(dictionaryRepositoryProvider)
-        .getDueFlashcards(userId);
+    final repo = ref.watch(flashcardSyncRepositoryProvider);
+
+    // Serve whatever is cached locally immediately — this is what makes
+    // the deck usable offline / before the network round-trip completes.
+    final cached = repo.getCachedDueFlashcards(userId);
+
+    // Refresh from the server in the background. If it turns up different
+    // data, invalidate so the next build re-reads the (now fresh) cache.
+    // Previously this sync ran silently with no way for the UI to know it
+    // should re-read the cache, leaving the deck stale until the page was
+    // manually reopened.
+    unawaited(
+      repo.refreshDueFlashcardsFromRemote(userId).then((changed) {
+        if (changed && ref.mounted) {
+          ref.invalidateSelf();
+        }
+      }),
+    );
+
+    return cached;
   }
 
   Future<void> reviewCard(
@@ -67,7 +85,7 @@ class Flashcards extends _$Flashcards {
     }
 
     await ref
-        .read(dictionaryRepositoryProvider)
+        .read(flashcardSyncRepositoryProvider)
         .updateFlashcardReview(
           userId: userId,
           flashcardId: flashcardId,

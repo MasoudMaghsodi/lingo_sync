@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/providers/dictionary_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,7 +23,6 @@ class VideoLessonPage extends ConsumerStatefulWidget {
 }
 
 class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
-  final FlutterTts _flutterTts = FlutterTts();
   final TextEditingController _noteController = TextEditingController();
   final TextEditingController _aiQuestionController = TextEditingController();
   bool _isLoadingNote = true;
@@ -35,30 +34,26 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   @override
   void initState() {
     super.initState();
-    _initTts();
+    // The completion handler toggles _isSpeakingAi when the shared TTS
+    // engine finishes an utterance. Cleared in dispose() so it never fires
+    // setState on this widget after it's gone, and never lingers to
+    // silently affect whichever page opens the shared TTS service next.
+    ref.read(ttsServiceProvider).setCompletionHandler(() {
+      if (mounted) setState(() => _isSpeakingAi = false);
+    });
     _loadNote();
   }
 
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.45);
-
-    _flutterTts.setCompletionHandler(() {
-      if (mounted) setState(() => _isSpeakingAi = false);
-    });
-  }
-
-  Future<void> _speak(String text) async {
-    await _flutterTts.speak(text);
-  }
+  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
 
   Future<void> _toggleAiSpeech(String text) async {
+    final tts = ref.read(ttsServiceProvider);
     if (_isSpeakingAi) {
-      await _flutterTts.stop();
+      await tts.stop();
       setState(() => _isSpeakingAi = false);
     } else {
       setState(() => _isSpeakingAi = true);
-      await _flutterTts.speak(text);
+      await tts.speak(text);
     }
   }
 
@@ -179,6 +174,12 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     }
   }
 
+  /// Saves a grammar point as a personal flashcard. Routes through the
+  /// same [dictionaryProvider] path used for saving dictionary words
+  /// (`folder: 'Grammar'`), instead of doing its own raw `flashcards`
+  /// insert — this is what keeps every flashcard row in one consistent
+  /// shape (`word_id` pointing at `global_dictionary`) instead of two
+  /// divergent ones.
   void _saveGrammarToAnki(GrammarPoint grammar) async {
     final isPersian = ref.read(isPersianProvider);
     final tempWord = WordAnalysis(
@@ -192,16 +193,9 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
       collocations: [],
     );
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      await Supabase.instance.client.from('flashcards').insert({
-        'user_id': user?.id,
-        'folder_name': 'Grammar',
-        'ai_analysis': tempWord.toJson(),
-        'repetition': 0,
-        'interval': 0,
-        'ease_factor': 2.5,
-        'next_review_date': DateTime.now().toUtc().toIso8601String(),
-      });
+      await ref
+          .read(dictionaryProvider.notifier)
+          .saveWordToFlashcards(tempWord, folder: 'Grammar');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -404,7 +398,8 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
 
   @override
   void dispose() {
-    _flutterTts.stop();
+    ref.read(ttsServiceProvider).stop();
+    ref.read(ttsServiceProvider).clearCompletionHandler();
     _noteController.dispose();
     _aiQuestionController.dispose();
     super.dispose();

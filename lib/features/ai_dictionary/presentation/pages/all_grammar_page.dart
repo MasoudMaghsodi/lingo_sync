@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
 import '../../data/models/video_analysis_model.dart';
 import '../../../../core/providers/settings_provider.dart';
 
@@ -16,7 +16,6 @@ class AllGrammarPage extends ConsumerStatefulWidget {
 
 class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final FlutterTts _flutterTts = FlutterTts();
 
   List<VideoAnalysis> _videoAnalyses = [];
   bool _isLoading = true;
@@ -24,18 +23,10 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   @override
   void initState() {
     super.initState();
-    _initTts();
     _loadAllGrammars();
   }
 
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.45);
-  }
-
-  Future<void> _speak(String text) async {
-    if (text.trim().isNotEmpty) await _flutterTts.speak(text);
-  }
+  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
 
   Future<void> _loadAllGrammars() async {
     try {
@@ -63,12 +54,6 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _flutterTts.stop();
-    super.dispose();
   }
 
   @override

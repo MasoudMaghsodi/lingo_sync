@@ -3,7 +3,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/word_analysis_model.dart';
 import '../../data/models/video_analysis_model.dart';
-import '../../data/repositories/dictionary_repository.dart';
+import '../../data/repositories/word_repository.dart';
+import '../../data/repositories/video_analysis_repository.dart';
 
 part 'dictionary_provider.g.dart';
 
@@ -20,7 +21,7 @@ class Dictionary extends _$Dictionary {
     state = const AsyncValue.loading();
     try {
       final result = await ref
-          .read(dictionaryRepositoryProvider)
+          .read(wordRepositoryProvider)
           .fetchWordAnalysis(word);
       state = AsyncValue.data(result.getOrThrow());
     } catch (e, st) {
@@ -28,10 +29,19 @@ class Dictionary extends _$Dictionary {
     }
   }
 
-  Future<void> saveWordToFlashcards(WordAnalysis wordData) async {
+  /// Saves [wordData] to the user's personal flashcards under [folder]
+  /// (defaults to 'General'). Also used to save grammar points — see
+  /// `VideoLessonPage._saveGrammarToAnki`, which builds a [WordAnalysis]
+  /// from a `GrammarPoint` and calls this with `folder: 'Grammar'` so every
+  /// flashcard row is written the same way regardless of where it came
+  /// from.
+  Future<void> saveWordToFlashcards(
+    WordAnalysis wordData, {
+    String folder = 'General',
+  }) async {
     final result = await ref
-        .read(dictionaryRepositoryProvider)
-        .saveToPersonalFlashcards(wordData);
+        .read(wordRepositoryProvider)
+        .saveToPersonalFlashcards(wordData, folder: folder);
     result.getOrThrow();
   }
 }
@@ -50,7 +60,7 @@ class VideoProcessing extends _$VideoProcessing {
     state = const AsyncValue.loading();
     try {
       final result = await ref
-          .read(dictionaryRepositoryProvider)
+          .read(videoAnalysisRepositoryProvider)
           .processYoutubeVideo(url);
       state = AsyncValue.data(result.getOrThrow());
     } catch (e, st) {
@@ -82,7 +92,7 @@ class VideoProcessing extends _$VideoProcessing {
 
         try {
           final result = await ref
-              .read(dictionaryRepositoryProvider)
+              .read(videoAnalysisRepositoryProvider)
               .processYoutubeVideo(videoUrl);
           result.getOrThrow();
           await supabase

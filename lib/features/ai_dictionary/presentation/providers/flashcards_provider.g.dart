@@ -33,7 +33,7 @@ final class FlashcardsProvider
   Flashcards create() => Flashcards();
 }
 
-String _$flashcardsHash() => r'c7b82bc5c4030003fc167334bc365ad0b1993d78';
+String _$flashcardsHash() => r'a04ec5ce2011fd018b62a47985904daea594c14e';
 
 abstract class _$Flashcards extends $AsyncNotifier<List<Map<String, dynamic>>> {
   FutureOr<List<Map<String, dynamic>>> build();

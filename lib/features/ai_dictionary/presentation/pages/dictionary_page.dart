@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
 // import '../../../../core/providers/pomodoro_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/dictionary_provider.dart';
@@ -21,28 +21,14 @@ class DictionaryPage extends ConsumerStatefulWidget {
 class _DictionaryPageState extends ConsumerState<DictionaryPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _ytController = TextEditingController();
-  final FlutterTts _flutterTts = FlutterTts();
 
-  @override
-  void initState() {
-    super.initState();
-    _initTts();
-  }
-
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.45);
-  }
-
-  Future<void> _speak(String text) async {
-    if (text.trim().isNotEmpty) await _flutterTts.speak(text);
-  }
+  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
 
   @override
   void dispose() {
     _searchController.dispose();
     _ytController.dispose();
-    _flutterTts.stop();
+    ref.read(ttsServiceProvider).stop();
     super.dispose();
   }
 

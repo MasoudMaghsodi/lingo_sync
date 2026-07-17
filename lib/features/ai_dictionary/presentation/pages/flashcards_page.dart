@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../providers/flashcards_provider.dart';
@@ -17,23 +17,9 @@ class FlashcardsPage extends ConsumerStatefulWidget {
 }
 
 class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
-  final FlutterTts _flutterTts = FlutterTts();
   bool _isFlipped = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initTts();
-  }
-
-  Future<void> _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.45);
-  }
-
-  Future<void> _speak(String text) async {
-    await _flutterTts.speak(text);
-  }
+  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
 
   void _handleReview(
     int flashcardId,
@@ -53,7 +39,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
 
   @override
   void dispose() {
-    _flutterTts.stop();
+    ref.read(ttsServiceProvider).stop();
     super.dispose();
   }
 

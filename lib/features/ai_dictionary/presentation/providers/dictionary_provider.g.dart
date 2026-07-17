@@ -41,7 +41,7 @@ final class DictionaryProvider
   }
 }
 
-String _$dictionaryHash() => r'4b33772bc34892022bf1f180dedb79375c96ab81';
+String _$dictionaryHash() => r'6ca332c089e805fc4665ba5a931c4ef16b34a1e0';
 
 abstract class _$Dictionary extends $Notifier<AsyncValue<WordAnalysis?>> {
   AsyncValue<WordAnalysis?> build();
@@ -94,7 +94,7 @@ final class VideoProcessingProvider
   }
 }
 
-String _$videoProcessingHash() => r'e3570af2c845abeb806a7bdf87c2041cf29abdc1';
+String _$videoProcessingHash() => r'9cfcb567497addcb337445b7a23ebde948b54dee';
 
 abstract class _$VideoProcessing extends $Notifier<AsyncValue<VideoAnalysis?>> {
   AsyncValue<VideoAnalysis?> build();
