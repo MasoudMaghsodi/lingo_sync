@@ -20,6 +20,11 @@ class AiMentorController extends _$AiMentorController {
   late final MentorSocketService _socket;
   late final MentorAudioService _audio;
 
+  Timer? _autoReconnectTimer;
+  Timer? _autoRestartTimer;
+  int _autoReconnectAttempts = 0;
+  int _autoRestartAttempts = 0;
+
   @override
   AiMentorSessionState build() {
     _socket = MentorSocketService(
@@ -30,6 +35,8 @@ class AiMentorController extends _$AiMentorController {
     _audio.onPlaybackCompleted(_onPlaybackCompleted);
 
     ref.onDispose(() {
+      _autoReconnectTimer?.cancel();
+      _autoRestartTimer?.cancel();
       _audio.dispose();
       _socket.dispose();
     });
@@ -71,13 +78,15 @@ class AiMentorController extends _$AiMentorController {
   }
 
   /// AI's turn on the *server's* Gemini connection died (mentor-server.js
-  /// still has our socket open) — just ask it to set up again.
+  /// still has our socket open) — just ask it to set up again. Called both
+  /// automatically (see [_scheduleAutoRestart]) and from a manual tap.
   void restartAiSession() {
     HapticFeedback.mediumImpact();
     _sendSetup();
   }
 
-  /// Our own socket to mentor-server.js died — full reconnect.
+  /// Our own socket to mentor-server.js died — full reconnect. Called both
+  /// automatically (see [_scheduleAutoReconnect]) and from a manual tap.
   void reconnect() {
     HapticFeedback.lightImpact();
     _connect();
@@ -98,6 +107,37 @@ class AiMentorController extends _$AiMentorController {
 
   void _handleDisconnect() {
     state = state.copyWith(phase: MentorPhase.disconnected, isMicMuted: true);
+    _scheduleAutoReconnect();
+  }
+
+  /// Automatically retries the socket connection instead of leaving the
+  /// user stuck on "No Internet Connection!" until they tap it themselves
+  /// — a brief hiccup should heal itself. Backs off gradually (1s, 2s, 3s
+  /// ... capped at 8s) so a genuinely offline device doesn't hammer
+  /// reconnect attempts in a tight loop.
+  void _scheduleAutoReconnect() {
+    _autoReconnectTimer?.cancel();
+    _autoReconnectAttempts++;
+    final delay = Duration(seconds: _autoReconnectAttempts.clamp(1, 8));
+    _autoReconnectTimer = Timer(delay, () {
+      if (state.phase == MentorPhase.disconnected) {
+        _connect();
+      }
+    });
+  }
+
+  /// Same idea as [_scheduleAutoReconnect] but for the Gemini-side session
+  /// ending — this is what used to require the user to manually tap the
+  /// orb after "just one message" before the conversation would continue.
+  void _scheduleAutoRestart() {
+    _autoRestartTimer?.cancel();
+    _autoRestartAttempts++;
+    final delay = Duration(seconds: _autoRestartAttempts.clamp(1, 5));
+    _autoRestartTimer = Timer(delay, () {
+      if (state.phase == MentorPhase.aiDisconnected) {
+        restartAiSession();
+      }
+    });
   }
 
   void _handleServerMessage(Map<String, dynamic> data) async {
@@ -111,6 +151,7 @@ class AiMentorController extends _$AiMentorController {
           phase: MentorPhase.aiDisconnected,
           isMicMuted: true,
         );
+        _scheduleAutoRestart();
         break;
 
       case 'audio':
@@ -158,6 +199,11 @@ class AiMentorController extends _$AiMentorController {
   }
 
   void _enterReadyState() {
+    // A successful turn means both the socket and the Gemini session are
+    // healthy again — reset the backoff counters so the next real failure
+    // starts retrying quickly instead of inheriting a long delay.
+    _autoReconnectAttempts = 0;
+    _autoRestartAttempts = 0;
     state = state.copyWith(
       phase: MentorPhase.ready,
       isMicMuted: false,

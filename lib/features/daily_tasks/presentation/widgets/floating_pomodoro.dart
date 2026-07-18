@@ -9,6 +9,13 @@ import '../../../../core/providers/settings_provider.dart';
 const double _kIconSize = 56;
 const double _kPanelWidth = 236;
 
+/// The floating, draggable Pomodoro overlay. Only ever mounted by
+/// `MainNavigation` while the timer `isRunning && isGloballyVisible` — see
+/// `PomodoroHomeCard` for the always-present, non-floating entry point
+/// shown on the Daily Tasks page the rest of the time. Because mounting is
+/// gated externally, this widget no longer needs (or has) an internal
+/// "hidden ambient dot" state; tapping "hide" here simply causes
+/// `MainNavigation` to unmount it, sending the user back to the home card.
 class FloatingPomodoro extends ConsumerStatefulWidget {
   const FloatingPomodoro({super.key});
 
@@ -102,29 +109,6 @@ class _FloatingPomodoroState extends ConsumerState<FloatingPomodoro> {
     final screenSize = MediaQuery.of(context).size;
 
     _initializePosition(context, isPersian);
-
-    if (!pomodoro.isGloballyVisible) {
-      // Fully hidden — a small ambient dot is the only way back in.
-      return Positioned(
-        right: isPersian ? null : 16,
-        left: isPersian ? 16 : null,
-        top: MediaQuery.of(context).padding.top + 12,
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            ref.read(pomodoroProvider.notifier).setVisibility(true);
-          },
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      );
-    }
 
     // Where should the panel sit relative to the icon, given screen edges?
     final opensLeft = isPersian

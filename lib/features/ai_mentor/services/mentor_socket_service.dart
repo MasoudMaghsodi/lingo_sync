@@ -19,19 +19,27 @@ class MentorSocketService {
   Timer? _pingTimer;
   Timer? _pongTimeoutTimer;
 
+  // Tolerating a handful of missed pongs (instead of disconnecting on the
+  // very first one) avoids false "No internet" trips from a brief lag
+  // spike, backgrounding, or a single slow frame — the exact complaint
+  // that a small hiccup shouldn't force a manual retry.
+  int _missedPongs = 0;
+  static const _maxMissedPongsBeforeDisconnect = 3;
+
   bool get isOpen => _channel != null && _channel!.closeCode == null;
 
   Future<void> connect(Uri uri) async {
     _channel = IOWebSocketChannel.connect(uri);
     await _channel!.ready.timeout(const Duration(seconds: 10));
 
+    _missedPongs = 0;
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!isOpen) return;
       send({'type': 'ping'});
 
       _pongTimeoutTimer?.cancel();
-      _pongTimeoutTimer = Timer(const Duration(seconds: 10), onDisconnected);
+      _pongTimeoutTimer = Timer(const Duration(seconds: 10), _onPongMissed);
     });
 
     await _wsSub?.cancel();
@@ -42,6 +50,7 @@ class MentorSocketService {
           if (decoded is! Map<String, dynamic>) return;
 
           if (decoded['type'] == 'pong') {
+            _missedPongs = 0;
             _pongTimeoutTimer?.cancel();
             return;
           }
@@ -51,6 +60,14 @@ class MentorSocketService {
       onDone: onDisconnected,
       onError: (_) => onDisconnected(),
     );
+  }
+
+  void _onPongMissed() {
+    _missedPongs++;
+    if (_missedPongs >= _maxMissedPongsBeforeDisconnect) {
+      _missedPongs = 0;
+      onDisconnected();
+    }
   }
 
   void send(Map<String, dynamic> message) {

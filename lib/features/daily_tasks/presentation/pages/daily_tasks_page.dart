@@ -11,6 +11,7 @@ import 'package:lingo_sync/core/services/error_handler_service.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/daily_tasks_provider.dart';
 import '../providers/selected_day_provider.dart';
+import '../widgets/pomodoro_home_card.dart';
 
 class DailyTasksPage extends ConsumerStatefulWidget {
   const DailyTasksPage({super.key});
@@ -106,6 +107,10 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
       ),
       body: Column(
         children: [
+          // خانه‌ی همیشگی تایمر پومودورو — ثابت و غیر شناور، تا وقتی
+          // کاربر خودش استارتش بزنه.
+          const PomodoroHomeCard(),
+
           // هدر روزها (Timeline)
           Container(
             height: 75,

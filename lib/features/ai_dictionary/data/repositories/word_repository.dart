@@ -63,10 +63,14 @@ class WordRepository {
 
       final aiResult = WordAnalysis.fromJson(jsonDecode(response.body));
 
+      // onConflict: 'word' اینجا حیاتی است — بدون آن، اگر همزمان دو درخواست
+      // برای یک لغت جدید بیایند (یا کش سراسری بین چک اول و اینجا پر شده
+      // باشد)، upsert به‌جای آپدیت رکورد موجود، سعی در insert می‌کند و به
+      // قید یکتای «word» می‌خورد (خطای duplicate key که در لاگ دیده شد).
       await _supabase.from('global_dictionary').upsert({
         'word': cleanWord,
         'ai_analysis': aiResult.toJson(),
-      });
+      }, onConflict: 'word');
       return Result<WordAnalysis>.success(aiResult);
     } catch (e, st) {
       return Result<WordAnalysis>.failure(

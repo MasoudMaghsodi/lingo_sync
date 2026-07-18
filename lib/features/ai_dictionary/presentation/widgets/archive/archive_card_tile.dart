@@ -119,13 +119,27 @@ class ArchiveCardTile extends StatelessWidget {
                   border: Border.all(color: levelColor.withValues(alpha: 0.4)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  '${entry.key}: ${entry.value.word}',
-                  style: TextStyle(
-                    color: levelColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${entry.key}: ${entry.value.word}',
+                      style: TextStyle(
+                        color: levelColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => onSpeak(entry.value.word),
+                      child: Icon(
+                        Icons.volume_up_rounded,
+                        size: 14,
+                        color: levelColor,
+                      ),
+                    ),
+                  ],
                 ),
               );
             }).toList(),

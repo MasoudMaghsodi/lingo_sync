@@ -8,6 +8,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/video_analysis_model.dart';
 
+/// Local-only grouping used purely for display in this page — unlike the
+/// shared [VideoAnalysis] model (which represents a single freshly
+/// processed video for [VideoLessonPage]), this carries the `title` and
+/// `day_number` columns the vault needs to show which lesson a video
+/// belongs to, without changing the shape other pages rely on.
+class _GrammarVideoGroup {
+  final String videoId;
+  final String? title;
+  final int? dayNumber;
+  final List<GrammarPoint> grammarPoints;
+
+  _GrammarVideoGroup({
+    required this.videoId,
+    required this.title,
+    required this.dayNumber,
+    required this.grammarPoints,
+  });
+}
+
 class AllGrammarPage extends ConsumerStatefulWidget {
   const AllGrammarPage({super.key});
 
@@ -22,7 +41,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   // ref.read must never be called inside dispose().
   late final TtsService _tts;
 
-  List<VideoAnalysis> _videoAnalyses = [];
+  List<_GrammarVideoGroup> _videoGroups = [];
   bool _isLoading = true;
 
   @override
@@ -36,22 +55,24 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
 
   Future<void> _loadAllGrammars() async {
     try {
-      // دریافت تمام ویدیوهای پردازش شده
+      // دریافت تمام ویدیوهای پردازش شده، همراه با عنوان و روز مربوطه —
+      // ordered by day_number so the vault reads like a lesson-by-lesson
+      // index instead of an unordered dump.
       final response = await _supabase
           .from('video_analysis')
-          .select('video_id, grammar_points');
+          .select('video_id, title, day_number, grammar_points')
+          .order('day_number', ascending: true);
 
       if (mounted) {
         setState(() {
-          _videoAnalyses = (response as List).map((data) {
-            return VideoAnalysis(
+          _videoGroups = (response as List).map((data) {
+            return _GrammarVideoGroup(
               videoId: data['video_id'],
-              summary: '', // در این صفحه نیازی به خلاصه نداریم
-              fullTranscriptTranslation: '',
+              title: data['title'] as String?,
+              dayNumber: data['day_number'] as int?,
               grammarPoints: (data['grammar_points'] as List)
                   .map((e) => GrammarPoint.fromJson(e))
                   .toList(),
-              vocabulary: [], // نیازی به لغات نداریم
             );
           }).toList();
           _isLoading = false;
@@ -81,7 +102,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _videoAnalyses.isEmpty
+          : _videoGroups.isEmpty
           ? Center(
               child: Text(
                 AppLocalizations.getString('no_grammar_points', isPersian),
@@ -92,13 +113,20 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
               onRefresh: _loadAllGrammars,
               child: ListView.builder(
                 padding: const EdgeInsets.all(AppConstants.standardPadding),
-                itemCount: _videoAnalyses.length,
+                itemCount: _videoGroups.length,
                 itemBuilder: (context, index) {
-                  final video = _videoAnalyses[index];
+                  final video = _videoGroups[index];
                   // اگر ویدیویی نکته گرامری نداشت، نشان داده نشود
                   if (video.grammarPoints.isEmpty) {
                     return const SizedBox.shrink();
                   }
+
+                  final dayLabel = video.dayNumber != null
+                      ? '${AppLocalizations.getString('day', isPersian)} ${video.dayNumber}'
+                      : null;
+                  final title = video.title?.trim().isNotEmpty == true
+                      ? video.title!
+                      : 'Video ${video.videoId.substring(0, video.videoId.length.clamp(0, 6))}...';
 
                   return Card(
                     margin: const EdgeInsets.only(
@@ -111,15 +139,18 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         color: theme.colorScheme.primary,
                       ),
                       title: Text(
-                        'Lesson from Video: ${video.videoId.substring(0, 6)}...',
+                        title,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       subtitle: Text(
-                        '${video.grammarPoints.length} '
-                        '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
+                        [
+                          ?dayLabel,
+                          '${video.grammarPoints.length} '
+                              '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
+                        ].join(' • '),
                       ),
                       childrenPadding: const EdgeInsets.all(
                         AppConstants.standardPadding,

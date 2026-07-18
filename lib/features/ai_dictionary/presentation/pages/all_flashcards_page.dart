@@ -50,6 +50,18 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     super.dispose();
   }
 
+  /// Shared helper so every folder-management action reports its *real*
+  /// failure reason instead of silently swallowing it — the previous
+  /// behavior (`catch (e) { setState(() => _isLoading = false); }`, no
+  /// user-visible message) made rename/delete look broken with zero clue
+  /// why.
+  void _showActionError(Object error) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$error'), backgroundColor: Colors.red),
+    );
+  }
+
   Future<void> _loadAllCards() async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -81,6 +93,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+        _showActionError(e);
       }
     }
   }
@@ -283,6 +296,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                     await _loadAllCards();
                   } catch (e) {
                     setState(() => _isLoading = false);
+                    _showActionError(e);
                   }
                 }
               },
@@ -307,6 +321,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
       await _loadAllCards();
     } catch (e) {
       setState(() => _isLoading = false);
+      _showActionError(e);
     }
   }
 
@@ -354,20 +369,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                         await _loadAllCards();
                       } catch (e) {
                         setState(() => _isLoading = false);
-                        if (mounted) {
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                AppLocalizations.getString(
-                                  'move_error',
-                                  isPersian,
-                                ),
-                              ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
+                        _showActionError(e);
                       }
                     },
                   );

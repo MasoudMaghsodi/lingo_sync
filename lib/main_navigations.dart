@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/providers/pomodoro_provider.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/dictionary_page.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/flashcards_page.dart';
@@ -20,22 +21,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
   // Which tabs have ever been shown. A tab's real page widget is only
   // constructed the first time its index becomes active — before that we
-  // render an empty placeholder instead.
-  //
-  // This matters because every tab lives inside an IndexedStack, and
-  // IndexedStack builds ALL of its children up front (even the ones not
-  // currently visible) so their state survives switching tabs. Without
-  // this guard, a tab like LeaderboardPage — which subscribes to a
-  // Supabase realtime stream the moment it's built — starts that
-  // subscription immediately on app launch, before the widget tree has
-  // even finished its first build. If the stream's first value arrives in
-  // that same window, Riverpod ends up trying to schedule a rebuild while
-  // Flutter is still mid-build, throwing
-  // "setState() or markNeedsBuild() called during build."
-  //
-  // Building each tab lazily — only once the user actually switches to it
-  // — sidesteps that race entirely, and as a bonus means tabs the user
-  // never visits never even subscribe to their providers.
+  // render an empty placeholder instead. See the fuller explanation on
+  // this in the previous refactor phase's commit notes: it avoids
+  // subscribing to stream-backed providers (like the leaderboard) before
+  // the widget tree has even finished its first build.
   final Set<int> _builtIndices = {0};
 
   static final List<Widget Function()> _pageBuilders = [
@@ -61,6 +50,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     final isPersian = ref.watch(isPersianProvider);
     final theme = Theme.of(context);
 
+    // The floating Pomodoro overlay only exists while the timer is
+    // actually running AND the user hasn't hidden it — otherwise its
+    // permanent home is the PomodoroHomeCard on the Daily Tasks page. This
+    // is what stops it "wandering" across every tab when idle.
+    final pomodoro = ref.watch(pomodoroProvider);
+    final showFloatingPomodoro =
+        pomodoro.isRunning && pomodoro.isGloballyVisible;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -73,7 +70,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
                   : const SizedBox.shrink(),
             ),
           ),
-          const FloatingPomodoro(),
+          if (showFloatingPomodoro) const FloatingPomodoro(),
         ],
       ),
 

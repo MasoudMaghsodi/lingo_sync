@@ -47,39 +47,42 @@ class AppLocalizations {
       'mentor_speaking': 'Mentor is speaking',
       'listening': 'Listening...',
 
-      // ==== Bottom navigation (Phase 3A) ====
+      // ==== Bottom navigation ====
       'nav_tasks': 'Tasks',
       'nav_dictionary': 'Dictionary',
       'nav_review': 'Review',
       'nav_leaderboard': 'Leaderboard',
 
-      // ==== Daily tasks page (Phase 3A) ====
+      // ==== Daily tasks page ====
       'tasks_loading_error': 'Something went wrong while loading your tasks.',
 
-      // ==== Awaiting approval page (Phase 3A) ====
+      // ==== Awaiting approval page ====
       'awaiting_approval_title': 'Awaiting Admin Approval',
       'awaiting_approval_body':
           'Your account has been created.\nThis page will unlock '
           'automatically once approved.',
       'logout': 'Logout',
 
-      // ==== Grammar vault page (Phase 3A) ====
+      // ==== Grammar vault page ====
       'grammar_vault_title': 'Grammar Vault',
       'no_grammar_points': 'No grammar points found.',
       'grammar_points_suffix': 'Grammar points',
 
-      // ==== AI Mentor sheet (Phase 3A) ====
+      // ==== AI Mentor sheet ====
       'mentor_session_ended': 'Session Ended (Tap to restart)',
       'mentor_no_internet': 'No Internet Connection!',
       'mentor_listening': 'Mentor is listening...',
 
-      // ==== Floating Pomodoro (Phase 3A) ====
+      // ==== Floating Pomodoro ====
       'pomodoro_set_focus_time': 'Set Focus Time',
       'pomodoro_enter_minutes_hint': 'Enter minutes (e.g. 25)',
       'pomodoro_focus_label': 'Focus',
       'pomodoro_done_label': 'Done! 🎉',
+      'pomodoro_start_button': 'Start',
+      'pomodoro_show_button': 'Show',
+      'pomodoro_running_label': 'Running',
 
-      // ==== Dictionary page (Phase 3B) ====
+      // ==== Dictionary page ====
       'dictionary_video_section_title': 'Smart Video Lesson',
       'dictionary_youtube_hint': 'Enter a YouTube link...',
       'dictionary_extract_button': 'Extract Summary, Grammar & Vocabulary',
@@ -92,7 +95,7 @@ class AppLocalizations {
       'dictionary_synonyms_hint': 'Synonyms (long-press = add to Anki)',
       'add_to_review': 'Add to Review (Anki)',
 
-      // ==== Video lesson page (Phase 3B) ====
+      // ==== Video lesson page ====
       'note_saved': 'Note saved.',
       'note_save_error': 'Error saving note',
       'ai_question_limit': 'Limit of 2 questions per hour reached!',
@@ -123,13 +126,13 @@ class AppLocalizations {
       'synonyms_level_hint': 'Synonyms by level (long-press = add):',
       'word_added_to_leitner': 'added to your flashcards',
 
-      // ==== Flashcards page (Phase 3B) ====
+      // ==== Flashcards page ====
       'flashcards_loading_error': 'Error loading data',
       'flashcards_all_done': 'All caught up for today!',
       'cards_left_suffix': 'cards left',
       'archive_all_tooltip': 'Archive',
 
-      // ==== All flashcards / archive page (Phase 3B) ====
+      // ==== All flashcards / archive page ====
       'create_folder_title': 'Create Folder',
       'folder_name_hint': 'Folder Name',
       'manage_folder_title': 'Manage Folder',
@@ -141,7 +144,7 @@ class AppLocalizations {
       'move_error': 'Error moving card',
       'move_tooltip': 'Move',
 
-      // ==== Leaderboard page (Phase 3B) ====
+      // ==== Leaderboard page ====
       'leaderboard_title': 'The Ascent',
       'leaderboard_subtitle': 'Live learner rankings',
       'leaderboard_empty_title': 'No one has started climbing yet',
@@ -149,7 +152,7 @@ class AppLocalizations {
       'leaderboard_error_title': "Couldn't load the leaderboard",
       'days_suffix': 'days',
 
-      // ==== Login page (Phase 3B) ====
+      // ==== Login page ====
       'login_tagline': 'The Ultimate Path to Fluency',
       'full_name_label': 'Full Name',
       'name_min_length_error': 'Name must be at least 3 characters',
@@ -202,39 +205,42 @@ class AppLocalizations {
       'mentor_speaking': 'استاد صحبت می‌کند',
       'listening': 'در حال شنیدن...',
 
-      // ==== Bottom navigation (Phase 3A) ====
+      // ==== Bottom navigation ====
       'nav_tasks': 'تسک‌ها',
       'nav_dictionary': 'دیکشنری',
       'nav_review': 'مرور',
       'nav_leaderboard': 'رتبه‌بندی',
 
-      // ==== Daily tasks page (Phase 3A) ====
+      // ==== Daily tasks page ====
       'tasks_loading_error': 'مشکلی در دریافت اطلاعات پیش آمد.',
 
-      // ==== Awaiting approval page (Phase 3A) ====
+      // ==== Awaiting approval page ====
       'awaiting_approval_title': 'در انتظار تایید ادمین',
       'awaiting_approval_body':
           'حساب شما ساخته شد.\nبه‌محض تایید مدیریت، این صفحه خودکار باز '
           'می‌شود.',
       'logout': 'خروج از حساب',
 
-      // ==== Grammar vault page (Phase 3A) ====
+      // ==== Grammar vault page ====
       'grammar_vault_title': 'گنجینه گرامرها',
       'no_grammar_points': 'هنوز گرامری ثبت نشده است.',
       'grammar_points_suffix': 'نکته گرامری',
 
-      // ==== AI Mentor sheet (Phase 3A) ====
+      // ==== AI Mentor sheet ====
       'mentor_session_ended': 'سشن پایان یافت (لمس برای شروع مجدد)',
       'mentor_no_internet': 'اینترنت قطع شد!',
       'mentor_listening': 'استاد می‌شنود...',
 
-      // ==== Floating Pomodoro (Phase 3A) ====
+      // ==== Floating Pomodoro ====
       'pomodoro_set_focus_time': 'تنظیم زمان تمرکز',
       'pomodoro_enter_minutes_hint': 'دقیقه را وارد کنید (مثلا ۲۵)',
       'pomodoro_focus_label': 'تمرکز',
       'pomodoro_done_label': 'تمام شد! 🎉',
+      'pomodoro_start_button': 'شروع',
+      'pomodoro_show_button': 'نمایش',
+      'pomodoro_running_label': 'در حال اجرا',
 
-      // ==== Dictionary page (Phase 3B) ====
+      // ==== Dictionary page ====
       'dictionary_video_section_title': 'درسنامه ویدیویی هوشمند',
       'dictionary_youtube_hint': 'لینک یوتیوب را وارد کنید...',
       'dictionary_extract_button': 'استخراج خلاصه، گرامر و لغات',
@@ -248,7 +254,7 @@ class AppLocalizations {
       'dictionary_synonyms_hint': 'مترادف‌ها (لانگ‌پرس = افزودن به انکی)',
       'add_to_review': 'افزودن به مرور (Anki)',
 
-      // ==== Video lesson page (Phase 3B) ====
+      // ==== Video lesson page ====
       'note_saved': 'یادداشت ذخیره شد.',
       'note_save_error': 'خطا در ذخیره یادداشت',
       'ai_question_limit': 'محدودیت ۲ سوال در ساعت!',
@@ -278,13 +284,13 @@ class AppLocalizations {
       'synonyms_level_hint': 'مترادف‌ها بر اساس سطح (لانگ‌پرس = افزودن):',
       'word_added_to_leitner': 'به لایتنر اضافه شد',
 
-      // ==== Flashcards page (Phase 3B) ====
+      // ==== Flashcards page ====
       'flashcards_loading_error': 'خطا در بارگذاری اطلاعات',
       'flashcards_all_done': 'تمام لغات امروز را مرور کردی!',
       'cards_left_suffix': 'کارت باقی‌مانده',
       'archive_all_tooltip': 'آرشیو کل لغات',
 
-      // ==== All flashcards / archive page (Phase 3B) ====
+      // ==== All flashcards / archive page ====
       'create_folder_title': 'ایجاد پوشه جدید',
       'folder_name_hint': 'نام پوشه',
       'manage_folder_title': 'مدیریت پوشه',
@@ -296,7 +302,7 @@ class AppLocalizations {
       'move_error': 'خطا در انتقال',
       'move_tooltip': 'انتقال پوشه',
 
-      // ==== Leaderboard page (Phase 3B) ====
+      // ==== Leaderboard page ====
       'leaderboard_title': 'مسیر صعود',
       'leaderboard_subtitle': 'رتبه‌بندی زنده‌ی زبان‌آموزها',
       'leaderboard_empty_title': 'هنوز کسی مسیر رو شروع نکرده',
@@ -304,7 +310,7 @@ class AppLocalizations {
       'leaderboard_error_title': 'رتبه‌بندی لود نشد',
       'days_suffix': 'روز',
 
-      // ==== Login page (Phase 3B) ====
+      // ==== Login page ====
       'login_tagline': 'بهترین مسیر تسلط بر زبان',
       'full_name_label': 'نام و نام خانوادگی',
       'name_min_length_error': 'نام باید حداقل ۳ حرف باشد',
