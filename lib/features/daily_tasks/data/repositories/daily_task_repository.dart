@@ -1,7 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/logging/app_logger.dart';
 import 'package:lingo_sync/core/result/result.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
+
 import '../models/daily_task_model.dart';
 
 /// Owns reading the 50-day task plan and toggling a user's completion of a

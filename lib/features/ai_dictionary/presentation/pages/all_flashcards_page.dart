@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:flutter/services.dart';
-import '../../data/models/word_analysis_model.dart';
-import '../../../../core/providers/settings_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/services/tts_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/settings_provider.dart';
+import '../../data/models/word_analysis_model.dart';
 import '../widgets/archive/archive_card_tile.dart';
 import '../widgets/archive/archive_filters_panel.dart';
 import '../widgets/archive/archive_folder_bar.dart';
@@ -67,7 +68,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
           _allCards = List<Map<String, dynamic>>.from(response);
           // استخراج پوشه‌ها و نگه‌داشتن پوشه‌های پایه
           _folders = {'General', 'Grammar'};
-          for (var card in _allCards) {
+          for (final card in _allCards) {
             if (card['folder_name'] != null &&
                 card['folder_name'].toString().trim().isNotEmpty) {
               _folders.add(card['folder_name']);

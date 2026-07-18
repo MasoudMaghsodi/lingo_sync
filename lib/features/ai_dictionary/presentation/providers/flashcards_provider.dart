@@ -46,7 +46,7 @@ class Flashcards extends _$Flashcards {
     int interval = currentData['interval'] ?? 0;
     double easeFactor = (currentData['ease_factor'] ?? 2.5).toDouble();
 
-    int quality = remembered ? 4 : 1;
+    final int quality = remembered ? 4 : 1;
 
     if (quality >= 3) {
       if (repetition == 0) {

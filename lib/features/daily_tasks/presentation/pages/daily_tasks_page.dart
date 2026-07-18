@@ -109,12 +109,14 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
           // هدر روزها (Timeline)
           Container(
             height: 75,
-            margin: EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
+            margin: const EdgeInsets.symmetric(
+              vertical: AppConstants.smallPadding,
+            ),
             child: ListView.builder(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
               itemCount: 49,
-              padding: EdgeInsets.symmetric(
+              padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.standardPadding,
               ),
               itemBuilder: (context, index) {
@@ -199,7 +201,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
               ),
               error: (error, stack) => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(AppConstants.largePadding),
+                  padding: const EdgeInsets.all(AppConstants.largePadding),
                   child: Text(
                     error is AppException
                         ? errorHandler.getUserMessage(error)
@@ -237,7 +239,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                 }
 
                 return ListView.builder(
-                  padding: EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: AppConstants.standardPadding,
                   ),
@@ -247,7 +249,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                     final task = tasks[index];
                     return AnimatedContainer(
                       duration: AppConstants.animationDuration,
-                      margin: EdgeInsets.only(
+                      margin: const EdgeInsets.only(
                         bottom: AppConstants.standardPadding,
                       ),
                       decoration: BoxDecoration(
@@ -283,14 +285,14 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                                 .toggleTask(task);
                           },
                           child: Padding(
-                            padding: EdgeInsets.all(
+                            padding: const EdgeInsets.all(
                               AppConstants.standardPadding,
                             ),
                             child: Row(
                               children: [
                                 // آیکون نوع تسک
                                 Container(
-                                  padding: EdgeInsets.all(
+                                  padding: const EdgeInsets.all(
                                     AppConstants.smallPadding + 4,
                                   ),
                                   decoration: BoxDecoration(
@@ -305,7 +307,9 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                                     size: 24,
                                   ),
                                 ),
-                                SizedBox(width: AppConstants.standardPadding),
+                                const SizedBox(
+                                  width: AppConstants.standardPadding,
+                                ),
 
                                 // اطلاعات تسک
                                 Expanded(

@@ -1,9 +1,9 @@
 import 'package:fpdart/fpdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/logging/app_logger.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
+
 import '../domain/auth_failure.dart';
 
 /// Wraps Supabase Auth plus the minimal profile bootstrap that has to

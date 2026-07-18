@@ -5,10 +5,11 @@ import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
+
 // import '../../../../core/providers/pomodoro_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
-import '../providers/dictionary_provider.dart';
 import '../../data/models/word_analysis_model.dart';
+import '../providers/dictionary_provider.dart';
 import 'video_lesson_page.dart';
 
 class DictionaryPage extends ConsumerStatefulWidget {
@@ -51,7 +52,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
   }
 
   void _saveWordToAnki(WordAnalysis wordData) async {
-    HapticFeedback.lightImpact();
+    await HapticFeedback.lightImpact();
     final isPersian = ref.read(isPersianProvider);
     try {
       await ref

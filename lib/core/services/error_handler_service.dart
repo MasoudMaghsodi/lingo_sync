@@ -113,20 +113,15 @@ class ErrorHandlerService {
     return switch (exception) {
       AuthException() =>
         'خطا در احراز هویت. لطفاً دوباره تلاش کنید یا رمز خود را تغییر دهید.',
-      NetworkException() =>
-        'خطای اتصال. اتصال اینترنت خود را بررسی کنید.',
+      NetworkException() => 'خطای اتصال. اتصال اینترنت خود را بررسی کنید.',
       ValidationException() =>
         'داده‌های وارد شده نامعتبر هستند. لطفاً بررسی کنید.',
-      DatabaseException() =>
-        'خطا در پایگاه داده. لطفاً دوباره تلاش کنید.',
+      DatabaseException() => 'خطا در پایگاه داده. لطفاً دوباره تلاش کنید.',
       CacheException() =>
         'خطا در دسترسی به حافظه موقت. لطفاً برنامه را دوباره راه‌اندازی کنید.',
-      FileException() =>
-        'خطا در دسترسی به فایل. لطفاً دوباره تلاش کنید.',
-      PermissionException() =>
-        'شما اجازه دسترسی به این منبع را ندارید.',
-      ApiException() =>
-        'خطا در سرویس. لطفاً بعداً تلاش کنید.',
+      FileException() => 'خطا در دسترسی به فایل. لطفاً دوباره تلاش کنید.',
+      PermissionException() => 'شما اجازه دسترسی به این منبع را ندارید.',
+      ApiException() => 'خطا در سرویس. لطفاً بعداً تلاش کنید.',
       StateException() =>
         'برنامه در حالت نامعتبری قرار دارد. لطفاً برنامه را دوباره راه‌اندازی کنید.',
       ConfigException() =>
@@ -135,8 +130,7 @@ class ErrorHandlerService {
         'ارتباط قطع شد. لطفاً اتصال اینترنت را بررسی کنید.',
       TimeoutException() =>
         'زمان انتظار تمام شد. لطفاً اتصال بررسی کنید و دوباره تلاش کنید.',
-      UnknownException() =>
-        'خطای نامشخص. لطفاً بعداً تلاش کنید.',
+      UnknownException() => 'خطای نامشخص. لطفاً بعداً تلاش کنید.',
     };
   }
 
@@ -146,15 +140,15 @@ class ErrorHandlerService {
       ..writeln(exception.runtimeType)
       ..writeln('Message: ${exception.message}');
 
-    if (exception case AuthException e) {
+    if (exception case final AuthException e) {
       buffer.writeln('Code: ${e.code}');
-    } else if (exception case NetworkException e) {
+    } else if (exception case final NetworkException e) {
       buffer.writeln('Status Code: ${e.statusCode}');
       buffer.writeln('Retryable: ${e.isRetryable}');
-    } else if (exception case ValidationException e) {
+    } else if (exception case final ValidationException e) {
       buffer.writeln('Field: ${e.fieldName}');
       buffer.writeln('Rule: ${e.validationRule}');
-    } else if (exception case DatabaseException e) {
+    } else if (exception case final DatabaseException e) {
       buffer.writeln('Operation: ${e.operation}');
       buffer.writeln('Table: ${e.tableName}');
     }
@@ -171,7 +165,7 @@ class ErrorHandlerService {
     final Map<String, dynamic> data = additionalData ?? {};
     data['exceptionType'] = exception.runtimeType.toString();
 
-    if (exception case NetworkException e) {
+    if (exception case final NetworkException e) {
       data['statusCode'] = e.statusCode;
       data['retryable'] = e.isRetryable;
     }

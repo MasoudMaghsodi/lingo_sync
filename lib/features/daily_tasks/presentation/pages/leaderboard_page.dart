@@ -1,7 +1,10 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/providers/settings_provider.dart';
 
 // ==== Data layer (unchanged) ====

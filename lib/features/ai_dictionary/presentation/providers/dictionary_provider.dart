@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/models/word_analysis_model.dart';
+
 import '../../data/models/video_analysis_model.dart';
-import '../../data/repositories/word_repository.dart';
+import '../../data/models/word_analysis_model.dart';
 import '../../data/repositories/video_analysis_repository.dart';
+import '../../data/repositories/word_repository.dart';
 
 part 'dictionary_provider.g.dart';
 
@@ -86,7 +87,7 @@ class VideoProcessing extends _$VideoProcessing {
         return;
       }
 
-      for (var task in pendingTasks) {
+      for (final task in pendingTasks) {
         final videoUrl = task['video_url'] as String;
         final taskId = task['id'] as int;
 

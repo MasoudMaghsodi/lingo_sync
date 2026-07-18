@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -34,7 +36,7 @@ class MentorAudioService {
       ),
     );
 
-    _ampSub?.cancel();
+    await _ampSub?.cancel();
     _ampSub = _recorder
         .onAmplitudeChanged(const Duration(milliseconds: 100))
         .listen((amp) {
@@ -42,7 +44,7 @@ class MentorAudioService {
           onAmplitude(normalized);
         });
 
-    _pcmSub?.cancel();
+    await _pcmSub?.cancel();
     _pcmSub = stream.listen((data) {
       if (data.isNotEmpty) onPcmChunk(data);
     });
@@ -70,7 +72,7 @@ class MentorAudioService {
   Future<void> playPcm(List<int> pcmBytes, {int sampleRate = 24000}) async {
     final wav = _buildWav(pcmBytes, sampleRate);
     await _player.setAudioSource(_InMemoryWavSource(wav));
-    _player.play();
+    await _player.play();
   }
 
   Future<void> stopPlayback() => _player.stop();

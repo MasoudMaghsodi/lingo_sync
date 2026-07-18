@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import 'package:lingo_sync/core/result/result.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
+
 import '../models/video_analysis_model.dart';
 import '../services/ai_server_client.dart';
 

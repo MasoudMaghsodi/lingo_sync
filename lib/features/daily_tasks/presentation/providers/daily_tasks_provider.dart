@@ -1,6 +1,7 @@
+import 'package:lingo_sync/core/logging/app_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:lingo_sync/core/logging/app_logger.dart';
+
 import '../../data/models/daily_task_model.dart';
 import '../../data/repositories/daily_task_repository.dart';
 

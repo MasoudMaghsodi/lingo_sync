@@ -1,13 +1,15 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/providers/dictionary_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/video_analysis_model.dart';
 import '../../data/models/word_analysis_model.dart';

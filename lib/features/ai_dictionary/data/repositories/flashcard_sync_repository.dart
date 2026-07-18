@@ -1,6 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'flashcard_sync_repository.g.dart';
 
@@ -116,7 +116,7 @@ class FlashcardSyncRepository {
 
   Future<void> syncPendingActions() async {
     if (_pendingSyncBox.isEmpty) return;
-    for (var key in _pendingSyncBox.keys.toList()) {
+    for (final key in _pendingSyncBox.keys.toList()) {
       final action = _pendingSyncBox.get(key);
       try {
         if (action['type'] == 'update_review') {

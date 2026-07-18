@@ -34,7 +34,7 @@ class MentorSocketService {
       _pongTimeoutTimer = Timer(const Duration(seconds: 10), onDisconnected);
     });
 
-    _wsSub?.cancel();
+    await _wsSub?.cancel();
     _wsSub = _channel!.stream.listen(
       (raw) {
         try {

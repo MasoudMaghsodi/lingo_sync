@@ -1,10 +1,12 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
-import '../../../../core/providers/settings_provider.dart';
+
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/settings_provider.dart';
 import '../providers/flashcards_provider.dart';
 import 'all_flashcards_page.dart';
 import 'all_grammar_page.dart'; // 🚀 ایمپورت صفحه جدید گرامر

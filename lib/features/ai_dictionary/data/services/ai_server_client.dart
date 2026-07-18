@@ -1,9 +1,12 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_server_client.g.dart';
 

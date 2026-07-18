@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
-import '../../data/models/video_analysis_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../../core/providers/settings_provider.dart';
+import '../../data/models/video_analysis_model.dart';
 
 class AllGrammarPage extends ConsumerStatefulWidget {
   const AllGrammarPage({super.key});
@@ -90,7 +91,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
           : RefreshIndicator(
               onRefresh: _loadAllGrammars,
               child: ListView.builder(
-                padding: EdgeInsets.all(AppConstants.standardPadding),
+                padding: const EdgeInsets.all(AppConstants.standardPadding),
                 itemCount: _videoAnalyses.length,
                 itemBuilder: (context, index) {
                   final video = _videoAnalyses[index];
@@ -100,7 +101,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                   }
 
                   return Card(
-                    margin: EdgeInsets.only(
+                    margin: const EdgeInsets.only(
                       bottom: AppConstants.standardPadding,
                     ),
                     child: ExpansionTile(
@@ -120,15 +121,17 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         '${video.grammarPoints.length} '
                         '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
                       ),
-                      childrenPadding: EdgeInsets.all(
+                      childrenPadding: const EdgeInsets.all(
                         AppConstants.standardPadding,
                       ),
                       children: video.grammarPoints.map((grammar) {
                         return Container(
-                          margin: EdgeInsets.only(
+                          margin: const EdgeInsets.only(
                             bottom: AppConstants.standardPadding,
                           ),
-                          padding: EdgeInsets.all(AppConstants.standardPadding),
+                          padding: const EdgeInsets.all(
+                            AppConstants.standardPadding,
+                          ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(
