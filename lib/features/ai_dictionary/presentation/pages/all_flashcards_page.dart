@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import '../../data/models/word_analysis_model.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../widgets/archive/archive_card_tile.dart';
+import '../widgets/archive/archive_filters_panel.dart';
+import '../widgets/archive/archive_folder_bar.dart';
 
 class AllFlashcardsPage extends ConsumerStatefulWidget {
   const AllFlashcardsPage({super.key});
@@ -16,6 +19,10 @@ class AllFlashcardsPage extends ConsumerStatefulWidget {
 
 class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  // Cached in initState — see the note in VideoLessonPage for why
+  // ref.read must never be called inside dispose().
+  late final TtsService _tts;
 
   List<Map<String, dynamic>> _allCards = [];
   List<Map<String, dynamic>> _filteredCards = [];
@@ -30,10 +37,17 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   @override
   void initState() {
     super.initState();
+    _tts = ref.read(ttsServiceProvider);
     _loadAllCards();
   }
 
-  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
+  Future<void> _speak(String text) => _tts.speak(text);
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   Future<void> _loadAllCards() async {
     final userId = _supabase.auth.currentUser?.id;
@@ -105,6 +119,28 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
         return true;
       }).toList();
     });
+  }
+
+  void _onCefrToggled(String level, bool checked) {
+    setState(() {
+      if (checked) {
+        _selectedCefrLevels.add(level);
+      } else {
+        _selectedCefrLevels.remove(level);
+      }
+    });
+    _applyAdvancedFilters();
+  }
+
+  void _onPosToggled(String pos, bool checked) {
+    setState(() {
+      if (checked) {
+        _selectedPartsOfSpeech.add(pos);
+      } else {
+        _selectedPartsOfSpeech.remove(pos);
+      }
+    });
+    _applyAdvancedFilters();
   }
 
   void _clearAllFilters() {
@@ -273,11 +309,9 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     }
   }
 
-  void _moveCardToFolder(
-    Map<String, dynamic> card,
-    ThemeData theme,
-    bool isPersian,
-  ) {
+  void _moveCardToFolder(Map<String, dynamic> card) {
+    final theme = Theme.of(context);
+    final isPersian = ref.read(isPersianProvider);
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
@@ -348,7 +382,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isPersian = ref.watch(isPersianProvider);
 
     return Scaffold(
@@ -364,127 +397,24 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ExpansionTile(
-            title: Text(
-              AppLocalizations.getString('filters', isPersian),
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            leading: Icon(
-              Icons.filter_alt_outlined,
-              color: theme.colorScheme.primary,
-            ),
-            trailing: TextButton(
-              onPressed: _clearAllFilters,
-              child: Text(
-                AppLocalizations.getString('clear_filters', isPersian),
-                style: const TextStyle(color: Colors.redAccent),
-              ),
-            ),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'CEFR Levels:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((
-                        level,
-                      ) {
-                        final isSelected = _selectedCefrLevels.contains(level);
-                        return FilterChip(
-                          label: Text(level),
-                          selected: isSelected,
-                          onSelected: (checked) {
-                            setState(() {
-                              if (checked) {
-                                _selectedCefrLevels.add(level);
-                              } else {
-                                _selectedCefrLevels.remove(level);
-                              }
-                            });
-                            _applyAdvancedFilters();
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '${AppLocalizations.getString('part_of_speech', isPersian)}:',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children:
-                          [
-                            'Noun',
-                            'Verb',
-                            'Adjective',
-                            'Adverb',
-                            'Grammar',
-                          ].map((pos) {
-                            final isSelected = _selectedPartsOfSpeech.contains(
-                              pos,
-                            );
-                            return FilterChip(
-                              label: Text(pos),
-                              selected: isSelected,
-                              onSelected: (checked) {
-                                setState(() {
-                                  if (checked) {
-                                    _selectedPartsOfSpeech.add(pos);
-                                  } else {
-                                    _selectedPartsOfSpeech.remove(pos);
-                                  }
-                                });
-                                _applyAdvancedFilters();
-                              },
-                            );
-                          }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          ArchiveFiltersPanel(
+            selectedCefrLevels: _selectedCefrLevels,
+            selectedPartsOfSpeech: _selectedPartsOfSpeech,
+            isPersian: isPersian,
+            onCefrToggled: _onCefrToggled,
+            onPosToggled: _onPosToggled,
+            onClearFilters: _clearAllFilters,
           ),
           const Divider(height: 1),
-
-          Container(
-            height: 50,
-            color: theme.colorScheme.surface,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', ..._folders].map((folder) {
-                final isSelected = _currentFolder == folder;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: GestureDetector(
-                    onLongPress: () => _showFolderOptions(folder, isPersian),
-                    child: ChoiceChip(
-                      label: Text(folder),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() => _currentFolder = folder);
-                        _applyAdvancedFilters();
-                      },
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+          ArchiveFolderBar(
+            folders: ['All', ..._folders],
+            currentFolder: _currentFolder,
+            onFolderSelected: (folder) {
+              setState(() => _currentFolder = folder);
+              _applyAdvancedFilters();
+            },
+            onFolderLongPress: (folder) =>
+                _showFolderOptions(folder, isPersian),
           ),
           const Divider(height: 1),
 
@@ -512,147 +442,12 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                             {};
                         final wordData = WordAnalysis.fromJson(aiAnalysisMap);
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ExpansionTile(
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primary
-                                  .withValues(alpha: 0.1),
-                              child: Text(
-                                wordData.partOfSpeech.isNotEmpty
-                                    ? wordData.partOfSpeech
-                                          .substring(0, 1)
-                                          .toUpperCase()
-                                    : 'W',
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              wordData.word.toUpperCase(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${AppLocalizations.getString('box', isPersian)} ${card['repetition'] ?? 0} • ${card['folder_name'] ?? 'General'}',
-                            ),
-                            childrenPadding: const EdgeInsets.all(16),
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      isPersian
-                                          ? wordData.persianMeaning
-                                          : wordData.englishMeaning,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.drive_file_move_outline,
-                                          color: theme.colorScheme.secondary,
-                                        ),
-                                        tooltip: AppLocalizations.getString(
-                                          'move_tooltip',
-                                          isPersian,
-                                        ),
-                                        onPressed: () => _moveCardToFolder(
-                                          card,
-                                          theme,
-                                          isPersian,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.volume_up,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                        onPressed: () => _speak(wordData.word),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const Divider(),
-                              Text(
-                                isPersian
-                                    ? wordData.englishMeaning
-                                    : wordData.persianMeaning,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                              const SizedBox(height: 12),
-                              if (wordData.examples.isNotEmpty) ...[
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Example: ',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        wordData.examples.first,
-                                        style: const TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: wordData.synonymsByLevel.entries.map((
-                                  entry,
-                                ) {
-                                  Color levelColor = entry.key.contains('A')
-                                      ? Colors.green
-                                      : (entry.key.contains('B')
-                                            ? Colors.blue
-                                            : Colors.orange);
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: levelColor.withValues(
-                                          alpha: 0.4,
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '${entry.key}: ${entry.value.word}',
-                                      style: TextStyle(
-                                        color: levelColor,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
+                        return ArchiveCardTile(
+                          card: card,
+                          wordData: wordData,
+                          isPersian: isPersian,
+                          onSpeak: _speak,
+                          onMove: _moveCardToFolder,
                         );
                       },
                     ),

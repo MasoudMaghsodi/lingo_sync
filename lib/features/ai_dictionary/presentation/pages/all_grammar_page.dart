@@ -17,16 +17,21 @@ class AllGrammarPage extends ConsumerStatefulWidget {
 class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  // Cached in initState — see the note in VideoLessonPage for why
+  // ref.read must never be called inside dispose().
+  late final TtsService _tts;
+
   List<VideoAnalysis> _videoAnalyses = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _tts = ref.read(ttsServiceProvider);
     _loadAllGrammars();
   }
 
-  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
+  Future<void> _speak(String text) => _tts.speak(text);
 
   Future<void> _loadAllGrammars() async {
     try {
@@ -54,6 +59,12 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
   }
 
   @override

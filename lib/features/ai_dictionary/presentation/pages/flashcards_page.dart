@@ -19,7 +19,17 @@ class FlashcardsPage extends ConsumerStatefulWidget {
 class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
   bool _isFlipped = false;
 
-  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
+  // Cached in initState — see the note in VideoLessonPage for why
+  // ref.read must never be called inside dispose().
+  late final TtsService _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = ref.read(ttsServiceProvider);
+  }
+
+  Future<void> _speak(String text) => _tts.speak(text);
 
   void _handleReview(
     int flashcardId,
@@ -39,7 +49,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
 
   @override
   void dispose() {
-    ref.read(ttsServiceProvider).stop();
+    _tts.stop();
     super.dispose();
   }
 
@@ -219,18 +229,18 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                                         );
                                       },
                                   child: _isFlipped
-                                      ? _buildCardBack(
-                                          word,
-                                          aiAnalysis,
-                                          theme,
-                                          isPersian,
+                                      ? _FlashcardBack(
                                           key: const ValueKey(true),
+                                          word: word,
+                                          aiAnalysis: aiAnalysis,
+                                          isPersian: isPersian,
+                                          onSpeak: _speak,
                                         )
-                                      : _buildCardFront(
-                                          word,
-                                          theme,
-                                          isPersian,
+                                      : _FlashcardFront(
                                           key: const ValueKey(false),
+                                          word: word,
+                                          isPersian: isPersian,
+                                          onSpeak: _speak,
                                         ),
                                 ),
                               ),
@@ -331,15 +341,26 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
       ),
     );
   }
+}
 
-  Widget _buildCardFront(
-    String word,
-    ThemeData theme,
-    bool isPersian, {
-    required Key key,
-  }) {
+/// The front face of a flashcard: just the word, a speaker button, and a
+/// hint to tap for the answer.
+class _FlashcardFront extends StatelessWidget {
+  final String word;
+  final bool isPersian;
+  final Future<void> Function(String text) onSpeak;
+
+  const _FlashcardFront({
+    required super.key,
+    required this.word,
+    required this.isPersian,
+    required this.onSpeak,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      key: key,
       width: double.infinity,
       decoration: BoxDecoration(
         color: theme.colorScheme.primary,
@@ -373,7 +394,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
           const SizedBox(height: 24),
           IconButton(
             icon: const Icon(Icons.volume_up, size: 48, color: Colors.white70),
-            onPressed: () => _speak(word),
+            onPressed: () => onSpeak(word),
           ),
           const SizedBox(height: 48),
           Text(
@@ -384,18 +405,30 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
       ),
     );
   }
+}
 
-  Widget _buildCardBack(
-    String word,
-    Map<String, dynamic> aiAnalysis,
-    ThemeData theme,
-    bool isPersian, {
-    required Key key,
-  }) {
+/// The back face of a flashcard: full definition, part of speech, and
+/// (if available) an example sentence.
+class _FlashcardBack extends StatelessWidget {
+  final String word;
+  final Map<String, dynamic> aiAnalysis;
+  final bool isPersian;
+  final Future<void> Function(String text) onSpeak;
+
+  const _FlashcardBack({
+    required super.key,
+    required this.word,
+    required this.aiAnalysis,
+    required this.isPersian,
+    required this.onSpeak,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final examples = aiAnalysis['examples'] as List<dynamic>? ?? [];
 
     return Container(
-      key: key,
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -433,7 +466,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.volume_up, color: theme.colorScheme.primary),
-                  onPressed: () => _speak(word),
+                  onPressed: () => onSpeak(word),
                 ),
               ],
             ),

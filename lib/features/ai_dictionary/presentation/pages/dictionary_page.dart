@@ -22,13 +22,23 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _ytController = TextEditingController();
 
-  Future<void> _speak(String text) => ref.read(ttsServiceProvider).speak(text);
+  // Cached in initState — see the note in VideoLessonPage for why
+  // ref.read must never be called inside dispose().
+  late final TtsService _tts;
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = ref.read(ttsServiceProvider);
+  }
+
+  Future<void> _speak(String text) => _tts.speak(text);
 
   @override
   void dispose() {
     _searchController.dispose();
     _ytController.dispose();
-    ref.read(ttsServiceProvider).stop();
+    _tts.stop();
     super.dispose();
   }
 
