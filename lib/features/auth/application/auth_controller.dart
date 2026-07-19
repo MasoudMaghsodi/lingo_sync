@@ -16,7 +16,6 @@ class AuthController extends _$AuthController {
   StreamSubscription<AuthState>? _authSub;
   StreamSubscription<bool>? _approvalSub;
   Timer? _refreshTimeoutTimer;
-  String? _watchedUserId;
 
   @override
   AuthStatus build() {
@@ -59,10 +58,7 @@ class AuthController extends _$AuthController {
         if (session.isExpired) {
           // Don't guess — wait for the SDK to either silently refresh the
           // token or give up. Either outcome arrives as its own event
-          // below (tokenRefreshed / signedOut). This is the fix for the
-          // original bug: an expired token used to fall through to
-          // "fetch approval status", which then failed and got
-          // misread as "not approved yet".
+          // below (tokenRefreshed / signedOut).
           state = const AuthInitial();
           _armRefreshTimeout();
           break;
@@ -95,11 +91,29 @@ class AuthController extends _$AuthController {
     });
   }
 
+  /// Always tears down any previous approval subscription and creates a
+  /// fresh one — deliberately NOT skipped even if this looks like the same
+  /// user as before.
+  ///
+  /// The previous version of this method had a "skip if already watching
+  /// this user" guard. That guard is what created a real bug: if an
+  /// earlier subscription attempt happened while the session's token was
+  /// stale/expiring (e.g. right around a token-expiry-then-manual-sign-in
+  /// cycle), Supabase's Realtime channel for that subscription can end up
+  /// silently never delivering data — the underlying websocket channel was
+  /// authorized with an old JWT and never re-authenticated with the fresh
+  /// one. A subsequent `signedIn` event for the "same" user id would then
+  /// hit the guard and reuse that dead subscription instead of creating a
+  /// new one, so the UI would show the sign-in as successful in the logs
+  /// but never actually move off the login screen until the app was
+  /// manually reloaded (which rebuilds this notifier from scratch).
+  ///
+  /// Always resubscribing costs one extra Realtime handshake in the rare
+  /// case where this really is called twice for the same already-healthy
+  /// subscription — a price worth paying to eliminate that failure mode
+  /// entirely.
   void _watchApproval(User user) {
-    if (_watchedUserId == user.id && _approvalSub != null) return;
-
     _stopWatchingApproval();
-    _watchedUserId = user.id;
 
     _approvalSub = ref
         .read(approvalRepositoryProvider)
@@ -122,7 +136,6 @@ class AuthController extends _$AuthController {
   void _stopWatchingApproval() {
     _approvalSub?.cancel();
     _approvalSub = null;
-    _watchedUserId = null;
   }
 
   Future<void> signOut() => ref.read(authRepositoryProvider).signOut();
