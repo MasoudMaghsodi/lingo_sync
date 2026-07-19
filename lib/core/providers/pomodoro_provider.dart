@@ -77,7 +77,9 @@ class Pomodoro extends _$Pomodoro {
 
       if (diff > 0) {
         // Session was still running when the app died — resume it exactly
-        // where it should be, and restart the ticker.
+        // where it should be, and restart the ticker. Genuinely in
+        // progress, so it's correct for this to be globally visible right
+        // away.
         _endTime = endTime;
         _scheduleTicker();
         return PomodoroState(
@@ -89,7 +91,8 @@ class Pomodoro extends _$Pomodoro {
         );
       } else {
         // Session finished while the app was closed — surface it as
-        // finished once, then clear the persisted session.
+        // finished once (so the user sees "Done!"), then clear the
+        // persisted session.
         _clearPersistedSession(prefs);
         return PomodoroState(
           remainingSeconds: savedMinutes * 60,
@@ -101,11 +104,17 @@ class Pomodoro extends _$Pomodoro {
       }
     }
 
+    // Genuinely fresh state — nothing running, nothing to resume, nothing
+    // finished. isGloballyVisible starts false here so the floating
+    // overlay doesn't appear anywhere until the user explicitly starts (or
+    // reopens) the timer via PomodoroHomeCard. Previously this defaulted
+    // to true, which is what made the timer "wander" onto every page even
+    // when it had never been started.
     return PomodoroState(
       remainingSeconds: savedMinutes * 60,
       isRunning: false,
       defaultMinutes: savedMinutes,
-      isGloballyVisible: true,
+      isGloballyVisible: false,
       isFinished: false,
     );
   }

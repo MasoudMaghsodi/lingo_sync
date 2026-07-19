@@ -42,7 +42,7 @@ final class AiMentorControllerProvider
 }
 
 String _$aiMentorControllerHash() =>
-    r'33ec4ba93cf8735afb27714f4a5db9823f873fab';
+    r'c57e10a0e3867e3c1941bcb4e93d9a099b8396bc';
 
 abstract class _$AiMentorController extends $Notifier<AiMentorSessionState> {
   AiMentorSessionState build();

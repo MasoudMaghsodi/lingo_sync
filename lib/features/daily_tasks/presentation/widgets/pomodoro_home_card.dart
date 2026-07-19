@@ -9,15 +9,14 @@ import '../../../../core/providers/settings_provider.dart';
 /// The Pomodoro timer's permanent home: a static (non-floating) card shown
 /// at the top of `DailyTasksPage`.
 ///
-/// - Not running: shows a "Start" button.
-/// - Running and currently shown as the floating overlay elsewhere: shows
-///   a live compact countdown, purely informational (the floating panel
-///   is the primary control surface at that point).
-/// - Running but hidden (user tapped "hide" on the floating panel): shows
-///   a live compact countdown plus a "Show" button to bring the floating
-///   overlay back — this is the fix for the timer "wandering" as an
-///   ambient dot on random pages: hiding it now always returns control to
-///   this one home location instead.
+/// - Not visible anywhere (isGloballyVisible == false): shows a
+///   "Start"/"Show" button (Start if genuinely idle, Show if it's running
+///   in the background but currently hidden).
+/// - Visible as the floating overlay elsewhere (isGloballyVisible == true):
+///   shows a live compact countdown, purely informational — the floating
+///   panel is the primary control surface at that point. This no longer
+///   requires isRunning == true, since the overlay legitimately stays up
+///   through pause/reset/settings changes too.
 class PomodoroHomeCard extends ConsumerWidget {
   const PomodoroHomeCard({super.key});
 
@@ -33,8 +32,7 @@ class PomodoroHomeCard extends ConsumerWidget {
     final isPersian = ref.watch(isPersianProvider);
     final theme = Theme.of(context);
 
-    final isFloatingElsewhere =
-        pomodoro.isRunning && pomodoro.isGloballyVisible;
+    final isFloatingElsewhere = pomodoro.isGloballyVisible;
 
     return Container(
       margin: const EdgeInsets.symmetric(

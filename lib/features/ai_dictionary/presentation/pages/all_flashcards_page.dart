@@ -50,11 +50,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     super.dispose();
   }
 
-  /// Shared helper so every folder-management action reports its *real*
-  /// failure reason instead of silently swallowing it — the previous
-  /// behavior (`catch (e) { setState(() => _isLoading = false); }`, no
-  /// user-visible message) made rename/delete look broken with zero clue
-  /// why.
   void _showActionError(Object error) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -78,7 +73,8 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
       if (mounted) {
         setState(() {
           _allCards = List<Map<String, dynamic>>.from(response);
-          // استخراج پوشه‌ها و نگه‌داشتن پوشه‌های پایه
+          // استخراج پوشه‌ها و نگه‌داشتن پوشه‌های پایه به‌عنوان گزینه‌های
+          // پیش‌فرض قابل‌انتخاب (نه اینکه غیرقابل‌تغییر باشن)
           _folders = {'General', 'Grammar'};
           for (final card in _allCards) {
             if (card['folder_name'] != null &&
@@ -206,12 +202,11 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     );
   }
 
+  /// 'All' is a display-only filter (not a real `folder_name` value), so it
+  /// can never be renamed or deleted — but General and Grammar are just
+  /// ordinary starting folders now and can be managed like any other.
   void _showFolderOptions(String folderName, bool isPersian) {
-    if (folderName == 'All' ||
-        folderName == 'General' ||
-        folderName == 'Grammar') {
-      return; // پوشه‌های سیستمی نباید تغییر کنند
-    }
+    if (folderName == 'All') return;
 
     HapticFeedback.mediumImpact();
     showModalBottomSheet(

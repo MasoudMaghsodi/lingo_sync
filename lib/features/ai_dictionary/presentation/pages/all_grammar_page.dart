@@ -8,21 +8,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/video_analysis_model.dart';
 
-/// Local-only grouping used purely for display in this page — unlike the
-/// shared [VideoAnalysis] model (which represents a single freshly
-/// processed video for [VideoLessonPage]), this carries the `title` and
-/// `day_number` columns the vault needs to show which lesson a video
-/// belongs to, without changing the shape other pages rely on.
+/// Local-only grouping used purely for display in this page — carries
+/// whatever is needed to build a human title ("Grammar video, Day 3")
+/// without changing the shared [VideoAnalysis] model other pages rely on.
 class _GrammarVideoGroup {
   final String videoId;
   final String? title;
   final int? dayNumber;
+  final String? taskType;
   final List<GrammarPoint> grammarPoints;
 
   _GrammarVideoGroup({
     required this.videoId,
     required this.title,
     required this.dayNumber,
+    required this.taskType,
     required this.grammarPoints,
   });
 }
@@ -53,23 +53,106 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
 
   Future<void> _speak(String text) => _tts.speak(text);
 
+  /// Turns a raw `task_type` string (e.g. "Listening", "Grammar",
+  /// "Read articles") into a short, human label. Falls back to the raw
+  /// value itself for anything not explicitly mapped, so a new task type
+  /// added to `daily_tasks` later never just disappears from the title.
+  String _taskTypeLabel(String? taskType, bool isPersian) {
+    if (taskType == null) return '';
+    final key = taskType.toLowerCase();
+    const enMap = {
+      'listening': 'Listening',
+      'vocabulary': 'Vocabulary',
+      'speaking': 'Speaking',
+      'reading': 'Reading',
+      'grammar': 'Grammar',
+      'writing': 'Writing',
+      'podcast': 'Podcast',
+      'shadowing': 'Shadowing',
+      'dictation': 'Dictation',
+    };
+    const faMap = {
+      'listening': 'لیسینینگ',
+      'vocabulary': 'وکبیولری',
+      'speaking': 'اسپیکینگ',
+      'reading': 'ریدینگ',
+      'grammar': 'گرامر',
+      'writing': 'رایتینگ',
+      'podcast': 'پادکست',
+      'shadowing': 'شادوینگ',
+      'dictation': 'دیکته',
+    };
+    final map = isPersian ? faMap : enMap;
+    return map[key] ?? taskType;
+  }
+
+  String _buildTitle(_GrammarVideoGroup video, bool isPersian) {
+    // If the AI actually generated a real title, prefer it.
+    if (video.title != null && video.title!.trim().isNotEmpty) {
+      return video.title!.trim();
+    }
+
+    // Otherwise build "Grammar video, Day N" / "ویدیو گرامر روز N" from
+    // the linked daily task, when we have one.
+    if (video.dayNumber != null) {
+      final typeLabel = _taskTypeLabel(video.taskType, isPersian);
+      if (isPersian) {
+        return typeLabel.isNotEmpty
+            ? 'ویدیو $typeLabel روز ${video.dayNumber}'
+            : 'ویدیو روز ${video.dayNumber}';
+      } else {
+        return typeLabel.isNotEmpty
+            ? '$typeLabel Video, Day ${video.dayNumber}'
+            : 'Video, Day ${video.dayNumber}';
+      }
+    }
+
+    // Truly no metadata at all (very old record, never linked to a task) —
+    // fall back to a short slice of the video id, same as before.
+    final shortId = video.videoId.substring(
+      0,
+      video.videoId.length.clamp(0, 6),
+    );
+    return 'Video $shortId...';
+  }
+
   Future<void> _loadAllGrammars() async {
     try {
-      // دریافت تمام ویدیوهای پردازش شده، همراه با عنوان و روز مربوطه —
-      // ordered by day_number so the vault reads like a lesson-by-lesson
-      // index instead of an unordered dump.
       final response = await _supabase
           .from('video_analysis')
-          .select('video_id, title, day_number, grammar_points')
+          .select('video_id, title, day_number, task_id, grammar_points')
           .order('day_number', ascending: true);
+
+      final rows = response as List;
+
+      // Resolve task_type for every non-null task_id in one extra query,
+      // instead of one query per video.
+      final taskIds = rows
+          .map((r) => r['task_id'])
+          .whereType<int>()
+          .toSet()
+          .toList();
+
+      final Map<int, String> taskTypesById = {};
+      if (taskIds.isNotEmpty) {
+        final tasksResponse = await _supabase
+            .from('daily_tasks')
+            .select('id, task_type')
+            .inFilter('id', taskIds);
+        for (final row in tasksResponse as List) {
+          taskTypesById[row['id'] as int] = row['task_type'] as String;
+        }
+      }
 
       if (mounted) {
         setState(() {
-          _videoGroups = (response as List).map((data) {
+          _videoGroups = rows.map((data) {
+            final taskId = data['task_id'] as int?;
             return _GrammarVideoGroup(
               videoId: data['video_id'],
               title: data['title'] as String?,
               dayNumber: data['day_number'] as int?,
+              taskType: taskId != null ? taskTypesById[taskId] : null,
               grammarPoints: (data['grammar_points'] as List)
                   .map((e) => GrammarPoint.fromJson(e))
                   .toList(),
@@ -116,24 +199,18 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                 itemCount: _videoGroups.length,
                 itemBuilder: (context, index) {
                   final video = _videoGroups[index];
-                  // اگر ویدیویی نکته گرامری نداشت، نشان داده نشود
                   if (video.grammarPoints.isEmpty) {
                     return const SizedBox.shrink();
                   }
 
-                  final dayLabel = video.dayNumber != null
-                      ? '${AppLocalizations.getString('day', isPersian)} ${video.dayNumber}'
-                      : null;
-                  final title = video.title?.trim().isNotEmpty == true
-                      ? video.title!
-                      : 'Video ${video.videoId.substring(0, video.videoId.length.clamp(0, 6))}...';
+                  final title = _buildTitle(video, isPersian);
 
                   return Card(
                     margin: const EdgeInsets.only(
                       bottom: AppConstants.standardPadding,
                     ),
                     child: ExpansionTile(
-                      initiallyExpanded: index == 0, // اولین مورد باز باشد
+                      initiallyExpanded: index == 0,
                       leading: Icon(
                         Icons.smart_display_rounded,
                         color: theme.colorScheme.primary,
@@ -146,11 +223,8 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         ),
                       ),
                       subtitle: Text(
-                        [
-                          ?dayLabel,
-                          '${video.grammarPoints.length} '
-                              '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
-                        ].join(' • '),
+                        '${video.grammarPoints.length} '
+                        '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
                       ),
                       childrenPadding: const EdgeInsets.all(
                         AppConstants.standardPadding,

@@ -21,10 +21,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
   // Which tabs have ever been shown. A tab's real page widget is only
   // constructed the first time its index becomes active — before that we
-  // render an empty placeholder instead. See the fuller explanation on
-  // this in the previous refactor phase's commit notes: it avoids
-  // subscribing to stream-backed providers (like the leaderboard) before
-  // the widget tree has even finished its first build.
+  // render an empty placeholder instead. This avoids subscribing to
+  // stream-backed providers (like the leaderboard) before the widget tree
+  // has even finished its first build.
   final Set<int> _builtIndices = {0};
 
   static final List<Widget Function()> _pageBuilders = [
@@ -50,13 +49,16 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     final isPersian = ref.watch(isPersianProvider);
     final theme = Theme.of(context);
 
-    // The floating Pomodoro overlay only exists while the timer is
-    // actually running AND the user hasn't hidden it — otherwise its
-    // permanent home is the PomodoroHomeCard on the Daily Tasks page. This
-    // is what stops it "wandering" across every tab when idle.
+    // The floating Pomodoro overlay's ONLY signal for existing is
+    // isGloballyVisible — deliberately NOT combined with isRunning.
+    // Several legitimate in-panel actions (Reset, saving a custom time in
+    // Settings) set isRunning to false without the user ever asking to
+    // hide the panel; gating on isRunning too used to cause the entire
+    // overlay (and anything open inside it, like the settings dialog) to
+    // vanish the instant one of those actions ran. Its permanent home when
+    // hidden is PomodoroHomeCard on the Daily Tasks page.
     final pomodoro = ref.watch(pomodoroProvider);
-    final showFloatingPomodoro =
-        pomodoro.isRunning && pomodoro.isGloballyVisible;
+    final showFloatingPomodoro = pomodoro.isGloballyVisible;
 
     return Scaffold(
       body: Stack(

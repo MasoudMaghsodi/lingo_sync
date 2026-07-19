@@ -7,58 +7,47 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/providers/settings_provider.dart';
 
-// ==== Data layer (unchanged) ====
+// ==== Data layer ====
 
-final _userStatsStreamProvider = StreamProvider<List<Map<String, dynamic>>>((
+/// Fetches the profile → full-name map once, then merges it into every
+/// row emitted by the live `user_stats` realtime stream.
+///
+/// This is a single self-contained `StreamProvider` that fetches and
+/// subscribes directly — not a plain `Provider` combining two other
+/// *watched* providers, and not relying on any `.stream`/`.future`
+/// provider modifier. That "combinator watches providers" pattern is what
+/// caused the earlier crash (`setState() called during build` triggered
+/// from `LeaderboardPage.build`): the first `ref.watch` on a plain
+/// `Provider` combining two already-resolved dependencies could trigger a
+/// synchronous self-invalidation mid-build. Subscribing directly here
+/// avoids that footgun entirely, and also avoids depending on a provider
+/// modifier API that may differ across Riverpod versions.
+final leaderboardProvider = StreamProvider<List<Map<String, dynamic>>>((
   ref,
-) {
-  return Supabase.instance.client
-      .from('user_stats')
-      .stream(primaryKey: ['id'])
-      .order('score', ascending: false);
-});
-
-final _profilesProvider = FutureProvider<Map<String, String>>((ref) async {
-  final data = await Supabase.instance.client
+) async* {
+  final profilesData = await Supabase.instance.client
       .from('profiles')
       .select('id, full_name');
 
-  final map = <String, String>{};
-  for (final row in data as List) {
+  final profiles = <String, String>{};
+  for (final row in profilesData as List) {
     final id = row['id']?.toString();
     final name = row['full_name']?.toString();
     if (id != null && name != null && name.trim().isNotEmpty) {
-      map[id] = name;
+      profiles[id] = name;
     }
   }
-  return map;
-});
 
-final leaderboardProvider = Provider<AsyncValue<List<Map<String, dynamic>>>>((
-  ref,
-) {
-  final statsAsync = ref.watch(_userStatsStreamProvider);
-  final profilesAsync = ref.watch(_profilesProvider);
-
-  if (statsAsync.isLoading || profilesAsync.isLoading) {
-    return const AsyncValue.loading();
-  }
-  if (statsAsync.hasError) {
-    return AsyncValue.error(statsAsync.error!, statsAsync.stackTrace!);
-  }
-  if (profilesAsync.hasError) {
-    return AsyncValue.error(profilesAsync.error!, profilesAsync.stackTrace!);
-  }
-
-  final stats = statsAsync.value ?? [];
-  final profiles = profilesAsync.value ?? {};
-
-  final merged = stats.map((user) {
-    final id = user['id']?.toString();
-    return {...user, 'full_name': profiles[id] ?? 'Unknown'};
-  }).toList();
-
-  return AsyncValue.data(merged);
+  yield* Supabase.instance.client
+      .from('user_stats')
+      .stream(primaryKey: ['id'])
+      .order('score', ascending: false)
+      .map((stats) {
+        return stats.map((user) {
+          final id = user['id']?.toString();
+          return {...user, 'full_name': profiles[id] ?? 'Unknown'};
+        }).toList();
+      });
 });
 
 // ==== Bronze accent: the one metal missing from AppTheme, kept local ====
@@ -102,10 +91,7 @@ class LeaderboardPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: theme.colorScheme.primary),
-            onPressed: () {
-              ref.invalidate(_userStatsStreamProvider);
-              ref.invalidate(_profilesProvider);
-            },
+            onPressed: () => ref.invalidate(leaderboardProvider),
           ),
         ],
       ),
