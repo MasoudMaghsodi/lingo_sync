@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
-/// The "Transcript" tab of `VideoLessonPage`: the full, selectable
-/// translated transcript. No state of its own.
+/// The "Transcript" tab of `VideoLessonPage`: the full, selectable,
+/// always-Persian translated transcript. Scrolls via
+/// [SingleChildScrollView] regardless of length — there is no fixed
+/// height constraint anywhere in this widget, so arbitrarily long
+/// translations remain fully scrollable and selectable.
 class VideoTranscriptTab extends StatelessWidget {
   final String transcript;
 
@@ -29,7 +33,7 @@ class VideoTranscriptTab extends StatelessWidget {
                 ),
               ],
             ),
-            child: SelectableText(
+            child: PersianContentSelectableText(
               transcript,
               style: const TextStyle(fontSize: 16, height: 2.0),
             ),

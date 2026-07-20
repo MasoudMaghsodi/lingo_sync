@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 import '../../../data/models/video_analysis_model.dart';
 
 /// The "Kid-Friendly Grammar" tab of `VideoLessonPage`: one expandable
@@ -109,8 +110,23 @@ class _GrammarPointCard extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 16.0),
               child: Divider(),
             ),
+            // The label follows the UI language toggle (ambient
+            // direction is correct for it); the explanation body itself
+            // is always genuinely Persian, so it's wrapped separately.
             Text(
-              '${AppLocalizations.getString('childlike_explanation_prefix', isPersian)}\n${grammar.persianExplanation}',
+              AppLocalizations.getString(
+                'childlike_explanation_prefix',
+                isPersian,
+              ),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                height: 1.8,
+              ),
+            ),
+            const SizedBox(height: 4),
+            PersianContentText(
+              grammar.persianExplanation,
               style: const TextStyle(fontSize: 16, height: 1.8),
             ),
             const SizedBox(height: 24),

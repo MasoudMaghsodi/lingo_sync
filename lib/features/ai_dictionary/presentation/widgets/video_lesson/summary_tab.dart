@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
 /// The "Summary & Notes" tab of `VideoLessonPage`: the AI-generated
-/// summary plus the user's own personal note for this video. Purely
-/// presentational — all state (the note's text, loading/saving flags) and
-/// the save action live in the parent page, since the note needs to
-/// survive tab switches and share its loading state with the save button.
+/// summary (always Persian, rendered via [PersianContentText] regardless
+/// of the app's UI language) plus the user's own personal note for this
+/// video. Purely presentational — all state (the note's text,
+/// loading/saving flags) and the save action live in the parent page.
 class VideoSummaryTab extends StatelessWidget {
   final String summary;
   final TextEditingController noteController;
@@ -60,7 +61,7 @@ class VideoSummaryTab extends StatelessWidget {
                 ),
               ],
             ),
-            child: Text(
+            child: PersianContentText(
               summary,
               style: const TextStyle(
                 fontSize: 16,
@@ -99,6 +100,9 @@ class VideoSummaryTab extends StatelessWidget {
                   ),
                 ],
               ),
+              // Left as free-form (ambient direction), unlike the AI
+              // summary above — this is the user's own note, which they
+              // may type in either language, so we don't force RTL here.
               child: TextField(
                 controller: noteController,
                 maxLines: 8,

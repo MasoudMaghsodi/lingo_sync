@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
@@ -410,7 +411,10 @@ class _FlashcardFront extends StatelessWidget {
 }
 
 /// The back face of a flashcard: full definition, part of speech, and
-/// (if available) an example sentence.
+/// (if available) an example sentence. The primary/secondary meaning
+/// lines swap positions based on [isPersian], but whichever one is
+/// actually the Persian string always gets explicit RTL direction via
+/// [PersianContentText] — independent of which position it's in.
 class _FlashcardBack extends StatelessWidget {
   final String word;
   final Map<String, dynamic> aiAnalysis;
@@ -429,6 +433,12 @@ class _FlashcardBack extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final examples = aiAnalysis['examples'] as List<dynamic>? ?? [];
+
+    final persianMeaning = (aiAnalysis['persian_meaning'] ?? '') as String;
+    final englishMeaning = (aiAnalysis['english_meaning'] ?? '') as String;
+
+    const primaryStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.w500);
+    const secondaryStyle = TextStyle(fontSize: 16, color: Colors.grey);
 
     return Container(
       width: double.infinity,
@@ -491,19 +501,13 @@ class _FlashcardBack extends StatelessWidget {
                 ),
               ),
             const Divider(height: 32),
-            Text(
-              isPersian
-                  ? (aiAnalysis['persian_meaning'] ?? '')
-                  : (aiAnalysis['english_meaning'] ?? ''),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
+            isPersian
+                ? PersianContentText(persianMeaning, style: primaryStyle)
+                : Text(englishMeaning, style: primaryStyle),
             const SizedBox(height: 8),
-            Text(
-              isPersian
-                  ? (aiAnalysis['english_meaning'] ?? '')
-                  : (aiAnalysis['persian_meaning'] ?? ''),
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
+            isPersian
+                ? Text(englishMeaning, style: secondaryStyle)
+                : PersianContentText(persianMeaning, style: secondaryStyle),
             const SizedBox(height: 24),
             if (examples.isNotEmpty) ...[
               Text(

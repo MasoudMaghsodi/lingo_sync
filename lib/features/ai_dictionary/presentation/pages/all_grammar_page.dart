@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/providers/settings_provider.dart';
@@ -53,10 +54,6 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
 
   Future<void> _speak(String text) => _tts.speak(text);
 
-  /// Turns a raw `task_type` string (e.g. "Listening", "Grammar",
-  /// "Read articles") into a short, human label. Falls back to the raw
-  /// value itself for anything not explicitly mapped, so a new task type
-  /// added to `daily_tasks` later never just disappears from the title.
   String _taskTypeLabel(String? taskType, bool isPersian) {
     if (taskType == null) return '';
     final key = taskType.toLowerCase();
@@ -87,13 +84,10 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   }
 
   String _buildTitle(_GrammarVideoGroup video, bool isPersian) {
-    // If the AI actually generated a real title, prefer it.
     if (video.title != null && video.title!.trim().isNotEmpty) {
       return video.title!.trim();
     }
 
-    // Otherwise build "Grammar video, Day N" / "ویدیو گرامر روز N" from
-    // the linked daily task, when we have one.
     if (video.dayNumber != null) {
       final typeLabel = _taskTypeLabel(video.taskType, isPersian);
       if (isPersian) {
@@ -107,8 +101,6 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
       }
     }
 
-    // Truly no metadata at all (very old record, never linked to a task) —
-    // fall back to a short slice of the video id, same as before.
     final shortId = video.videoId.substring(
       0,
       video.videoId.length.clamp(0, 6),
@@ -125,8 +117,6 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
 
       final rows = response as List;
 
-      // Resolve task_type for every non-null task_id in one extra query,
-      // instead of one query per video.
       final taskIds = rows
           .map((r) => r['task_id'])
           .whereType<int>()
@@ -260,7 +250,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                                 ),
                               ),
                               const Divider(height: 24),
-                              Text(
+                              PersianContentText(
                                 "👶 ${grammar.persianExplanation}",
                                 style: const TextStyle(
                                   fontSize: 16,

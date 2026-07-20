@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 import '../../../data/models/word_analysis_model.dart';
 
 /// One expandable flashcard entry in `AllFlashcardsPage`'s archive list.
@@ -22,6 +23,10 @@ class ArchiveCardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    const primaryStyle = TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
+    const secondaryStyle = TextStyle(color: Colors.grey);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
@@ -50,13 +55,12 @@ class ArchiveCardTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(
-                  isPersian ? wordData.persianMeaning : wordData.englishMeaning,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: isPersian
+                    ? PersianContentText(
+                        wordData.persianMeaning,
+                        style: primaryStyle,
+                      )
+                    : Text(wordData.englishMeaning, style: primaryStyle),
               ),
               Row(
                 children: [
@@ -83,10 +87,12 @@ class ArchiveCardTile extends StatelessWidget {
             ],
           ),
           const Divider(),
-          Text(
-            isPersian ? wordData.englishMeaning : wordData.persianMeaning,
-            style: const TextStyle(color: Colors.grey),
-          ),
+          isPersian
+              ? Text(wordData.englishMeaning, style: secondaryStyle)
+              : PersianContentText(
+                  wordData.persianMeaning,
+                  style: secondaryStyle,
+                ),
           const SizedBox(height: 12),
           if (wordData.examples.isNotEmpty) ...[
             Row(
@@ -119,27 +125,13 @@ class ArchiveCardTile extends StatelessWidget {
                   border: Border.all(color: levelColor.withValues(alpha: 0.4)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${entry.key}: ${entry.value.word}',
-                      style: TextStyle(
-                        color: levelColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => onSpeak(entry.value.word),
-                      child: Icon(
-                        Icons.volume_up_rounded,
-                        size: 14,
-                        color: levelColor,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  '${entry.key}: ${entry.value.word}',
+                  style: TextStyle(
+                    color: levelColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               );
             }).toList(),

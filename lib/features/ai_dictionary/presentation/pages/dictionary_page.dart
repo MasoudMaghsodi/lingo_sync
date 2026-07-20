@@ -5,8 +5,8 @@ import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
+import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
-// import '../../../../core/providers/pomodoro_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/word_analysis_model.dart';
 import '../providers/dictionary_provider.dart';
@@ -400,7 +400,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        PersianContentText(
           wordData.persianMeaning,
           style: const TextStyle(fontSize: 18, height: 1.6, color: Colors.grey),
         ),
