@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
@@ -10,33 +11,28 @@ import '../../../../core/providers/settings_provider.dart';
 
 // ==== Data layer ====
 
-/// Fetches the profile → full-name map once, then merges it into every
-/// row emitted by the live `user_stats` realtime stream.
+/// Fetches the profile → (name, avatar) map once, then merges it into
+/// every row emitted by the live `user_stats` realtime stream.
 ///
-/// This is a single self-contained `StreamProvider` that fetches and
-/// subscribes directly — not a plain `Provider` combining two other
-/// *watched* providers, and not relying on any `.stream`/`.future`
-/// provider modifier. That "combinator watches providers" pattern is what
-/// caused the earlier crash (`setState() called during build` triggered
-/// from `LeaderboardPage.build`): the first `ref.watch` on a plain
-/// `Provider` combining two already-resolved dependencies could trigger a
-/// synchronous self-invalidation mid-build. Subscribing directly here
-/// avoids that footgun entirely, and also avoids depending on a provider
-/// modifier API that may differ across Riverpod versions.
+/// A single self-contained `StreamProvider` that fetches and subscribes
+/// directly — not a plain `Provider` combining two other *watched*
+/// providers. See the note that used to live here for why the
+/// "combinator watches providers" pattern caused a real mount-time crash.
 final leaderboardProvider = StreamProvider<List<Map<String, dynamic>>>((
   ref,
 ) async* {
   final profilesData = await Supabase.instance.client
       .from('profiles')
-      .select('id, full_name');
+      .select('id, full_name, avatar_url');
 
-  final profiles = <String, String>{};
+  final profiles = <String, Map<String, String?>>{};
   for (final row in profilesData as List) {
     final id = row['id']?.toString();
-    final name = row['full_name']?.toString();
-    if (id != null && name != null && name.trim().isNotEmpty) {
-      profiles[id] = name;
-    }
+    if (id == null) continue;
+    profiles[id] = {
+      'full_name': row['full_name'] as String?,
+      'avatar_url': row['avatar_url'] as String?,
+    };
   }
 
   yield* Supabase.instance.client
@@ -46,7 +42,15 @@ final leaderboardProvider = StreamProvider<List<Map<String, dynamic>>>((
       .map((stats) {
         return stats.map((user) {
           final id = user['id']?.toString();
-          return {...user, 'full_name': profiles[id] ?? 'Unknown'};
+          final profile = profiles[id];
+          final name = profile?['full_name'];
+          return {
+            ...user,
+            'full_name': (name != null && name.trim().isNotEmpty)
+                ? name
+                : 'Unknown',
+            'avatar_url': profile?['avatar_url'],
+          };
         }).toList();
       });
 });
@@ -116,9 +120,6 @@ class LeaderboardPage extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(
                 child: SizedBox(
-                  // Fixed outer height, but each peak fills it via Expanded
-                  // instead of a hardcoded bar height — no more overflow
-                  // regardless of name length or font scaling.
                   height: 300,
                   child: _SummitPodium(
                     users: users,
@@ -227,7 +228,7 @@ class _SummitPodium extends StatelessWidget {
 class _Peak extends StatelessWidget {
   final Map<String, dynamic> user;
   final int rank;
-  final int peakFlex; // relative height of the colored peak bar
+  final int peakFlex;
   final Color color;
   final ThemeData theme;
   final bool crowned;
@@ -246,8 +247,10 @@ class _Peak extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = user['full_name']?.toString() ?? 'Unknown';
+    final avatarUrl = user['avatar_url'] as String?;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final isMe = user['id'] == Supabase.instance.client.auth.currentUser?.id;
+    final size = crowned ? 56.0 : 46.0;
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -263,18 +266,26 @@ class _Peak extends StatelessWidget {
             ),
           ),
         Container(
-          width: crowned ? 56 : 46,
-          height: crowned ? 56 : 46,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                color.withValues(alpha: 0.95),
-                color.withValues(alpha: 0.6),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: avatarUrl == null
+                ? LinearGradient(
+                    colors: [
+                      color.withValues(alpha: 0.95),
+                      color.withValues(alpha: 0.6),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            image: avatarUrl != null
+                ? DecorationImage(
+                    image: CachedNetworkImageProvider(avatarUrl),
+                    fit: BoxFit.cover,
+                  )
+                : null,
             border: Border.all(
               color: isMe
                   ? theme.colorScheme.primary
@@ -290,14 +301,16 @@ class _Peak extends StatelessWidget {
             ],
           ),
           alignment: Alignment.center,
-          child: Text(
-            initial,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-            ),
-          ),
+          child: avatarUrl == null
+              ? Text(
+                  initial,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
+                )
+              : null,
         ),
         const SizedBox(height: 6),
         Text(
@@ -321,8 +334,6 @@ class _Peak extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        // The peak fills whatever space remains — flex controls relative
-        // height between rank 1/2/3 without any hardcoded pixel values.
         Expanded(
           flex: peakFlex,
           child: ClipRRect(
@@ -385,6 +396,7 @@ class _ClimberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = user['full_name']?.toString() ?? 'Unknown';
+    final avatarUrl = user['avatar_url'] as String?;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final streak = user['streak_days'] ?? 0;
     final score = user['score'] ?? 0;
@@ -436,23 +448,33 @@ class _ClimberRow extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    gold.withValues(alpha: 0.9),
-                    gold.withValues(alpha: 0.55),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: avatarUrl == null
+                    ? LinearGradient(
+                        colors: [
+                          gold.withValues(alpha: 0.9),
+                          gold.withValues(alpha: 0.55),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                image: avatarUrl != null
+                    ? DecorationImage(
+                        image: CachedNetworkImageProvider(avatarUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
+              child: avatarUrl == null
+                  ? Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(

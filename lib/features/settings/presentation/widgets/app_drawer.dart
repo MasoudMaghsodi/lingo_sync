@@ -1,15 +1,17 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:lingo_sync/features/auth/application/auth_controller.dart';
+
 import '../../data/profile_repository.dart';
 import '../providers/profile_provider.dart';
 
@@ -157,6 +159,10 @@ class AppSettingsDrawer extends ConsumerWidget {
 
     await Hive.box('flashcards_cache').clear();
     await Hive.box('pending_sync').clear();
+    // 🚀 کش عکس‌های آواتار (و بقیه‌ی تصاویر شبکه‌ای) هم بخشی از "کش
+    // آفلاین" اپه — پاک‌کردن کش باید شامل این هم بشه.
+    await CachedNetworkImage.evictFromCache('');
+    await DefaultCacheManager().emptyCache();
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -382,8 +388,6 @@ class _AvatarPickerState extends ConsumerState<_AvatarPicker> {
   bool _isUploading = false;
 
   Future<void> _pickAndUpload() async {
-    // ignore: unused_local_variable
-    final isPersian = ref.read(isPersianProvider);
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
@@ -426,11 +430,14 @@ class _AvatarPickerState extends ConsumerState<_AvatarPicker> {
       onTap: _isUploading ? null : _pickAndUpload,
       child: Stack(
         children: [
+          // 🚀 CachedNetworkImageProvider به‌جای NetworkImage خام — بعد از
+          // اولین دانلود، عکس روی دیسک کش می‌شه؛ دفعات بعد فوری از کش
+          // خونده می‌شه، نه دوباره از شبکه.
           CircleAvatar(
             radius: 36,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
             backgroundImage: widget.avatarUrl != null
-                ? NetworkImage(widget.avatarUrl!)
+                ? CachedNetworkImageProvider(widget.avatarUrl!)
                 : null,
             child: widget.avatarUrl == null
                 ? Text(

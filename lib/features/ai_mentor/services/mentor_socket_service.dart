@@ -4,10 +4,22 @@ import 'dart:convert';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-/// Pure transport: owns the raw WebSocket connection, the ping/pong
-/// keepalive, and JSON encode/decode. Knows nothing about mentor state,
-/// audio, or Gemini — just "send this map, tell me when a map arrives, tell
-/// me if the connection died".
+/// Pure transport: owns the raw WebSocket connection, the ping keepalive,
+/// and JSON encode/decode. Knows nothing about mentor state, audio, or
+/// Gemini — just "send this map, tell me when a map arrives, tell me if
+/// the connection died".
+///
+/// Disconnection is detected ONLY from the socket's own `onDone`/`onError`
+/// events — matching the behavior of the earlier, proven-reliable client
+/// implementation this was modeled after. An earlier version of this
+/// class also declared "disconnected" after a few missed pong replies,
+/// but that turned out to be a real regression: a brief server-side delay
+/// relaying audio (or ordinary network jitter) could delay a pong past
+/// the timeout on a connection that was actually still perfectly healthy,
+/// causing spurious "No Internet Connection" flashes and reconnect
+/// churn — exactly what made the live conversation feel less real-time.
+/// The ping is now purely a NAT/firewall keepalive with no bearing on the
+/// disconnect decision.
 class MentorSocketService {
   final void Function(Map<String, dynamic> message) onMessage;
   final void Function() onDisconnected;
@@ -17,14 +29,6 @@ class MentorSocketService {
   WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
   Timer? _pingTimer;
-  Timer? _pongTimeoutTimer;
-
-  // Tolerating a handful of missed pongs (instead of disconnecting on the
-  // very first one) avoids false "No internet" trips from a brief lag
-  // spike, backgrounding, or a single slow frame — the exact complaint
-  // that a small hiccup shouldn't force a manual retry.
-  int _missedPongs = 0;
-  static const _maxMissedPongsBeforeDisconnect = 3;
 
   bool get isOpen => _channel != null && _channel!.closeCode == null;
 
@@ -32,14 +36,10 @@ class MentorSocketService {
     _channel = IOWebSocketChannel.connect(uri);
     await _channel!.ready.timeout(const Duration(seconds: 10));
 
-    _missedPongs = 0;
     _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+    _pingTimer = Timer.periodic(const Duration(seconds: 8), (_) {
       if (!isOpen) return;
       send({'type': 'ping'});
-
-      _pongTimeoutTimer?.cancel();
-      _pongTimeoutTimer = Timer(const Duration(seconds: 10), _onPongMissed);
     });
 
     await _wsSub?.cancel();
@@ -48,26 +48,13 @@ class MentorSocketService {
         try {
           final decoded = jsonDecode(raw.toString());
           if (decoded is! Map<String, dynamic>) return;
-
-          if (decoded['type'] == 'pong') {
-            _missedPongs = 0;
-            _pongTimeoutTimer?.cancel();
-            return;
-          }
+          if (decoded['type'] == 'pong') return; // acknowledged, nothing to do
           onMessage(decoded);
         } catch (_) {}
       },
       onDone: onDisconnected,
       onError: (_) => onDisconnected(),
     );
-  }
-
-  void _onPongMissed() {
-    _missedPongs++;
-    if (_missedPongs >= _maxMissedPongsBeforeDisconnect) {
-      _missedPongs = 0;
-      onDisconnected();
-    }
   }
 
   void send(Map<String, dynamic> message) {
@@ -90,7 +77,6 @@ class MentorSocketService {
 
   Future<void> dispose() async {
     _pingTimer?.cancel();
-    _pongTimeoutTimer?.cancel();
     await _wsSub?.cancel();
     await _channel?.sink.close();
   }
