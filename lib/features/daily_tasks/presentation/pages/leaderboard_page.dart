@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/providers/settings_provider.dart';
@@ -67,6 +68,11 @@ class LeaderboardPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () =>
+              ref.read(appShellScaffoldKeyProvider).currentState?.openDrawer(),
+        ),
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

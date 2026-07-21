@@ -166,6 +166,23 @@ class AppLocalizations {
       'login_toggle': 'Login',
       'signup_toggle': 'Sign up',
       'unexpected_error': 'An unexpected error occurred',
+
+      // ==== Settings drawer ====
+      'theme_dark_mode': 'Dark Mode',
+      'theme_light_mode': 'Light Mode',
+      'language_english': 'English',
+      'language_persian': 'فارسی',
+      'clear_cache': 'Clear Offline Cache',
+      'clear_cache_confirm_title': 'Clear Cache?',
+      'clear_cache_confirm_body':
+          'This removes locally cached flashcards and pending sync data. Your account data on the server is not affected.',
+      'clear_cache_success': 'Offline cache cleared.',
+      'about_app': 'About',
+      'app_version_label': 'Version',
+      'logout_confirm_title': 'Log Out?',
+      'logout_confirm_body': 'You will need to sign in again to continue.',
+      'edit_english_level': 'Select Your English Level',
+      'level_not_set': 'Set level',
     },
     'fa': {
       // ==== Dictionary / Flashcards (existing) ====
@@ -324,6 +341,23 @@ class AppLocalizations {
       'login_toggle': 'ورود',
       'signup_toggle': 'ثبت‌نام',
       'unexpected_error': 'خطای نامشخص',
+
+      // ==== Settings drawer ====
+      'theme_dark_mode': 'حالت تیره',
+      'theme_light_mode': 'حالت روشن',
+      'language_english': 'انگلیسی',
+      'language_persian': 'فارسی',
+      'clear_cache': 'پاک کردن کش آفلاین',
+      'clear_cache_confirm_title': 'پاک شود؟',
+      'clear_cache_confirm_body':
+          'این کار فلش‌کارت‌های ذخیره‌شده‌ی محلی و صف سینک در انتظار رو پاک می‌کنه. اطلاعات حسابت روی سرور دست‌نخورده می‌مونه.',
+      'clear_cache_success': 'کش آفلاین پاک شد.',
+      'about_app': 'درباره برنامه',
+      'app_version_label': 'نسخه',
+      'logout_confirm_title': 'خروج از حساب؟',
+      'logout_confirm_body': 'برای ادامه باید دوباره وارد شوید.',
+      'edit_english_level': 'سطح زبان خود را انتخاب کنید',
+      'level_not_set': 'انتخاب سطح',
     },
   };
 

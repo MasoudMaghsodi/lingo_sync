@@ -1,8 +1,18 @@
 /// Central repository for all application constants.
-/// 
+///
 /// This file contains hardcoded values like durations, timeouts, sizes, and API URLs.
 /// Using constants instead of magic numbers improves maintainability and consistency.
 abstract class AppConstants {
+  // ========================
+  // App Metadata
+  // ========================
+
+  /// Displayed in the "About" section of the settings drawer. Kept in
+  /// sync manually with the `version:` field in pubspec.yaml for now —
+  /// see ARCHITECTURE.md for a note on adding `package_info_plus` later
+  /// if this needs to be read automatically instead.
+  static const String appVersion = '1.0.0';
+
   // ========================
   // Duration Constants
   // ========================
@@ -122,22 +132,6 @@ abstract class AppConstants {
   static const String maxEnglishLevel = 'C2';
 
   // ========================
-  // Cache Constants
-  // ========================
-
-  /// Cache expiration time (24 hours)
-  static const Duration cacheExpiration = Duration(hours: 24);
-
-  /// Flashcard cache expiration (1 hour)
-  static const Duration flashcardCacheExpiration = Duration(hours: 1);
-
-  /// User stats cache expiration (5 minutes)
-  static const Duration userStatsCacheExpiration = Duration(minutes: 5);
-
-  /// Maximum cache size in MB
-  static const int maxCacheSizeMB = 100;
-
-  // ========================
   // English Levels (CEFR)
   // ========================
 
@@ -247,7 +241,8 @@ abstract class AppConstants {
   // ========================
 
   /// Email validation pattern
-  static const String emailRegex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailRegex =
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
   /// Password pattern - at least 8 chars, 1 uppercase, 1 number, 1 special char
   static const String passwordRegex =

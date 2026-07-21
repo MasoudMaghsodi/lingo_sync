@@ -50,6 +50,7 @@ dependencies:
   hive: ^2.2.3
   flutter_sound: ^9.30.0
   http: ^1.6.0
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
@@ -65,6 +66,11 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () =>
+              ref.read(appShellScaffoldKeyProvider).currentState?.openDrawer(),
+        ),
         title: Text(AppLocalizations.getString('smart_anki', isPersian)),
         actions: [
           // 🚀 دکمه جدید گنجینه گرامر

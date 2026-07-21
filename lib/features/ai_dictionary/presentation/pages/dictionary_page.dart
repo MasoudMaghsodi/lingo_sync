@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
 import 'package:lingo_sync/core/widgets/persian_content_text.dart';
@@ -118,6 +119,11 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () =>
+              ref.read(appShellScaffoldKeyProvider).currentState?.openDrawer(),
+        ),
         title: Text(
           'AI Hub',
           style: TextStyle(
@@ -126,16 +132,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
             letterSpacing: 1.2,
           ),
         ),
-        // actions: [
-        //   // 🚀 دکمه پومودورو در نوار بالایی برای فعال‌سازی راحت
-        //   IconButton(
-        //     icon: const Icon(Icons.timer_outlined),
-        //     onPressed: () {
-        //       ref.read(pomodoroProvider.notifier).setVisibility(true);
-        //       ref.read(pomodoroProvider.notifier).toggleTimer();
-        //     },
-        //   ),
-        // ],
       ),
       body: Stack(
         // 🚀 اضافه شدن Stack برای پومودورو

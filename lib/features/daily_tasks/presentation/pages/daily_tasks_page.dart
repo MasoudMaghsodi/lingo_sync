@@ -1,13 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
+
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/daily_tasks_provider.dart';
 import '../providers/selected_day_provider.dart';
@@ -88,6 +90,11 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () =>
+              ref.read(appShellScaffoldKeyProvider).currentState?.openDrawer(),
+        ),
         title: Column(
           children: [
             Text(

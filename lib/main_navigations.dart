@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/providers/pomodoro_provider.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/dictionary_page.dart';
@@ -9,6 +10,7 @@ import 'package:lingo_sync/features/ai_mentor/presentation/widgets/ai_mentor_she
 import 'package:lingo_sync/features/daily_tasks/presentation/pages/daily_tasks_page.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/pages/leaderboard_page.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/widgets/floating_pomodoro.dart';
+import 'package:lingo_sync/features/settings/presentation/widgets/app_drawer.dart';
 
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
@@ -19,11 +21,6 @@ class MainNavigation extends ConsumerStatefulWidget {
 class _MainNavigationState extends ConsumerState<MainNavigation> {
   int _currentIndex = 0;
 
-  // Which tabs have ever been shown. A tab's real page widget is only
-  // constructed the first time its index becomes active — before that we
-  // render an empty placeholder instead. This avoids subscribing to
-  // stream-backed providers (like the leaderboard) before the widget tree
-  // has even finished its first build.
   final Set<int> _builtIndices = {0};
 
   static final List<Widget Function()> _pageBuilders = [
@@ -48,19 +45,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   Widget build(BuildContext context) {
     final isPersian = ref.watch(isPersianProvider);
     final theme = Theme.of(context);
+    final scaffoldKey = ref.watch(appShellScaffoldKeyProvider);
 
-    // The floating Pomodoro overlay's ONLY signal for existing is
-    // isGloballyVisible — deliberately NOT combined with isRunning.
-    // Several legitimate in-panel actions (Reset, saving a custom time in
-    // Settings) set isRunning to false without the user ever asking to
-    // hide the panel; gating on isRunning too used to cause the entire
-    // overlay (and anything open inside it, like the settings dialog) to
-    // vanish the instant one of those actions ran. Its permanent home when
-    // hidden is PomodoroHomeCard on the Daily Tasks page.
     final pomodoro = ref.watch(pomodoroProvider);
     final showFloatingPomodoro = pomodoro.isGloballyVisible;
 
     return Scaffold(
+      key: scaffoldKey,
+      drawer: const AppSettingsDrawer(),
       body: Stack(
         children: [
           IndexedStack(
