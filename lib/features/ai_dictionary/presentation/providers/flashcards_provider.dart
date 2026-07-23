@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/models/flashcard_entry.dart';
 import '../../data/repositories/flashcard_sync_repository.dart';
 
 part 'flashcards_provider.g.dart';
@@ -8,7 +9,7 @@ part 'flashcards_provider.g.dart';
 @riverpod
 class Flashcards extends _$Flashcards {
   @override
-  Future<List<Map<String, dynamic>>> build() async {
+  Future<List<FlashcardEntry>> build() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return [];
 
@@ -20,9 +21,6 @@ class Flashcards extends _$Flashcards {
 
     // Refresh from the server in the background. If it turns up different
     // data, invalidate so the next build re-reads the (now fresh) cache.
-    // Previously this sync ran silently with no way for the UI to know it
-    // should re-read the cache, leaving the deck stale until the page was
-    // manually reopened.
     unawaited(
       repo.refreshDueFlashcardsFromRemote(userId).then((changed) {
         if (changed && ref.mounted) {
@@ -31,20 +29,19 @@ class Flashcards extends _$Flashcards {
       }),
     );
 
-    return cached;
+    // The repository (data layer) still deals in raw rows — this is the
+    // one place that maps them into the domain type the rest of the app
+    // sees.
+    return cached.map(FlashcardEntry.fromRow).toList();
   }
 
-  Future<void> reviewCard(
-    int flashcardId,
-    bool remembered,
-    Map<String, dynamic> currentData,
-  ) async {
+  Future<void> reviewCard(FlashcardEntry card, bool remembered) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
 
-    int repetition = currentData['repetition'] ?? 0;
-    int interval = currentData['interval'] ?? 0;
-    double easeFactor = (currentData['ease_factor'] ?? 2.5).toDouble();
+    int repetition = card.repetition;
+    int interval = card.interval;
+    double easeFactor = card.easeFactor;
 
     final int quality = remembered ? 4 : 1;
 
@@ -79,8 +76,8 @@ class Flashcards extends _$Flashcards {
     };
 
     if (state.hasValue) {
-      final newList = List<Map<String, dynamic>>.from(state.value!);
-      newList.removeWhere((item) => item['id'] == flashcardId);
+      final newList = List<FlashcardEntry>.from(state.value!);
+      newList.removeWhere((item) => item.id == card.id);
       state = AsyncData(newList);
     }
 
@@ -88,7 +85,7 @@ class Flashcards extends _$Flashcards {
         .read(flashcardSyncRepositoryProvider)
         .updateFlashcardReview(
           userId: userId,
-          flashcardId: flashcardId,
+          flashcardId: card.id,
           quality: quality,
           updatedData: updatedData,
         );

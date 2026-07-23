@@ -5,10 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/services/tts_service.dart';
-import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../data/models/flashcard_entry.dart';
 import '../providers/flashcards_provider.dart';
 import 'all_flashcards_page.dart';
 import 'all_grammar_page.dart'; // 🚀 ایمپورت صفحه جدید گرامر
@@ -35,16 +35,10 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
 
   Future<void> _speak(String text) => _tts.speak(text);
 
-  void _handleReview(
-    int flashcardId,
-    bool remembered,
-    Map<String, dynamic> currentData,
-  ) {
+  void _handleReview(FlashcardEntry card, bool remembered) {
     HapticFeedback.lightImpact();
     setState(() => _isFlipped = false);
-    ref
-        .read(flashcardsProvider.notifier)
-        .reviewCard(flashcardId, remembered, currentData);
+    ref.read(flashcardsProvider.notifier).reviewCard(card, remembered);
   }
 
   Future<void> _handleRefresh() async {
@@ -165,10 +159,6 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
               }
 
               final currentCard = flashcards.first;
-              final globalDict = currentCard['global_dictionary'] ?? {};
-              final aiAnalysis = globalDict['ai_analysis'] ?? {};
-              final word =
-                  aiAnalysis['word'] ?? globalDict['word'] ?? 'Unknown';
 
               return RefreshIndicator(
                 onRefresh: _handleRefresh,
@@ -240,14 +230,13 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                                   child: _isFlipped
                                       ? _FlashcardBack(
                                           key: const ValueKey(true),
-                                          word: word,
-                                          aiAnalysis: aiAnalysis,
+                                          card: currentCard,
                                           isPersian: isPersian,
                                           onSpeak: _speak,
                                         )
                                       : _FlashcardFront(
                                           key: const ValueKey(false),
-                                          word: word,
+                                          card: currentCard,
                                           isPersian: isPersian,
                                           onSpeak: _speak,
                                         ),
@@ -277,11 +266,8 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                                           ),
                                           elevation: 0,
                                         ),
-                                        onPressed: () => _handleReview(
-                                          currentCard['id'],
-                                          false,
-                                          currentCard,
-                                        ),
+                                        onPressed: () =>
+                                            _handleReview(currentCard, false),
                                         icon: const Icon(Icons.close),
                                         label: Text(
                                           AppLocalizations.getString(
@@ -314,11 +300,8 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                                             alpha: 0.5,
                                           ),
                                         ),
-                                        onPressed: () => _handleReview(
-                                          currentCard['id'],
-                                          true,
-                                          currentCard,
-                                        ),
+                                        onPressed: () =>
+                                            _handleReview(currentCard, true),
                                         icon: const Icon(Icons.check),
                                         label: Text(
                                           AppLocalizations.getString(
@@ -355,13 +338,13 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
 /// The front face of a flashcard: just the word, a speaker button, and a
 /// hint to tap for the answer.
 class _FlashcardFront extends StatelessWidget {
-  final String word;
+  final FlashcardEntry card;
   final bool isPersian;
   final Future<void> Function(String text) onSpeak;
 
   const _FlashcardFront({
     required super.key,
-    required this.word,
+    required this.card,
     required this.isPersian,
     required this.onSpeak,
   });
@@ -390,7 +373,7 @@ class _FlashcardFront extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                word.toUpperCase(),
+                card.word.toUpperCase(),
                 style: const TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
@@ -403,7 +386,7 @@ class _FlashcardFront extends StatelessWidget {
           const SizedBox(height: 24),
           IconButton(
             icon: const Icon(Icons.volume_up, size: 48, color: Colors.white70),
-            onPressed: () => onSpeak(word),
+            onPressed: () => onSpeak(card.word),
           ),
           const SizedBox(height: 48),
           Text(
@@ -417,20 +400,15 @@ class _FlashcardFront extends StatelessWidget {
 }
 
 /// The back face of a flashcard: full definition, part of speech, and
-/// (if available) an example sentence. The primary/secondary meaning
-/// lines swap positions based on [isPersian], but whichever one is
-/// actually the Persian string always gets explicit RTL direction via
-/// [PersianContentText] — independent of which position it's in.
+/// (if available) an example sentence.
 class _FlashcardBack extends StatelessWidget {
-  final String word;
-  final Map<String, dynamic> aiAnalysis;
+  final FlashcardEntry card;
   final bool isPersian;
   final Future<void> Function(String text) onSpeak;
 
   const _FlashcardBack({
     required super.key,
-    required this.word,
-    required this.aiAnalysis,
+    required this.card,
     required this.isPersian,
     required this.onSpeak,
   });
@@ -438,13 +416,6 @@ class _FlashcardBack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final examples = aiAnalysis['examples'] as List<dynamic>? ?? [];
-
-    final persianMeaning = (aiAnalysis['persian_meaning'] ?? '') as String;
-    final englishMeaning = (aiAnalysis['english_meaning'] ?? '') as String;
-
-    const primaryStyle = TextStyle(fontSize: 18, fontWeight: FontWeight.w500);
-    const secondaryStyle = TextStyle(fontSize: 16, color: Colors.grey);
 
     return Container(
       width: double.infinity,
@@ -474,7 +445,7 @@ class _FlashcardBack extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    word.toUpperCase(),
+                    card.word.toUpperCase(),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -484,11 +455,11 @@ class _FlashcardBack extends StatelessWidget {
                 ),
                 IconButton(
                   icon: Icon(Icons.volume_up, color: theme.colorScheme.primary),
-                  onPressed: () => onSpeak(word),
+                  onPressed: () => onSpeak(card.word),
                 ),
               ],
             ),
-            if (aiAnalysis['part_of_speech'] != null)
+            if (card.partOfSpeech.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -499,7 +470,7 @@ class _FlashcardBack extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  aiAnalysis['part_of_speech'],
+                  card.partOfSpeech,
                   style: TextStyle(
                     color: theme.colorScheme.primary,
                     fontStyle: FontStyle.italic,
@@ -507,15 +478,17 @@ class _FlashcardBack extends StatelessWidget {
                 ),
               ),
             const Divider(height: 32),
-            isPersian
-                ? PersianContentText(persianMeaning, style: primaryStyle)
-                : Text(englishMeaning, style: primaryStyle),
+            Text(
+              isPersian ? card.persianMeaning : card.englishMeaning,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 8),
-            isPersian
-                ? Text(englishMeaning, style: secondaryStyle)
-                : PersianContentText(persianMeaning, style: secondaryStyle),
+            Text(
+              isPersian ? card.englishMeaning : card.persianMeaning,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
             const SizedBox(height: 24),
-            if (examples.isNotEmpty) ...[
+            if (card.examples.isNotEmpty) ...[
               Text(
                 AppLocalizations.getString('example', isPersian),
                 style: const TextStyle(
@@ -532,7 +505,7 @@ class _FlashcardBack extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  examples.first.toString(),
+                  card.examples.first,
                   style: const TextStyle(
                     fontSize: 16,
                     fontStyle: FontStyle.italic,

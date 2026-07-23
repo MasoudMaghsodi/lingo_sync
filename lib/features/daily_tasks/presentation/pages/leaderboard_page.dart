@@ -8,31 +8,26 @@ import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/providers/settings_provider.dart';
+import '../../data/models/leaderboard_entry.dart';
 
 // ==== Data layer ====
 
-/// Fetches the profile → (name, avatar) map once, then merges it into
-/// every row emitted by the live `user_stats` realtime stream.
-///
-/// A single self-contained `StreamProvider` that fetches and subscribes
-/// directly — not a plain `Provider` combining two other *watched*
-/// providers. See the note that used to live here for why the
-/// "combinator watches providers" pattern caused a real mount-time crash.
-final leaderboardProvider = StreamProvider<List<Map<String, dynamic>>>((
+/// A single self-contained `StreamProvider` that fetches profiles once and
+/// subscribes directly to the live `user_stats` stream, mapping each
+/// emission into typed [LeaderboardEntry] values — not a plain `Provider`
+/// combining two other *watched* providers (see the note that used to
+/// live here for why that pattern caused a real mount-time crash).
+final leaderboardProvider = StreamProvider<List<LeaderboardEntry>>((
   ref,
 ) async* {
   final profilesData = await Supabase.instance.client
       .from('profiles')
       .select('id, full_name, avatar_url');
 
-  final profiles = <String, Map<String, String?>>{};
+  final profiles = <String, Map<String, dynamic>>{};
   for (final row in profilesData as List) {
     final id = row['id']?.toString();
-    if (id == null) continue;
-    profiles[id] = {
-      'full_name': row['full_name'] as String?,
-      'avatar_url': row['avatar_url'] as String?,
-    };
+    if (id != null) profiles[id] = row as Map<String, dynamic>;
   }
 
   yield* Supabase.instance.client
@@ -40,18 +35,14 @@ final leaderboardProvider = StreamProvider<List<Map<String, dynamic>>>((
       .stream(primaryKey: ['id'])
       .order('score', ascending: false)
       .map((stats) {
-        return stats.map((user) {
-          final id = user['id']?.toString();
-          final profile = profiles[id];
-          final name = profile?['full_name'];
-          return {
-            ...user,
-            'full_name': (name != null && name.trim().isNotEmpty)
-                ? name
-                : 'Unknown',
-            'avatar_url': profile?['avatar_url'],
-          };
-        }).toList();
+        return stats
+            .map(
+              (row) => LeaderboardEntry.fromStatsRow(
+                row,
+                profiles[row['id']?.toString()],
+              ),
+            )
+            .toList();
       });
 });
 
@@ -136,7 +127,7 @@ class LeaderboardPage extends ConsumerWidget {
                     if (index < 3) return const SizedBox.shrink();
                     final user = users[index];
                     final isMe =
-                        user['id'] ==
+                        user.id ==
                         Supabase.instance.client.auth.currentUser?.id;
                     return _ClimberRow(
                       rank: index + 1,
@@ -160,7 +151,7 @@ class LeaderboardPage extends ConsumerWidget {
 // ==== Podium: three peaks, each column fills fixed height via Expanded ====
 
 class _SummitPodium extends StatelessWidget {
-  final List<Map<String, dynamic>> users;
+  final List<LeaderboardEntry> users;
   final bool isPersian;
   final ThemeData theme;
   final bool isDark;
@@ -187,7 +178,6 @@ class _SummitPodium extends StatelessWidget {
                 peakFlex: 3,
                 color: isDark ? Colors.white70 : Colors.blueGrey.shade300,
                 theme: theme,
-                isPersian: isPersian,
               ),
             )
           else
@@ -201,7 +191,6 @@ class _SummitPodium extends StatelessWidget {
                 peakFlex: 4,
                 color: theme.colorScheme.primary,
                 theme: theme,
-                isPersian: isPersian,
                 crowned: true,
               ),
             ),
@@ -214,7 +203,6 @@ class _SummitPodium extends StatelessWidget {
                 peakFlex: 2,
                 color: isDark ? _bronzeDark : _bronze,
                 theme: theme,
-                isPersian: isPersian,
               ),
             )
           else
@@ -226,13 +214,12 @@ class _SummitPodium extends StatelessWidget {
 }
 
 class _Peak extends StatelessWidget {
-  final Map<String, dynamic> user;
+  final LeaderboardEntry user;
   final int rank;
   final int peakFlex;
   final Color color;
   final ThemeData theme;
   final bool crowned;
-  final bool isPersian;
 
   const _Peak({
     required this.user,
@@ -240,16 +227,15 @@ class _Peak extends StatelessWidget {
     required this.peakFlex,
     required this.color,
     required this.theme,
-    required this.isPersian,
     this.crowned = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final name = user['full_name']?.toString() ?? 'Unknown';
-    final avatarUrl = user['avatar_url'] as String?;
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    final isMe = user['id'] == Supabase.instance.client.auth.currentUser?.id;
+    final initial = user.fullName.isNotEmpty
+        ? user.fullName[0].toUpperCase()
+        : '?';
+    final isMe = user.id == Supabase.instance.client.auth.currentUser?.id;
     final size = crowned ? 56.0 : 46.0;
 
     return Column(
@@ -270,7 +256,7 @@ class _Peak extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: avatarUrl == null
+            gradient: user.avatarUrl == null
                 ? LinearGradient(
                     colors: [
                       color.withValues(alpha: 0.95),
@@ -280,9 +266,9 @@ class _Peak extends StatelessWidget {
                     end: Alignment.bottomRight,
                   )
                 : null,
-            image: avatarUrl != null
+            image: user.avatarUrl != null
                 ? DecorationImage(
-                    image: CachedNetworkImageProvider(avatarUrl),
+                    image: CachedNetworkImageProvider(user.avatarUrl!),
                     fit: BoxFit.cover,
                   )
                 : null,
@@ -301,7 +287,7 @@ class _Peak extends StatelessWidget {
             ],
           ),
           alignment: Alignment.center,
-          child: avatarUrl == null
+          child: user.avatarUrl == null
               ? Text(
                   initial,
                   style: const TextStyle(
@@ -314,7 +300,7 @@ class _Peak extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          name,
+          user.fullName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -326,7 +312,7 @@ class _Peak extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          '${user['score'] ?? 0} XP',
+          '${user.score} XP',
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.w800,
@@ -380,7 +366,7 @@ class _Peak extends StatelessWidget {
 
 class _ClimberRow extends StatelessWidget {
   final int rank;
-  final Map<String, dynamic> user;
+  final LeaderboardEntry user;
   final bool isMe;
   final bool isPersian;
   final ThemeData theme;
@@ -395,11 +381,9 @@ class _ClimberRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = user['full_name']?.toString() ?? 'Unknown';
-    final avatarUrl = user['avatar_url'] as String?;
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    final streak = user['streak_days'] ?? 0;
-    final score = user['score'] ?? 0;
+    final initial = user.fullName.isNotEmpty
+        ? user.fullName[0].toUpperCase()
+        : '?';
     final gold = theme.colorScheme.primary;
 
     return Padding(
@@ -448,7 +432,7 @@ class _ClimberRow extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: avatarUrl == null
+                gradient: user.avatarUrl == null
                     ? LinearGradient(
                         colors: [
                           gold.withValues(alpha: 0.9),
@@ -458,14 +442,14 @@ class _ClimberRow extends StatelessWidget {
                         end: Alignment.bottomRight,
                       )
                     : null,
-                image: avatarUrl != null
+                image: user.avatarUrl != null
                     ? DecorationImage(
-                        image: CachedNetworkImageProvider(avatarUrl),
+                        image: CachedNetworkImageProvider(user.avatarUrl!),
                         fit: BoxFit.cover,
                       )
                     : null,
               ),
-              child: avatarUrl == null
+              child: user.avatarUrl == null
                   ? Text(
                       initial,
                       style: const TextStyle(
@@ -482,7 +466,7 @@ class _ClimberRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    user.fullName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -501,7 +485,7 @@ class _ClimberRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        '$streak '
+                        '${user.streakDays} '
                         '${AppLocalizations.getString('days_suffix', isPersian)}',
                         style: TextStyle(
                           color: theme.colorScheme.onSurface.withValues(
@@ -523,7 +507,7 @@ class _ClimberRow extends StatelessWidget {
                 border: Border.all(color: gold.withValues(alpha: 0.4)),
               ),
               child: Text(
-                '$score XP',
+                '${user.score} XP',
                 style: TextStyle(
                   color: gold,
                   fontWeight: FontWeight.w800,

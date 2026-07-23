@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
-import '../../data/models/word_analysis_model.dart';
+import '../../data/models/flashcard_entry.dart';
 import '../widgets/archive/archive_card_tile.dart';
 import '../widgets/archive/archive_filters_panel.dart';
 import '../widgets/archive/archive_folder_bar.dart';
@@ -21,12 +21,10 @@ class AllFlashcardsPage extends ConsumerStatefulWidget {
 class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Cached in initState — see the note in VideoLessonPage for why
-  // ref.read must never be called inside dispose().
   late final TtsService _tts;
 
-  List<Map<String, dynamic>> _allCards = [];
-  List<Map<String, dynamic>> _filteredCards = [];
+  List<FlashcardEntry> _allCards = [];
+  List<FlashcardEntry> _filteredCards = [];
   bool _isLoading = true;
 
   final List<String> _selectedCefrLevels = [];
@@ -59,9 +57,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
   Future<void> _loadAllCards() async {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) {
-      return;
-    }
+    if (userId == null) return;
 
     try {
       final response = await _supabase
@@ -70,16 +66,16 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
+      final rows = List<Map<String, dynamic>>.from(response);
+      final cards = rows.map(FlashcardEntry.fromRow).toList();
+
       if (mounted) {
         setState(() {
-          _allCards = List<Map<String, dynamic>>.from(response);
-          // استخراج پوشه‌ها و نگه‌داشتن پوشه‌های پایه به‌عنوان گزینه‌های
-          // پیش‌فرض قابل‌انتخاب (نه اینکه غیرقابل‌تغییر باشن)
+          _allCards = cards;
           _folders = {'General', 'Grammar'};
-          for (final card in _allCards) {
-            if (card['folder_name'] != null &&
-                card['folder_name'].toString().trim().isNotEmpty) {
-              _folders.add(card['folder_name']);
+          for (final card in cards) {
+            if (card.folderName.trim().isNotEmpty) {
+              _folders.add(card.folderName);
             }
           }
           _applyAdvancedFilters();
@@ -97,33 +93,23 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
   void _applyAdvancedFilters() {
     setState(() {
       _filteredCards = _allCards.where((card) {
-        final globalDict = card['global_dictionary'] ?? {};
-        final aiAnalysisMap =
-            globalDict['ai_analysis'] ?? card['ai_analysis'] ?? {};
-        final wordData = WordAnalysis.fromJson(aiAnalysisMap);
-        final cardFolder = card['folder_name'] ?? 'General';
-
-        if (_currentFolder != 'All' && cardFolder != _currentFolder) {
+        if (_currentFolder != 'All' && card.folderName != _currentFolder) {
           return false;
         }
 
         if (_selectedCefrLevels.isNotEmpty) {
-          final hasLevel = wordData.synonymsByLevel.keys.any(
+          final hasLevel = card.synonymsByLevel.keys.any(
             (key) => _selectedCefrLevels.contains(key),
           );
-          if (!hasLevel) {
-            return false;
-          }
+          if (!hasLevel) return false;
         }
 
         if (_selectedPartsOfSpeech.isNotEmpty) {
-          final cleanPos = wordData.partOfSpeech.toLowerCase();
+          final cleanPos = card.partOfSpeech.toLowerCase();
           final matchPos = _selectedPartsOfSpeech.any(
             (pos) => cleanPos.contains(pos.toLowerCase()),
           );
-          if (!matchPos) {
-            return false;
-          }
+          if (!matchPos) return false;
         }
 
         return true;
@@ -202,9 +188,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     );
   }
 
-  /// 'All' is a display-only filter (not a real `folder_name` value), so it
-  /// can never be renamed or deleted — but General and Grammar are just
-  /// ordinary starting folders now and can be managed like any other.
   void _showFolderOptions(String folderName, bool isPersian) {
     if (folderName == 'All') return;
 
@@ -320,7 +303,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     }
   }
 
-  void _moveCardToFolder(Map<String, dynamic> card) {
+  void _moveCardToFolder(FlashcardEntry entry) {
     final theme = Theme.of(context);
     final isPersian = ref.read(isPersianProvider);
     HapticFeedback.lightImpact();
@@ -350,7 +333,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                 children: _folders.map((folder) {
                   return ActionChip(
                     label: Text(folder),
-                    backgroundColor: card['folder_name'] == folder
+                    backgroundColor: entry.folderName == folder
                         ? theme.colorScheme.primary.withValues(alpha: 0.2)
                         : null,
                     onPressed: () async {
@@ -360,7 +343,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                         await _supabase
                             .from('flashcards')
                             .update({'folder_name': folder})
-                            .eq('id', card['id']);
+                            .eq('id', entry.id);
                         await _loadAllCards();
                       } catch (e) {
                         setState(() => _isLoading = false);
@@ -415,7 +398,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                 _showFolderOptions(folder, isPersian),
           ),
           const Divider(height: 1),
-
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -432,17 +414,9 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                       padding: const EdgeInsets.all(16),
                       itemCount: _filteredCards.length,
                       itemBuilder: (context, index) {
-                        final card = _filteredCards[index];
-                        final globalDict = card['global_dictionary'] ?? {};
-                        final aiAnalysisMap =
-                            globalDict['ai_analysis'] ??
-                            card['ai_analysis'] ??
-                            {};
-                        final wordData = WordAnalysis.fromJson(aiAnalysisMap);
-
+                        final entry = _filteredCards[index];
                         return ArchiveCardTile(
-                          card: card,
-                          wordData: wordData,
+                          entry: entry,
                           isPersian: isPersian,
                           onSpeak: _speak,
                           onMove: _moveCardToFolder,

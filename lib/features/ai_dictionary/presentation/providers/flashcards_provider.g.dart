@@ -13,7 +13,7 @@ part of 'flashcards_provider.dart';
 final flashcardsProvider = FlashcardsProvider._();
 
 final class FlashcardsProvider
-    extends $AsyncNotifierProvider<Flashcards, List<Map<String, dynamic>>> {
+    extends $AsyncNotifierProvider<Flashcards, List<FlashcardEntry>> {
   FlashcardsProvider._()
     : super(
         from: null,
@@ -33,27 +33,24 @@ final class FlashcardsProvider
   Flashcards create() => Flashcards();
 }
 
-String _$flashcardsHash() => r'587348fd7e783929a1bb052011e27e51c7e23dcb';
+String _$flashcardsHash() => r'97fab876e74a689916069d2e366548ce420718c2';
 
-abstract class _$Flashcards extends $AsyncNotifier<List<Map<String, dynamic>>> {
-  FutureOr<List<Map<String, dynamic>>> build();
+abstract class _$Flashcards extends $AsyncNotifier<List<FlashcardEntry>> {
+  FutureOr<List<FlashcardEntry>> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
     final ref =
         this.ref
-            as $Ref<
-              AsyncValue<List<Map<String, dynamic>>>,
-              List<Map<String, dynamic>>
-            >;
+            as $Ref<AsyncValue<List<FlashcardEntry>>, List<FlashcardEntry>>;
     final element =
         ref.element
             as $ClassProviderElement<
               AnyNotifier<
-                AsyncValue<List<Map<String, dynamic>>>,
-                List<Map<String, dynamic>>
+                AsyncValue<List<FlashcardEntry>>,
+                List<FlashcardEntry>
               >,
-              AsyncValue<List<Map<String, dynamic>>>,
+              AsyncValue<List<FlashcardEntry>>,
               Object?,
               Object?
             >;

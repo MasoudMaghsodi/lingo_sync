@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/core/widgets/persian_content_text.dart';
-import '../../../data/models/word_analysis_model.dart';
+import '../../../data/models/flashcard_entry.dart';
 
 /// One expandable flashcard entry in `AllFlashcardsPage`'s archive list.
 class ArchiveCardTile extends StatelessWidget {
-  final Map<String, dynamic> card;
-  final WordAnalysis wordData;
+  final FlashcardEntry entry;
   final bool isPersian;
   final Future<void> Function(String text) onSpeak;
-  final void Function(Map<String, dynamic> card) onMove;
+  final void Function(FlashcardEntry entry) onMove;
 
   const ArchiveCardTile({
     super.key,
-    required this.card,
-    required this.wordData,
+    required this.entry,
     required this.isPersian,
     required this.onSpeak,
     required this.onMove,
@@ -23,18 +20,14 @@ class ArchiveCardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    const primaryStyle = TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
-    const secondaryStyle = TextStyle(color: Colors.grey);
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
           child: Text(
-            wordData.partOfSpeech.isNotEmpty
-                ? wordData.partOfSpeech.substring(0, 1).toUpperCase()
+            entry.partOfSpeech.isNotEmpty
+                ? entry.partOfSpeech.substring(0, 1).toUpperCase()
                 : 'W',
             style: TextStyle(
               color: theme.colorScheme.primary,
@@ -43,11 +36,11 @@ class ArchiveCardTile extends StatelessWidget {
           ),
         ),
         title: Text(
-          wordData.word.toUpperCase(),
+          entry.word.toUpperCase(),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         subtitle: Text(
-          '${AppLocalizations.getString('box', isPersian)} ${card['repetition'] ?? 0} • ${card['folder_name'] ?? 'General'}',
+          '${AppLocalizations.getString('box', isPersian)} ${entry.repetition} • ${entry.folderName}',
         ),
         childrenPadding: const EdgeInsets.all(16),
         children: [
@@ -55,12 +48,13 @@ class ArchiveCardTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: isPersian
-                    ? PersianContentText(
-                        wordData.persianMeaning,
-                        style: primaryStyle,
-                      )
-                    : Text(wordData.englishMeaning, style: primaryStyle),
+                child: Text(
+                  isPersian ? entry.persianMeaning : entry.englishMeaning,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               Row(
                 children: [
@@ -73,28 +67,26 @@ class ArchiveCardTile extends StatelessWidget {
                       'move_tooltip',
                       isPersian,
                     ),
-                    onPressed: () => onMove(card),
+                    onPressed: () => onMove(entry),
                   ),
                   IconButton(
                     icon: Icon(
                       Icons.volume_up,
                       color: theme.colorScheme.primary,
                     ),
-                    onPressed: () => onSpeak(wordData.word),
+                    onPressed: () => onSpeak(entry.word),
                   ),
                 ],
               ),
             ],
           ),
           const Divider(),
-          isPersian
-              ? Text(wordData.englishMeaning, style: secondaryStyle)
-              : PersianContentText(
-                  wordData.persianMeaning,
-                  style: secondaryStyle,
-                ),
+          Text(
+            isPersian ? entry.englishMeaning : entry.persianMeaning,
+            style: const TextStyle(color: Colors.grey),
+          ),
           const SizedBox(height: 12),
-          if (wordData.examples.isNotEmpty) ...[
+          if (entry.examples.isNotEmpty) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -104,7 +96,7 @@ class ArchiveCardTile extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    wordData.examples.first,
+                    entry.examples.first,
                     style: const TextStyle(fontStyle: FontStyle.italic),
                   ),
                 ),
@@ -115,10 +107,10 @@ class ArchiveCardTile extends StatelessWidget {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: wordData.synonymsByLevel.entries.map((entry) {
-              final levelColor = entry.key.contains('A')
+            children: entry.synonymsByLevel.entries.map((e) {
+              final levelColor = e.key.contains('A')
                   ? Colors.green
-                  : (entry.key.contains('B') ? Colors.blue : Colors.orange);
+                  : (e.key.contains('B') ? Colors.blue : Colors.orange);
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -126,7 +118,7 @@ class ArchiveCardTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${entry.key}: ${entry.value.word}',
+                  '${e.key}: ${e.value.word}',
                   style: TextStyle(
                     color: levelColor,
                     fontSize: 11,
