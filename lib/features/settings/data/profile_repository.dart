@@ -52,6 +52,15 @@ class ProfileRepository {
   /// see `leaderboard_page.dart` for why "a provider watching two other
   /// providers" is a real footgun. This lives entirely outside Riverpod's
   /// provider graph, sidestepping that class of bug entirely.
+  ///
+  /// Both subscriptions pass an `onError` handler that forwards into the
+  /// controller as a stream error — without this, a subscription failure
+  /// (e.g. a table not yet added to the `supabase_realtime` publication)
+  /// surfaces as an uncaught top-level exception instead of a normal
+  /// `AsyncValue.error` the UI can render gracefully. This is exactly what
+  /// happened with `profiles` before it was added to the publication (see
+  /// the accompanying SQL fix) — this handler is what makes any *future*
+  /// table with the same oversight fail safely instead of crashing.
   Stream<UserProfile> watchCurrentUserProfile() {
     final user = _supabase.auth.currentUser;
     if (user == null) {
@@ -81,6 +90,17 @@ class ProfileRepository {
       );
     }
 
+    void forwardError(Object error, StackTrace stackTrace) {
+      controller.addError(
+        errorHandler.toAppException(
+          error,
+          stackTrace,
+          context: 'ProfileRepository.watchCurrentUserProfile',
+        ),
+        stackTrace,
+      );
+    }
+
     late final StreamSubscription profileSub;
     late final StreamSubscription statsSub;
 
@@ -93,7 +113,7 @@ class ProfileRepository {
             .listen((rows) {
               latestProfile = rows.isNotEmpty ? rows.first : null;
               emitIfReady();
-            });
+            }, onError: forwardError);
 
         statsSub = _supabase
             .from('user_stats')
@@ -102,7 +122,7 @@ class ProfileRepository {
             .listen((rows) {
               latestStats = rows.isNotEmpty ? rows.first : null;
               emitIfReady();
-            });
+            }, onError: forwardError);
       },
       onCancel: () {
         profileSub.cancel();
@@ -169,9 +189,6 @@ class ProfileRepository {
           );
 
       final publicUrl = _supabase.storage.from('avatars').getPublicUrl(path);
-      // Cache-bust so the image widget actually reloads after a re-upload —
-      // the public URL for the same path otherwise looks identical to any
-      // HTTP/image cache.
       final bustedUrl =
           '$publicUrl?updated=${DateTime.now().millisecondsSinceEpoch}';
 

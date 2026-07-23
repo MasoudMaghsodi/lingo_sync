@@ -114,3 +114,31 @@ Supabase/پلتفرم) است: `Result`, `AppException`, `DailyTaskModel`,
 وابسته به Supabase (`AuthController`) یا platform channel (`TtsService`) در
 این فاز پوشش داده نشده‌اند چون نیازمند زیرساخت mock (مثل `mocktail` +
 `fake_async`) هستند که در فاز جداگانه‌ای می‌تواند اضافه شود.
+
+## CI/CD
+
+`.github/workflows/flutter_ci.yml` runs `build_runner`, format-check,
+`flutter analyze`, and `flutter test` on every push/PR to `main`. See
+`.github/workflows/README.md` for details.
+
+## Enterprise-readiness roadmap (Phase 4)
+
+Tracked here so this doesn't get re-litigated from scratch later:
+
+- [x] 4A — CI pipeline (analyze + test on every push)
+- [ ] 4B — Consistent domain layer across all features (not just auth):
+      thin `Entity`/`UseCase` types between repositories and UI, so
+      presentation never depends directly on Supabase's raw JSON row
+      shape.
+- [ ] 4C — Uniform folder structure per feature
+      (`data/{models,repositories}`, `domain/`, `presentation/{pages,
+      widgets,providers}`) applied consistently to `daily_tasks` and
+      `ai_mentor`, which currently have a shallower structure than
+      `ai_dictionary`/`auth`.
+- [ ] 4D — Remaining magic-number `EdgeInsets`/`BorderRadius` literals
+      migrated to `AppConstants` across older files (leaderboard_page.dart,
+      video_lesson widgets, archive widgets).
+- [ ] 4E — Widget tests for the highest-risk interactive flows (Pomodoro
+      timer, flashcard review flow, auth gate state transitions) and at
+      least one integration test for the login → daily tasks → flashcard
+      review path.
