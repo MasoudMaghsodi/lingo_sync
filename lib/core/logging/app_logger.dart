@@ -38,38 +38,19 @@ class AppLogger {
   /// Maximum number of log entries to keep in memory
   static const int maxHistorySize = 1000;
 
-  AppLogger({
-    LogLevel? minimumLevel,
-    bool? enableConsoleOutput,
-  })  : minimumLevel = minimumLevel ?? (kDebugMode ? LogLevel.debug : LogLevel.info),
-        enableConsoleOutput = enableConsoleOutput ?? kDebugMode;
+  AppLogger({LogLevel? minimumLevel, bool? enableConsoleOutput})
+    : minimumLevel =
+          minimumLevel ?? (kDebugMode ? LogLevel.debug : LogLevel.info),
+      enableConsoleOutput = enableConsoleOutput ?? kDebugMode;
 
   /// Log debug message (development only)
-  void debug(
-    String message, {
-    String? context,
-    Map<String, dynamic>? data,
-  }) {
-    _log(
-      level: LogLevel.debug,
-      message: message,
-      context: context,
-      data: data,
-    );
+  void debug(String message, {String? context, Map<String, dynamic>? data}) {
+    _log(level: LogLevel.debug, message: message, context: context, data: data);
   }
 
   /// Log info message (normal operation)
-  void info(
-    String message, {
-    String? context,
-    Map<String, dynamic>? data,
-  }) {
-    _log(
-      level: LogLevel.info,
-      message: message,
-      context: context,
-      data: data,
-    );
+  void info(String message, {String? context, Map<String, dynamic>? data}) {
+    _log(level: LogLevel.info, message: message, context: context, data: data);
   }
 
   /// Log warning message (something unusual but recoverable)
@@ -220,10 +201,7 @@ class AppLogger {
 }
 
 /// Initialize the global logger
-void initializeLogger({
-  LogLevel? minimumLevel,
-  bool? enableConsoleOutput,
-}) {
+void initializeLogger({LogLevel? minimumLevel, bool? enableConsoleOutput}) {
   logger = AppLogger(
     minimumLevel: minimumLevel,
     enableConsoleOutput: enableConsoleOutput,

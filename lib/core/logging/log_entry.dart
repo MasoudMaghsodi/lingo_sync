@@ -54,29 +54,31 @@ class LogEntry {
   /// Format for console output
   String toConsoleString() {
     final buffer = StringBuffer();
-    
+
     buffer.write('${level.colorCode}[${level.label}]${LogLevel.colorReset} ');
-    buffer.write('${timestamp.hour.toString().padLeft(2, '0')}:'
-        '${timestamp.minute.toString().padLeft(2, '0')}:'
-        '${timestamp.second.toString().padLeft(2, '0')} ');
-    
+    buffer.write(
+      '${timestamp.hour.toString().padLeft(2, '0')}:'
+      '${timestamp.minute.toString().padLeft(2, '0')}:'
+      '${timestamp.second.toString().padLeft(2, '0')} ',
+    );
+
     if (context != null) {
       buffer.write('[$context] ');
     }
-    
+
     buffer.write(message);
-    
+
     if (error != null) {
       buffer.write('\n  Error: $error');
     }
-    
+
     if (data != null && data!.isNotEmpty) {
       buffer.write('\n  Data: ');
       data!.forEach((key, value) {
         buffer.write('$key=$value, ');
       });
     }
-    
+
     return buffer.toString();
   }
 

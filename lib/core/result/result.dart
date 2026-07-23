@@ -8,7 +8,7 @@ import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 /// Example usage:
 /// ```dart
 /// Result<User> result = await userRepository.getUser(id);
-/// 
+///
 /// result.when(
 ///   success: (user) => print('User: ${user.name}'),
 ///   failure: (error) => print('Error: ${error.message}'),

@@ -20,10 +20,7 @@ sealed class AppException implements Exception {
   final String message;
   final StackTrace? stackTrace;
 
-  const AppException(
-    this.message, [
-    this.stackTrace,
-  ]);
+  const AppException(this.message, [this.stackTrace]);
 
   @override
   String toString() => 'AppException: $message';
@@ -37,14 +34,12 @@ final class AuthException extends AppException {
   /// Optional error code from auth service (e.g., 'invalid_credentials')
   final String? code;
 
-  const AuthException(
-    String message, {
-    this.code,
-    StackTrace? stackTrace,
-  }) : super(message, stackTrace);
+  const AuthException(String message, {this.code, StackTrace? stackTrace})
+    : super(message, stackTrace);
 
   @override
-  String toString() => 'AuthException${code != null ? '($code)' : ''}: $message';
+  String toString() =>
+      'AuthException${code != null ? '($code)' : ''}: $message';
 }
 
 /// Network-related exceptions (timeouts, connection failures, etc.)
@@ -66,7 +61,8 @@ final class NetworkException extends AppException {
   }) : super(message, stackTrace);
 
   @override
-  String toString() => 'NetworkException${statusCode != null ? '($statusCode)' : ''}: $message';
+  String toString() =>
+      'NetworkException${statusCode != null ? '($statusCode)' : ''}: $message';
 }
 
 /// Validation exceptions (invalid input, constraint violations)
@@ -123,11 +119,8 @@ final class CacheException extends AppException {
   /// Cache key that failed to retrieve or store
   final String? cacheKey;
 
-  const CacheException(
-    String message, {
-    this.cacheKey,
-    StackTrace? stackTrace,
-  }) : super(message, stackTrace);
+  const CacheException(String message, {this.cacheKey, StackTrace? stackTrace})
+    : super(message, stackTrace);
 
   @override
   String toString() => 'CacheException: $message';
@@ -152,7 +145,8 @@ final class FileException extends AppException {
   }) : super(message, stackTrace);
 
   @override
-  String toString() => 'FileException${operation != null ? '($operation)' : ''}: $message';
+  String toString() =>
+      'FileException${operation != null ? '($operation)' : ''}: $message';
 }
 
 /// Permission-related exceptions (unauthorized access, insufficient privileges)
@@ -200,7 +194,8 @@ final class ApiException extends AppException {
   }) : super(message, stackTrace);
 
   @override
-  String toString() => 'ApiException${statusCode != null ? '($statusCode)' : ''}: $message';
+  String toString() =>
+      'ApiException${statusCode != null ? '($statusCode)' : ''}: $message';
 }
 
 /// State management exceptions (invalid transitions, illegal operations)
