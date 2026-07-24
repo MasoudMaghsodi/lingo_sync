@@ -499,7 +499,7 @@ class _ClimberRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(
-                  AppConstants.standardBorderRadius,
+                  UIConstants.standardBorderRadius,
                 ),
                 color: gold.withValues(alpha: 0.12),
                 border: Border.all(color: gold.withValues(alpha: 0.4)),
@@ -531,7 +531,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.extraLargePadding),
+        padding: const EdgeInsets.all(UIConstants.extraLargePadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -583,7 +583,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.extraLargePadding),
+        padding: const EdgeInsets.all(UIConstants.extraLargePadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

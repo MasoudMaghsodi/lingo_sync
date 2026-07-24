@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/logging/app_logger.dart';
-import '../../../../core/providers/app_providers.dart';
+import 'package:lingo_sync/core/providers/settings_provider.dart';
 import '../../application/auth_providers.dart';
 import '../../domain/auth_failure.dart';
 

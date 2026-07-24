@@ -31,14 +31,14 @@ class VideoSummaryTab extends StatelessWidget {
     final theme = Theme.of(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(AppConstants.largePadding),
+      padding: const EdgeInsets.all(UIConstants.largePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-              const SizedBox(width: AppConstants.smallPadding),
+              const SizedBox(width: UIConstants.smallPadding),
               Text(
                 AppLocalizations.getString('smart_summary_title', isPersian),
                 style: const TextStyle(
@@ -48,13 +48,13 @@ class VideoSummaryTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppConstants.standardPadding),
+          const SizedBox(height: UIConstants.standardPadding),
           Container(
-            padding: const EdgeInsets.all(AppConstants.largePadding),
+            padding: const EdgeInsets.all(UIConstants.largePadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(
-                AppConstants.largeBorderRadius,
+                UIConstants.largeBorderRadius,
               ),
               boxShadow: [
                 BoxShadow(
@@ -77,7 +77,7 @@ class VideoSummaryTab extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.edit_note_rounded, color: theme.colorScheme.primary),
-              const SizedBox(width: AppConstants.smallPadding),
+              const SizedBox(width: UIConstants.smallPadding),
               Text(
                 AppLocalizations.getString('personal_notes_title', isPersian),
                 style: const TextStyle(
@@ -87,7 +87,7 @@ class VideoSummaryTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppConstants.standardPadding),
+          const SizedBox(height: UIConstants.standardPadding),
           if (isLoadingNote)
             const Center(child: CircularProgressIndicator())
           else
@@ -95,7 +95,7 @@ class VideoSummaryTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(
-                  AppConstants.largeBorderRadius,
+                  UIConstants.largeBorderRadius,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -118,7 +118,7 @@ class VideoSummaryTab extends StatelessWidget {
                     color: Colors.grey.withValues(alpha: 0.5),
                   ),
                   contentPadding: const EdgeInsets.all(
-                    AppConstants.largePadding,
+                    UIConstants.largePadding,
                   ),
                   border: InputBorder.none,
                 ),

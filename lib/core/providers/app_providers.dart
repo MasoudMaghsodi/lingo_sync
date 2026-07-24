@@ -10,5 +10,4 @@
 /// ```
 library;
 
-export 'pomodoro_provider.dart';
-export 'settings_provider.dart';
+export '../../features/daily_tasks/presentation/providers/pomodoro_provider.dart';

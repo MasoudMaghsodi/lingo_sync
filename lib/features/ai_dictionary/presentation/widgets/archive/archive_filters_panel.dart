@@ -55,7 +55,7 @@ class ArchiveFiltersPanel extends StatelessWidget {
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(AppConstants.standardPadding),
+          padding: const EdgeInsets.all(UIConstants.standardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -17,16 +17,16 @@ class VideoTranscriptTab extends StatelessWidget {
     final theme = Theme.of(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(AppConstants.largePadding),
+      padding: const EdgeInsets.all(UIConstants.largePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(AppConstants.largePadding),
+            padding: const EdgeInsets.all(UIConstants.largePadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(
-                AppConstants.largeBorderRadius,
+                UIConstants.largeBorderRadius,
               ),
               boxShadow: [
                 BoxShadow(

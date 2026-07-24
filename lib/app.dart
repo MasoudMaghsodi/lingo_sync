@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/app_messenger.dart';
+import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/auth/presentation/pages/auth_gate.dart';
 
-import 'core/providers/app_providers.dart';
 import 'core/theme/app_theme.dart';
 
 class LingoSyncApp extends ConsumerWidget {

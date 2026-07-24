@@ -25,7 +25,7 @@ class VideoGrammarTab extends StatelessWidget {
     final theme = Theme.of(context);
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(AppConstants.standardPadding),
+      padding: const EdgeInsets.all(UIConstants.standardPadding),
       itemCount: grammarPoints.length,
       itemBuilder: (context, index) => _GrammarPointCard(
         grammar: grammarPoints[index],
@@ -59,7 +59,7 @@ class _GrammarPointCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConstants.largeBorderRadius),
+        borderRadius: BorderRadius.circular(UIConstants.largeBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -69,7 +69,7 @@ class _GrammarPointCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.largePadding),
+        padding: const EdgeInsets.all(UIConstants.largePadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -101,7 +101,7 @@ class _GrammarPointCard extends StatelessWidget {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
-                        AppConstants.standardBorderRadius,
+                        UIConstants.standardBorderRadius,
                       ),
                     ),
                   ),
@@ -131,11 +131,11 @@ class _GrammarPointCard extends StatelessWidget {
             const SizedBox(height: 24),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(AppConstants.standardPadding),
+              padding: const EdgeInsets.all(UIConstants.standardPadding),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(
-                  AppConstants.standardBorderRadius,
+                  UIConstants.standardBorderRadius,
                 ),
               ),
               child: Column(

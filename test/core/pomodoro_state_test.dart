@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lingo_sync/core/providers/pomodoro_provider.dart';
+import 'package:lingo_sync/features/daily_tasks/presentation/providers/pomodoro_provider.dart';
 
 void main() {
   group('PomodoroState', () {

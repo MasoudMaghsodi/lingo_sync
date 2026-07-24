@@ -46,7 +46,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
       final position = (day - 1) * 65.0; // عرض تقریبی هر آیتم
       _scrollController.animateTo(
         position,
-        duration: AppConstants.animationDuration,
+        duration: UIConstants.animationDuration,
         curve: Curves.easeInOut,
       );
     }
@@ -122,14 +122,14 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
           Container(
             height: 75,
             margin: const EdgeInsets.symmetric(
-              vertical: AppConstants.smallPadding,
+              vertical: UIConstants.smallPadding,
             ),
             child: ListView.builder(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
               itemCount: 49,
               padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.standardPadding,
+                horizontal: UIConstants.standardPadding,
               ),
               itemBuilder: (context, index) {
                 final day = index + 1;
@@ -144,15 +144,15 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                     duration: const Duration(milliseconds: 250),
                     width: isSelected ? 65 : 55,
                     margin: EdgeInsets.only(
-                      left: isPersian ? AppConstants.smallPadding : 0,
-                      right: isPersian ? 0 : AppConstants.smallPadding,
+                      left: isPersian ? UIConstants.smallPadding : 0,
+                      right: isPersian ? 0 : UIConstants.smallPadding,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? theme.colorScheme.primary
                           : theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(
-                        AppConstants.largeBorderRadius,
+                        UIConstants.largeBorderRadius,
                       ),
                       border: Border.all(
                         color: isSelected
@@ -213,7 +213,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
               ),
               error: (error, stack) => Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.largePadding),
+                  padding: const EdgeInsets.all(UIConstants.largePadding),
                   child: Text(
                     error is AppException
                         ? errorHandler.getUserMessage(error)
@@ -253,23 +253,23 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: AppConstants.standardPadding,
+                    vertical: UIConstants.standardPadding,
                   ),
                   physics: const BouncingScrollPhysics(),
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     final task = tasks[index];
                     return AnimatedContainer(
-                      duration: AppConstants.animationDuration,
+                      duration: UIConstants.animationDuration,
                       margin: const EdgeInsets.only(
-                        bottom: AppConstants.standardPadding,
+                        bottom: UIConstants.standardPadding,
                       ),
                       decoration: BoxDecoration(
                         color: task.isCompleted
                             ? theme.colorScheme.primary.withValues(alpha: 0.05)
                             : theme.colorScheme.surface,
                         borderRadius: BorderRadius.circular(
-                          AppConstants.largeBorderRadius,
+                          UIConstants.largeBorderRadius,
                         ),
                         border: Border.all(
                           color: task.isCompleted
@@ -288,7 +288,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(
-                            AppConstants.largeBorderRadius,
+                            UIConstants.largeBorderRadius,
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -298,14 +298,14 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(
-                              AppConstants.standardPadding,
+                              UIConstants.standardPadding,
                             ),
                             child: Row(
                               children: [
                                 // آیکون نوع تسک
                                 Container(
                                   padding: const EdgeInsets.all(
-                                    AppConstants.smallPadding + 4,
+                                    UIConstants.smallPadding + 4,
                                   ),
                                   decoration: BoxDecoration(
                                     color: theme.colorScheme.primary.withValues(
@@ -320,7 +320,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                                   ),
                                 ),
                                 const SizedBox(
-                                  width: AppConstants.standardPadding,
+                                  width: UIConstants.standardPadding,
                                 ),
 
                                 // اطلاعات تسک
@@ -356,7 +356,7 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
 
                                 // دکمه تیک با انیمیشن
                                 AnimatedContainer(
-                                  duration: AppConstants.animationDuration,
+                                  duration: UIConstants.animationDuration,
                                   curve: Curves.easeInOutBack,
                                   width: 32,
                                   height: 32,

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/app_shell_provider.dart';
-import 'package:lingo_sync/core/providers/pomodoro_provider.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/dictionary_page.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/flashcards_page.dart';
 import 'package:lingo_sync/features/ai_mentor/presentation/widgets/ai_mentor_sheet.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/pages/daily_tasks_page.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/pages/leaderboard_page.dart';
+import 'package:lingo_sync/features/daily_tasks/presentation/providers/pomodoro_provider.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/widgets/floating_pomodoro.dart';
 import 'package:lingo_sync/features/settings/presentation/widgets/app_drawer.dart';
 

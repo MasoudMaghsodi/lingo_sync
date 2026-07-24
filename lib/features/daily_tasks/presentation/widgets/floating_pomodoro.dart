@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 
-import '../../../../core/providers/pomodoro_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../providers/pomodoro_provider.dart';
 
 const double _kIconSize = 56;
 const double _kPanelWidth = 236;

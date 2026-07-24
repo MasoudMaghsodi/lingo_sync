@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
-import '../../../../core/providers/pomodoro_provider.dart';
+
 import '../../../../core/providers/settings_provider.dart';
+import '../providers/pomodoro_provider.dart';
 
 /// The Pomodoro timer's permanent home: a static (non-floating) card shown
 /// at the top of `DailyTasksPage`.
@@ -36,13 +37,13 @@ class PomodoroHomeCard extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(
-        horizontal: AppConstants.standardPadding,
-        vertical: AppConstants.smallPadding,
+        horizontal: UIConstants.standardPadding,
+        vertical: UIConstants.smallPadding,
       ),
-      padding: const EdgeInsets.all(AppConstants.standardPadding),
+      padding: const EdgeInsets.all(UIConstants.standardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConstants.largeBorderRadius),
+        borderRadius: BorderRadius.circular(UIConstants.largeBorderRadius),
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.2),
         ),
@@ -53,7 +54,7 @@ class PomodoroHomeCard extends ConsumerWidget {
             pomodoro.isRunning ? Icons.timer_rounded : Icons.timer_outlined,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(width: AppConstants.smallPadding),
+          const SizedBox(width: UIConstants.smallPadding),
           Expanded(
             child: Text(
               pomodoro.isRunning

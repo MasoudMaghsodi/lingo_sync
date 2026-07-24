@@ -234,7 +234,7 @@ class AppSettingsDrawer extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               '${AppLocalizations.getString('app_version_label', isPersian)}: '
-              '${AppConstants.appVersion}',
+              '${BusinessConstants.appVersion}',
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 20),
@@ -352,7 +352,7 @@ class _ProfileHeader extends ConsumerWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: AppConstants.englishLevels.map((level) {
+              children: BusinessConstants.englishLevels.map((level) {
                 return ChoiceChip(
                   label: Text(level),
                   selected: profile.englishLevel == level,

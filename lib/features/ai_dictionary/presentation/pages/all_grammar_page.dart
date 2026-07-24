@@ -185,7 +185,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
           : RefreshIndicator(
               onRefresh: _loadAllGrammars,
               child: ListView.builder(
-                padding: const EdgeInsets.all(AppConstants.standardPadding),
+                padding: const EdgeInsets.all(UIConstants.standardPadding),
                 itemCount: _videoGroups.length,
                 itemBuilder: (context, index) {
                   final video = _videoGroups[index];
@@ -197,7 +197,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
 
                   return Card(
                     margin: const EdgeInsets.only(
-                      bottom: AppConstants.standardPadding,
+                      bottom: UIConstants.standardPadding,
                     ),
                     child: ExpansionTile(
                       initiallyExpanded: index == 0,
@@ -217,20 +217,20 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
                       ),
                       childrenPadding: const EdgeInsets.all(
-                        AppConstants.standardPadding,
+                        UIConstants.standardPadding,
                       ),
                       children: video.grammarPoints.map((grammar) {
                         return Container(
                           margin: const EdgeInsets.only(
-                            bottom: AppConstants.standardPadding,
+                            bottom: UIConstants.standardPadding,
                           ),
                           padding: const EdgeInsets.all(
-                            AppConstants.standardPadding,
+                            UIConstants.standardPadding,
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(
-                              AppConstants.standardBorderRadius,
+                              UIConstants.standardBorderRadius,
                             ),
                             border: Border.all(
                               color: theme.colorScheme.primary.withValues(
@@ -265,7 +265,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                                     alpha: 0.1,
                                   ),
                                   borderRadius: BorderRadius.circular(
-                                    AppConstants.standardBorderRadius,
+                                    UIConstants.standardBorderRadius,
                                   ),
                                 ),
                                 child: Row(

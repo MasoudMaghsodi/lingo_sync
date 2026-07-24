@@ -43,7 +43,7 @@ class ArchiveCardTile extends StatelessWidget {
         subtitle: Text(
           '${AppLocalizations.getString('box', isPersian)} ${entry.repetition} • ${entry.folderName}',
         ),
-        childrenPadding: const EdgeInsets.all(AppConstants.standardPadding),
+        childrenPadding: const EdgeInsets.all(UIConstants.standardPadding),
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

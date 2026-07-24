@@ -29,13 +29,13 @@ class ArchiveFolderBar extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.standardPadding,
-          vertical: AppConstants.smallPadding,
+          horizontal: UIConstants.standardPadding,
+          vertical: UIConstants.smallPadding,
         ),
         children: folders.map((folder) {
           final isSelected = currentFolder == folder;
           return Padding(
-            padding: const EdgeInsets.only(right: AppConstants.smallPadding),
+            padding: const EdgeInsets.only(right: UIConstants.smallPadding),
             child: GestureDetector(
               onLongPress: () => onFolderLongPress(folder),
               child: ChoiceChip(

@@ -23,7 +23,7 @@ class VideoVocabularyTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(AppConstants.standardPadding),
+      padding: const EdgeInsets.all(UIConstants.standardPadding),
       itemCount: vocabulary.length,
       itemBuilder: (context, index) => _VocabularyCard(
         word: vocabulary[index],
@@ -77,7 +77,7 @@ class _VocabularyCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConstants.largeBorderRadius),
+        borderRadius: BorderRadius.circular(UIConstants.largeBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -87,7 +87,7 @@ class _VocabularyCard extends ConsumerWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.standardPadding),
+        padding: const EdgeInsets.all(UIConstants.standardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -170,7 +170,7 @@ class _VocabularyCard extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(
-                      AppConstants.standardBorderRadius,
+                      UIConstants.standardBorderRadius,
                     ),
                     onLongPress: () {
                       final tempWord = WordAnalysis(
@@ -206,7 +206,7 @@ class _VocabularyCard extends ConsumerWidget {
                           color: levelColor.withValues(alpha: 0.3),
                         ),
                         borderRadius: BorderRadius.circular(
-                          AppConstants.standardBorderRadius,
+                          UIConstants.standardBorderRadius,
                         ),
                       ),
                       child: Row(

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'settings_provider.dart';
+import '../../../../core/providers/settings_provider.dart';
 
 part 'pomodoro_provider.g.dart';
 
