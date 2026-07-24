@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 
 /// Horizontal scrollable row of folder chips at the top of
 /// `AllFlashcardsPage` (below the filters panel). Long-pressing a
@@ -27,11 +28,14 @@ class ArchiveFolderBar extends StatelessWidget {
       color: theme.colorScheme.surface,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.standardPadding,
+          vertical: AppConstants.smallPadding,
+        ),
         children: folders.map((folder) {
           final isSelected = currentFolder == folder;
           return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: AppConstants.smallPadding),
             child: GestureDetector(
               onLongPress: () => onFolderLongPress(folder),
               child: ChoiceChip(

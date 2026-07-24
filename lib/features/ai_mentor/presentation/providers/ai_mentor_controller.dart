@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:lingo_sync/core/config/app_config.dart';
-import 'package:lingo_sync/features/ai_mentor/data/mentor_state.dart';
+import 'package:lingo_sync/features/ai_mentor/data/models/mentor_state.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_audio_service.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_socket_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

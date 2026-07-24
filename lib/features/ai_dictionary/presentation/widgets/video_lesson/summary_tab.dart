@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
@@ -30,14 +31,14 @@ class VideoSummaryTab extends StatelessWidget {
     final theme = Theme.of(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(AppConstants.largePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppConstants.smallPadding),
               Text(
                 AppLocalizations.getString('smart_summary_title', isPersian),
                 style: const TextStyle(
@@ -47,12 +48,14 @@ class VideoSummaryTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppConstants.standardPadding),
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppConstants.largePadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(
+                AppConstants.largeBorderRadius,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -74,7 +77,7 @@ class VideoSummaryTab extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.edit_note_rounded, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppConstants.smallPadding),
               Text(
                 AppLocalizations.getString('personal_notes_title', isPersian),
                 style: const TextStyle(
@@ -84,14 +87,16 @@ class VideoSummaryTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppConstants.standardPadding),
           if (isLoadingNote)
             const Center(child: CircularProgressIndicator())
           else
             Container(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(
+                  AppConstants.largeBorderRadius,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -112,7 +117,9 @@ class VideoSummaryTab extends StatelessWidget {
                   hintStyle: TextStyle(
                     color: Colors.grey.withValues(alpha: 0.5),
                   ),
-                  contentPadding: const EdgeInsets.all(24),
+                  contentPadding: const EdgeInsets.all(
+                    AppConstants.largePadding,
+                  ),
                   border: InputBorder.none,
                 ),
               ),

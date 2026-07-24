@@ -3,6 +3,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,11 +13,6 @@ import '../../data/models/leaderboard_entry.dart';
 
 // ==== Data layer ====
 
-/// A single self-contained `StreamProvider` that fetches profiles once and
-/// subscribes directly to the live `user_stats` stream, mapping each
-/// emission into typed [LeaderboardEntry] values — not a plain `Provider`
-/// combining two other *watched* providers (see the note that used to
-/// live here for why that pattern caused a real mount-time crash).
 final leaderboardProvider = StreamProvider<List<LeaderboardEntry>>((
   ref,
 ) async* {
@@ -502,7 +498,9 @@ class _ClimberRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  AppConstants.standardBorderRadius,
+                ),
                 color: gold.withValues(alpha: 0.12),
                 border: Border.all(color: gold.withValues(alpha: 0.4)),
               ),
@@ -533,7 +531,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppConstants.extraLargePadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -585,7 +583,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppConstants.extraLargePadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

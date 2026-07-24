@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/features/ai_mentor/controller/ai_mentor_controller.dart';
-import 'package:lingo_sync/features/ai_mentor/data/mentor_state.dart';
+import 'package:lingo_sync/features/ai_mentor/data/models/mentor_state.dart';
+import 'package:lingo_sync/features/ai_mentor/presentation/providers/ai_mentor_controller.dart';
 
 import '../../../../core/providers/settings_provider.dart';
 

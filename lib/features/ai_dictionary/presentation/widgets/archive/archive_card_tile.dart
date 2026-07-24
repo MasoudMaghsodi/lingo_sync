@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../../data/models/flashcard_entry.dart';
 
@@ -42,7 +43,7 @@ class ArchiveCardTile extends StatelessWidget {
         subtitle: Text(
           '${AppLocalizations.getString('box', isPersian)} ${entry.repetition} • ${entry.folderName}',
         ),
-        childrenPadding: const EdgeInsets.all(16),
+        childrenPadding: const EdgeInsets.all(AppConstants.standardPadding),
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

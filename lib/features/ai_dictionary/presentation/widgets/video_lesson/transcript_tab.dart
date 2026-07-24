@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/widgets/persian_content_text.dart';
 
 /// The "Transcript" tab of `VideoLessonPage`: the full, selectable,
@@ -16,15 +17,17 @@ class VideoTranscriptTab extends StatelessWidget {
     final theme = Theme.of(context);
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(AppConstants.largePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppConstants.largePadding),
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(
+                AppConstants.largeBorderRadius,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),

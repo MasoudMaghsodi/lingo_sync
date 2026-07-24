@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 
 /// The collapsible CEFR-level / part-of-speech filter panel shown at the
@@ -54,7 +55,7 @@ class ArchiveFiltersPanel extends StatelessWidget {
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(AppConstants.standardPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

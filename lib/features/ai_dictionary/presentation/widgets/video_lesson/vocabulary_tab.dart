@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import '../../../data/models/word_analysis_model.dart';
 import '../../providers/dictionary_provider.dart';
@@ -22,7 +23,7 @@ class VideoVocabularyTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppConstants.standardPadding),
       itemCount: vocabulary.length,
       itemBuilder: (context, index) => _VocabularyCard(
         word: vocabulary[index],
@@ -76,7 +77,7 @@ class _VocabularyCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppConstants.largeBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -86,7 +87,7 @@ class _VocabularyCard extends ConsumerWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(AppConstants.standardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -168,7 +169,9 @@ class _VocabularyCard extends ConsumerWidget {
                 return Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.standardBorderRadius,
+                    ),
                     onLongPress: () {
                       final tempWord = WordAnalysis(
                         word: entry.value.word,
@@ -202,7 +205,9 @@ class _VocabularyCard extends ConsumerWidget {
                         border: Border.all(
                           color: levelColor.withValues(alpha: 0.3),
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.standardBorderRadius,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

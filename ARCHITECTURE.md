@@ -130,14 +130,18 @@ Tracked here so this doesn't get re-litigated from scratch later:
       thin `Entity`/`UseCase` types between repositories and UI, so
       presentation never depends directly on Supabase's raw JSON row
       shape.
-- [ ] 4C — Uniform folder structure per feature
-      (`data/{models,repositories}`, `domain/`, `presentation/{pages,
-      widgets,providers}`) applied consistently to `daily_tasks` and
-      `ai_mentor`, which currently have a shallower structure than
-      `ai_dictionary`/`auth`.
-- [ ] 4D — Remaining magic-number `EdgeInsets`/`BorderRadius` literals
-      migrated to `AppConstants` across older files (leaderboard_page.dart,
-      video_lesson widgets, archive widgets).
+- [x] 4C — Uniform folder structure per feature. `daily_tasks` already
+      matched the standard shape on inspection (no changes needed).
+      `ai_mentor` was restructured: `mentor_state.dart` moved into
+      `data/models/`, and `ai_mentor_controller.dart` moved from its own
+      top-level `controller/` folder into `presentation/providers/` to
+      match every other feature's Riverpod-layer convention.
+- [x] 4D — Remaining magic-number `EdgeInsets`/`BorderRadius` literals
+      migrated to `AppConstants` in `leaderboard_page.dart` and all four
+      `video_lesson`/`archive` widget files. Values with no exact
+      `AppConstants` equivalent (e.g. bespoke `10/6` chip padding,
+      `blurRadius: 20` shadows) were deliberately left as-is rather than
+      forcing a mismatched constant onto them.
 - [ ] 4E — Widget tests for the highest-risk interactive flows (Pomodoro
       timer, flashcard review flow, auth gate state transitions) and at
       least one integration test for the login → daily tasks → flashcard

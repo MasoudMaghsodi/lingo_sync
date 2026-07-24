@@ -25,7 +25,7 @@ class VideoGrammarTab extends StatelessWidget {
     final theme = Theme.of(context);
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppConstants.standardPadding),
       itemCount: grammarPoints.length,
       itemBuilder: (context, index) => _GrammarPointCard(
         grammar: grammarPoints[index],
@@ -59,7 +59,7 @@ class _GrammarPointCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppConstants.largeBorderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -69,7 +69,7 @@ class _GrammarPointCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppConstants.largePadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -100,7 +100,9 @@ class _GrammarPointCard extends StatelessWidget {
                     foregroundColor: theme.colorScheme.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.standardBorderRadius,
+                      ),
                     ),
                   ),
                 ),
@@ -110,9 +112,6 @@ class _GrammarPointCard extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 16.0),
               child: Divider(),
             ),
-            // The label follows the UI language toggle (ambient
-            // direction is correct for it); the explanation body itself
-            // is always genuinely Persian, so it's wrapped separately.
             Text(
               AppLocalizations.getString(
                 'childlike_explanation_prefix',
@@ -132,7 +131,7 @@ class _GrammarPointCard extends StatelessWidget {
             const SizedBox(height: 24),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppConstants.standardPadding),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(
