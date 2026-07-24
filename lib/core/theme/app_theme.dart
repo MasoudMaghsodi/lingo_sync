@@ -1,23 +1,57 @@
 import 'package:flutter/material.dart';
 
-/// Central design system for the app: colors, typography, and every widget
-/// theme that gives Material components (AppBar, Card, Chip, SnackBar,
-/// etc.) a consistent look without each page having to redeclare its own
-/// BoxDecoration / TextStyle by hand.
-///
-/// [lightTheme] and [darkTheme] both build on top of a shared
-/// [_buildTheme] so the two variants never drift out of sync — adding a
-/// new themed property only needs to happen once.
+/// افزونه اختصاصی تم (ThemeExtension) برای رنگ‌هایی که در ColorScheme استاندارد جا نمی‌شوند.
+/// این روش باعث می‌شود سوئیچ بین تم دارک و لایت کاملاً انیمیشن‌دار (Smooth) و تایپ‌سیف باشد.
+class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
+  final Color mutedBorder;
+  final Color
+  aiHighlight; // رنگ اختصاصی برای بک‌گراند یا هاله بخش‌های هوش مصنوعی
+  final Color success; // رنگ موفقیت (برای اسنک‌بارها یا تیک‌ها)
+
+  const AppColorsExtension({
+    required this.mutedBorder,
+    required this.aiHighlight,
+    required this.success,
+  });
+
+  @override
+  ThemeExtension<AppColorsExtension> copyWith({
+    Color? mutedBorder,
+    Color? aiHighlight,
+    Color? success,
+  }) {
+    return AppColorsExtension(
+      mutedBorder: mutedBorder ?? this.mutedBorder,
+      aiHighlight: aiHighlight ?? this.aiHighlight,
+      success: success ?? this.success,
+    );
+  }
+
+  @override
+  ThemeExtension<AppColorsExtension> lerp(
+    covariant ThemeExtension<AppColorsExtension>? other,
+    double t,
+  ) {
+    if (other is! AppColorsExtension) return this;
+    return AppColorsExtension(
+      mutedBorder: Color.lerp(mutedBorder, other.mutedBorder, t)!,
+      aiHighlight: Color.lerp(aiHighlight, other.aiHighlight, t)!,
+      success: Color.lerp(success, other.success, t)!,
+    );
+  }
+}
+
+/// سیستم طراحی مرکزی اپلیکیشن (Design System)
 class AppTheme {
-  // پالت پرمیوم لایت‌مود (طلایی لوکس مات + پس‌زمینه عاجی ضد استرس چشم)
+  // پالت پرمیوم لایت‌مود
   static const Color goldPrimary = Color(0xFFC5A059);
   static const Color goldAccent = Color(0xFF9E7E38);
-  static const Color bgLight = Color(0xFFFDFBF7); // Warm Ivory / Soft Alabaster
+  static const Color bgLight = Color(0xFFFDFBF7);
   static const Color surfaceLight = Colors.white;
 
-  // پالت پرمیوم دارک‌مود (طلایی درخشان + خاکستری تیره یشمی محافظ چشم)
+  // پالت پرمیوم دارک‌مود
   static const Color goldDark = Color(0xFFE5C158);
-  static const Color bgDark = Color(0xFF1E2525); // Deep Slate Jade
+  static const Color bgDark = Color(0xFF1E2525);
   static const Color surfaceDark = Color(0xFF283232);
 
   static ThemeData get lightTheme => _buildTheme(
@@ -29,6 +63,8 @@ class AppTheme {
     error: const Color(0xFFBA1A1A),
     onSurface: Colors.black87,
     mutedBorder: Colors.grey.shade300,
+    aiHighlight: const Color(0xFFF0F4F8), // رنگ ملایم برای لایت‌مود
+    success: const Color(0xFF2E7D32),
   );
 
   static ThemeData get darkTheme => _buildTheme(
@@ -40,11 +76,10 @@ class AppTheme {
     error: const Color(0xFFFFB4AB),
     onSurface: Colors.white,
     mutedBorder: Colors.grey.shade800,
+    aiHighlight: const Color(0xFF1A2327), // رنگ تیره برای دارک‌مود
+    success: const Color(0xFF81C784),
   );
 
-  /// Builds a full [ThemeData] from a small set of brand colors. Both
-  /// [lightTheme] and [darkTheme] funnel through here so every themed
-  /// widget property below is defined exactly once.
   static ThemeData _buildTheme({
     required Brightness brightness,
     required Color primary,
@@ -54,6 +89,8 @@ class AppTheme {
     required Color error,
     required Color onSurface,
     required Color mutedBorder,
+    required Color aiHighlight,
+    required Color success,
   }) {
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -67,6 +104,12 @@ class AppTheme {
       onError: Colors.white,
     );
 
+    final appColorsExtension = AppColorsExtension(
+      mutedBorder: mutedBorder,
+      aiHighlight: aiHighlight,
+      success: success,
+    );
+
     final baseBorderRadius = BorderRadius.circular(16);
 
     OutlineInputBorder inputBorder(Color color, {double width = 1}) {
@@ -78,10 +121,10 @@ class AppTheme {
 
     return ThemeData(
       brightness: brightness,
-      primaryColor: primary,
       scaffoldBackgroundColor: background,
       colorScheme: colorScheme,
       useMaterial3: true,
+      extensions: [appColorsExtension], // تزریق اکستنشن به سیستم
       textTheme: _buildTextTheme(onSurface),
 
       appBarTheme: AppBarTheme(
@@ -101,7 +144,7 @@ class AppTheme {
         color: surface,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: baseBorderRadius),
       ),
 
       dividerTheme: DividerThemeData(
@@ -116,9 +159,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: baseBorderRadius),
         ),
       ),
 
@@ -166,9 +207,6 @@ class AppTheme {
         ),
       ),
 
-      // Floating + rounded to match the rest of the app's rounded-corner
-      // visual language, instead of the default full-width Material
-      // snackbar every page previously got implicitly.
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

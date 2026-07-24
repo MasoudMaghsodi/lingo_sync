@@ -1,15 +1,15 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/providers/settings_provider.dart';
 
 part 'pomodoro_provider.g.dart';
 
-// SharedPreferences keys used to persist a running session across app kill.
+// کلیدهای ذخیره‌سازی محلی (فقط مختص همین فیچر)
 const _kPrefMinutes = 'pomodoro_time';
 const _kPrefEndEpochMs = 'pomodoro_end_epoch_ms';
 const _kPrefWasRunning = 'pomodoro_was_running';
 
+/// مدل وضعیت پومودورو - کاملا Immutable (غیرقابل تغییر)
 class PomodoroState {
   final int remainingSeconds;
   final bool isRunning;
@@ -42,20 +42,9 @@ class PomodoroState {
   }
 }
 
-// keepAlive: true — without it, this notifier auto-disposes (and its Timer
-// gets cancelled) the moment no widget happens to be watching it, e.g. while
-// the user is on the login / awaiting-approval screen. That silently wipes
-// a running session for no good reason.
 @Riverpod(keepAlive: true)
 class Pomodoro extends _$Pomodoro {
   Timer? _timer;
-
-  // The actual wall-clock moment the current session should end. Ticking
-  // against this (instead of just doing `remainingSeconds - 1` every tick)
-  // means the countdown can never drift: even if the OS suspends the app's
-  // Dart timers for a while (backgrounded, screen locked, etc.), the moment
-  // they resume we recompute from the real target time and land on the
-  // correct remaining value instead of "pausing" during that gap.
   DateTime? _endTime;
 
   @override
@@ -63,23 +52,21 @@ class Pomodoro extends _$Pomodoro {
     final prefs = ref.watch(sharedPreferencesProvider);
     final savedMinutes = prefs.getInt(_kPrefMinutes) ?? 25;
 
+    // پاکسازی امن تایمر هنگام از بین رفتن پرووایدر
     ref.onDispose(() {
       _timer?.cancel();
+      _timer = null;
     });
 
-    // Try to recover a session that was running when the app was last closed.
     final wasRunning = prefs.getBool(_kPrefWasRunning) ?? false;
     final savedEndEpochMs = prefs.getInt(_kPrefEndEpochMs);
 
+    // بازیابی سشن قبلی در صورت بسته شدن ناگهانی اپلیکیشن
     if (wasRunning && savedEndEpochMs != null) {
       final endTime = DateTime.fromMillisecondsSinceEpoch(savedEndEpochMs);
       final diff = endTime.difference(DateTime.now()).inSeconds;
 
       if (diff > 0) {
-        // Session was still running when the app died — resume it exactly
-        // where it should be, and restart the ticker. Genuinely in
-        // progress, so it's correct for this to be globally visible right
-        // away.
         _endTime = endTime;
         _scheduleTicker();
         return PomodoroState(
@@ -90,10 +77,7 @@ class Pomodoro extends _$Pomodoro {
           isFinished: false,
         );
       } else {
-        // Session finished while the app was closed — surface it as
-        // finished once (so the user sees "Done!"), then clear the
-        // persisted session.
-        _clearPersistedSession(prefs);
+        _clearPersistedSession();
         return PomodoroState(
           remainingSeconds: savedMinutes * 60,
           isRunning: false,
@@ -104,12 +88,7 @@ class Pomodoro extends _$Pomodoro {
       }
     }
 
-    // Genuinely fresh state — nothing running, nothing to resume, nothing
-    // finished. isGloballyVisible starts false here so the floating
-    // overlay doesn't appear anywhere until the user explicitly starts (or
-    // reopens) the timer via PomodoroHomeCard. Previously this defaulted
-    // to true, which is what made the timer "wander" onto every page even
-    // when it had never been started.
+    // وضعیت کاملا جدید
     return PomodoroState(
       remainingSeconds: savedMinutes * 60,
       isRunning: false,
@@ -119,7 +98,8 @@ class Pomodoro extends _$Pomodoro {
     );
   }
 
-  void _clearPersistedSession(dynamic prefs) {
+  void _clearPersistedSession() {
+    final prefs = ref.read(sharedPreferencesProvider);
     prefs.remove(_kPrefEndEpochMs);
     prefs.setBool(_kPrefWasRunning, false);
   }
@@ -130,33 +110,33 @@ class Pomodoro extends _$Pomodoro {
   }
 
   void _tick() {
-    final endTime = _endTime;
-    if (endTime == null) {
+    if (_endTime == null) {
       _timer?.cancel();
       return;
     }
 
-    final diff = endTime.difference(DateTime.now()).inSeconds;
+    final diff = _endTime!.difference(DateTime.now()).inSeconds;
 
     if (diff > 0) {
-      // Only touch state when the value actually changed, to avoid
-      // redundant rebuilds if a tick fires slightly early.
       if (diff != state.remainingSeconds) {
         state = state.copyWith(remainingSeconds: diff);
       }
       return;
     }
 
-    // Finished.
+    // پایان زمان تمرکز
     _timer?.cancel();
     _endTime = null;
-    _clearPersistedSession(ref.read(sharedPreferencesProvider));
-    HapticFeedback.heavyImpact();
+    _clearPersistedSession();
+
     state = state.copyWith(
       isRunning: false,
       isFinished: true,
       remainingSeconds: state.defaultMinutes * 60,
     );
+
+    // نکته منتورینگ: ویبره (HapticFeedback) رو از اینجا حذف کردم.
+    // ویبره باید در لایه UI وقتی `isFinished` برابر true شد فراخوانی بشه.
   }
 
   void toggleTimer() {
@@ -192,28 +172,26 @@ class Pomodoro extends _$Pomodoro {
   void pauseTimer() {
     _timer?.cancel();
 
-    // Recompute the exact remaining time from the wall-clock target rather
-    // than trusting whatever the last per-second tick happened to store —
-    // this avoids an off-by-one-second pause.
-    final endTime = _endTime;
-    final remaining = endTime != null
-        ? endTime.difference(DateTime.now()).inSeconds.clamp(0, 1 << 30)
+    final remaining = _endTime != null
+        ? _endTime!.difference(DateTime.now()).inSeconds.clamp(0, 1 << 30)
         : state.remainingSeconds;
 
     _endTime = null;
-    _clearPersistedSession(ref.read(sharedPreferencesProvider));
+    _clearPersistedSession();
 
     state = state.copyWith(isRunning: false, remainingSeconds: remaining);
   }
 
   void setVisibility(bool visible) {
-    state = state.copyWith(isGloballyVisible: visible);
+    if (state.isGloballyVisible != visible) {
+      state = state.copyWith(isGloballyVisible: visible);
+    }
   }
 
   void resetTimer() {
     _timer?.cancel();
     _endTime = null;
-    _clearPersistedSession(ref.read(sharedPreferencesProvider));
+    _clearPersistedSession();
     state = state.copyWith(
       isRunning: false,
       isFinished: false,
@@ -227,7 +205,7 @@ class Pomodoro extends _$Pomodoro {
 
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setInt(_kPrefMinutes, minutes);
-    _clearPersistedSession(prefs);
+    _clearPersistedSession();
 
     state = state.copyWith(
       defaultMinutes: minutes,
