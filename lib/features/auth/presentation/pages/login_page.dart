@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/core/logging/app_logger.dart';
-import 'package:lingo_sync/core/providers/settings_provider.dart';
+import '../../../../core/constants/business_constants.dart';
+import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/logging/app_logger.dart';
+import '../../../../core/providers/settings_provider.dart';
 import '../../application/auth_providers.dart';
-import '../../domain/auth_failure.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -35,30 +36,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isValidName(String name) =>
       RegExp(r"^[a-zA-Z\s\u0600-\u06FF]+$").hasMatch(name);
 
-  /// Maps a data-layer [AuthFailureReason] to a user-facing message. This
-  /// stays as a switch (rather than plain AppLocalizations keys) because
-  /// it's a mapping *from an enum*, not a raw UI string — but every branch
-  /// still reads from AppLocalizations so the actual text lives in one
-  /// place.
-  String _describeFailure(AuthFailure failure, bool isPersian) {
-    switch (failure.reason) {
-      case AuthFailureReason.invalidCredentials:
-        return isPersian
-            ? 'ایمیل یا رمز عبور اشتباه است.'
-            : 'Invalid email or password.';
-      case AuthFailureReason.emailInUse:
-        return isPersian
-            ? 'این ایمیل قبلاً ثبت‌نام کرده است.'
-            : 'This email is already registered.';
-      case AuthFailureReason.weakPassword:
-        return isPersian ? 'رمز عبور ضعیف است.' : 'Password is too weak.';
-      case AuthFailureReason.network:
-        return isPersian
-            ? 'خطا در ارتباط با سرور. دوباره تلاش کنید.'
-            : 'Network error. Please try again.';
-      case AuthFailureReason.unknown:
-        return AppLocalizations.getString('unexpected_error', isPersian);
+  /// تبدیل کد خطای سیستم به متن قابل فهم برای کاربر
+  String _describeFailure(AppException exception, bool isPersian) {
+    if (exception is AuthException) {
+      switch (exception.code) {
+        case 'invalid_credentials':
+          return isPersian
+              ? 'ایمیل یا رمز عبور اشتباه است.'
+              : 'Invalid email or password.';
+        case 'email_in_use':
+          return isPersian
+              ? 'این ایمیل قبلاً ثبت‌نام کرده است.'
+              : 'This email is already registered.';
+        case 'weak_password':
+          return isPersian ? 'رمز عبور ضعیف است.' : 'Password is too weak.';
+      }
     }
+    if (exception is NetworkException) {
+      return isPersian
+          ? 'خطا در ارتباط با سرور. دوباره تلاش کنید.'
+          : 'Network error. Please try again.';
+    }
+    return AppLocalizations.getString('unexpected_error', isPersian);
   }
 
   Future<void> _authenticate() async {
@@ -82,34 +81,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       setState(() => _isLoading = false);
 
       final isPersian = ref.read(isPersianProvider);
-      result.match(
-        (failure) {
-          logger.warning(
-            'Authentication failed',
-            context: 'LoginPage._authenticate',
-            data: {
-              'mode': _isLoginMode ? 'signin' : 'signup',
-              'reason': failure.reason.toString(),
-            },
-          );
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_describeFailure(failure, isPersian)),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        },
-        (_) {
+      // استفاده استاندارد از Result Pattern اپلیکیشن خودمان
+      result.when(
+        success: (_) {
           logger.info(
             'Authentication successful',
             context: 'LoginPage._authenticate',
             data: {'mode': _isLoginMode ? 'signin' : 'signup'},
           );
-          // Nothing else to do here — AuthController is listening to the
-          // auth stream and will move the app to the right screen on its
-          // own the moment Supabase confirms the session.
+        },
+        failure: (exception) {
+          logger.warning(
+            'Authentication failed',
+            context: 'LoginPage._authenticate',
+            error: exception,
+            data: {'mode': _isLoginMode ? 'signin' : 'signup'},
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_describeFailure(exception, isPersian)),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
         },
       );
     } catch (e, st) {
@@ -309,9 +305,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             ),
                             validator: (value) {
+                              // استفاده از رِجِکس استاندارد سیستم (DRY Principle)
                               if (value == null ||
                                   !RegExp(
-                                    r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                    BusinessConstants.emailRegex,
                                   ).hasMatch(value)) {
                                 return AppLocalizations.getString(
                                   'invalid_email_error',
@@ -353,6 +350,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             ),
                             validator: (value) {
+                              // استفاده از رِجِکس استاندارد پسورد در صورت نیاز، اما اینجا فقط طول چک می‌شه طبق کد قبلیت
                               if (value == null || value.length < 8) {
                                 return AppLocalizations.getString(
                                   'password_min_length_error',
@@ -405,7 +403,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 }
 
 // ==== Reusable pieces ====
-
 class _HeroBadge extends StatelessWidget {
   final Color color;
   const _HeroBadge({required this.color});
@@ -468,8 +465,6 @@ class _AuthModeToggle extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // AlignmentDirectional resolves automatically for RTL/LTR, so
-          // this slides to the correct side regardless of app language.
           AnimatedAlign(
             duration: const Duration(milliseconds: 240),
             curve: Curves.easeOutCubic,

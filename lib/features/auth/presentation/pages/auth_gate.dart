@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/layout/main_navigation.dart';
-import 'package:lingo_sync/core/providers/settings_provider.dart';
-import 'package:lingo_sync/core/utils/app_messenger.dart';
 
+import '../../../../core/layout/main_navigation.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/utils/app_messenger.dart';
 import '../../application/auth_controller.dart';
 import '../../domain/auth_status.dart';
 import '../pages/awaiting_approval_page.dart';
 import '../pages/login_page.dart';
 
-/// The single place in the app that decides "which top-level screen is the
-/// user looking at right now", driven entirely by [AuthStatus]. Nothing
-/// below this widget needs to know or care about tokens, sessions, or
-/// approval — each screen just gets built once the state machine says
-/// it's time.
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
@@ -24,14 +20,24 @@ class AuthGate extends ConsumerWidget {
     ref.listen<AuthStatus>(authControllerProvider, (previous, next) {
       if (next is AuthError) {
         final isPersian = ref.read(isPersianProvider);
+
+        // حذف استرینگ‌های هاردکد شده و اتصال به معماری چندزبانگی
         final message = switch (next.reason) {
-          AuthErrorReason.approvalCheckFailed =>
-            isPersian
-                ? 'خطا در بررسی وضعیت حساب. اتصال خود را بررسی کنید.'
-                : 'Could not check your approval status. Check your connection.',
+          AuthErrorReason.approvalCheckFailed => AppLocalizations.getString(
+            'approval_check_failed',
+            isPersian,
+          ),
         };
+
+        // اطمینان از اینکه اگر کلید در فایل زبان نبود، پیامِ خالی نشان داده نشود (Fallback)
+        final displayMessage = message == 'approval_check_failed'
+            ? (isPersian
+                  ? 'خطا در بررسی وضعیت. اتصال را بررسی کنید.'
+                  : 'Connection error.')
+            : message;
+
         rootScaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(content: Text(message)),
+          SnackBar(content: Text(displayMessage)),
         );
       }
     });

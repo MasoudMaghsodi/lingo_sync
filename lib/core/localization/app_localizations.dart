@@ -166,6 +166,8 @@ class AppLocalizations {
       'login_toggle': 'Login',
       'signup_toggle': 'Sign up',
       'unexpected_error': 'An unexpected error occurred',
+      'approval_check_failed':
+          'Could not check your approval status. Please check your connection.',
 
       // ==== Settings drawer ====
       'theme_dark_mode': 'Dark Mode',
@@ -341,6 +343,8 @@ class AppLocalizations {
       'login_toggle': 'ورود',
       'signup_toggle': 'ثبت‌نام',
       'unexpected_error': 'خطای نامشخص',
+      'approval_check_failed':
+          'خطا در بررسی وضعیت حساب. اتصال اینترنت خود را بررسی کنید.',
 
       // ==== Settings drawer ====
       'theme_dark_mode': 'حالت تیره',

@@ -1,14 +1,11 @@
-import 'package:fpdart/fpdart.dart';
-import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
-import 'package:lingo_sync/core/logging/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
-
-import '../domain/auth_failure.dart';
+import '../../../core/exceptions/app_exceptions.dart';
+import '../../../core/logging/app_logger.dart';
+import '../../../core/result/result.dart';
 
 /// Wraps Supabase Auth plus the minimal profile bootstrap that has to
-/// happen right after a successful sign-up. Whether the user is *allowed
-/// in* (admin approval) is a separate concern — see [ApprovalRepository].
+/// happen right after a successful sign-up.
+///
 /// Authentication (who are you) and authorization (are you allowed in)
 /// change for different reasons and shouldn't live in the same class.
 class AuthRepository {
@@ -20,7 +17,7 @@ class AuthRepository {
       _supabase.auth.onAuthStateChange;
   supabase.User? get currentUser => _supabase.auth.currentUser;
 
-  Future<Either<AuthFailure, AuthResponse>> signUp({
+  Future<Result<supabase.AuthResponse>> signUp({
     required String email,
     required String password,
     required String fullName,
@@ -34,27 +31,14 @@ class AuthRepository {
 
       final user = response.user;
       if (user != null) {
-        // Part of the sign-up use case: every new account needs a row in
-        // `profiles` so the rest of the app (leaderboard, etc.) can show a
-        // name instead of a raw id. Non-fatal on failure — the account was
-        // still created successfully, and the row can be repaired later.
         try {
           await _supabase.from('profiles').upsert({
             'id': user.id,
             'full_name': fullName,
           });
-        } on DatabaseException catch (e) {
-          logger.warning(
-            'Failed to create profile row after signup',
-            context: 'AuthRepository.signUp',
-            error: e,
-            stackTrace: e.stackTrace,
-            data: {'userId': user.id},
-          );
-          // Non-fatal - account created successfully, profile can be repaired
         } catch (e, st) {
           logger.warning(
-            'Unexpected error creating profile row',
+            'Failed to create profile row after signup',
             context: 'AuthRepository.signUp',
             error: e is Exception ? e : Exception(e.toString()),
             stackTrace: st,
@@ -63,15 +47,17 @@ class AuthRepository {
         }
       }
 
-      return Right(response);
-    } on AuthException catch (e) {
-      return Left(_mapAuthException(e));
-    } catch (e) {
-      return Left(AuthFailure(AuthFailureReason.network, e.toString()));
+      return Result.success(response);
+    } on supabase.AuthException catch (e) {
+      return Result.failure(_mapAuthException(e));
+    } catch (e, st) {
+      return Result.failure(
+        UnknownException(e.toString(), originalException: e, stackTrace: st),
+      );
     }
   }
 
-  Future<Either<AuthFailure, AuthResponse>> signIn({
+  Future<Result<supabase.AuthResponse>> signIn({
     required String email,
     required String password,
   }) async {
@@ -80,31 +66,34 @@ class AuthRepository {
         email: email,
         password: password,
       );
-      return Right(response);
-    } on AuthException catch (e) {
-      return Left(_mapAuthException(e));
-    } catch (e) {
-      return Left(AuthFailure(AuthFailureReason.network, e.toString()));
+      return Result.success(response);
+    } on supabase.AuthException catch (e) {
+      return Result.failure(_mapAuthException(e));
+    } catch (e, st) {
+      return Result.failure(
+        UnknownException(e.toString(), originalException: e, stackTrace: st),
+      );
     }
   }
 
   Future<void> signOut() => _supabase.auth.signOut();
 
-  AuthFailure _mapAuthException(AuthException e) {
+  /// تبدیل ارورهای خام دیتابیس به ارورهای استاندارد سیستم خودمان
+  AuthException _mapAuthException(supabase.AuthException e) {
     final msg = e.message.toLowerCase();
+    String code = 'unknown';
 
     if (msg.contains('invalid') &&
         (msg.contains('credential') || msg.contains('login'))) {
-      return AuthFailure(AuthFailureReason.invalidCredentials, e.message);
-    }
-    if (msg.contains('already') ||
+      code = 'invalid_credentials';
+    } else if (msg.contains('already') ||
         msg.contains('registered') ||
         msg.contains('exists')) {
-      return AuthFailure(AuthFailureReason.emailInUse, e.message);
+      code = 'email_in_use';
+    } else if (msg.contains('password')) {
+      code = 'weak_password';
     }
-    if (msg.contains('password')) {
-      return AuthFailure(AuthFailureReason.weakPassword, e.message);
-    }
-    return AuthFailure(AuthFailureReason.unknown, e.message);
+
+    return AuthException(e.message, code: code);
   }
 }
