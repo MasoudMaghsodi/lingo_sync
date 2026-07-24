@@ -87,7 +87,7 @@ final class IsPersianProvider extends $NotifierProvider<IsPersian, bool> {
   }
 }
 
-String _$isPersianHash() => r'5452795a79cf12bc66688bfe00d60d12c8f583eb';
+String _$isPersianHash() => r'b18d04cbb30d70f7de6e73f1f85ffa6b4e37d2b4';
 
 abstract class _$IsPersian extends $Notifier<bool> {
   bool build();
@@ -138,7 +138,7 @@ final class IsDarkModeProvider extends $NotifierProvider<IsDarkMode, bool> {
   }
 }
 
-String _$isDarkModeHash() => r'7118fc576e97a785109fa752bf5beb3d28a727ab';
+String _$isDarkModeHash() => r'bfb0c34c17f5f78923ec51dacafe608672c1bdb6';
 
 abstract class _$IsDarkMode extends $Notifier<bool> {
   bool build();
