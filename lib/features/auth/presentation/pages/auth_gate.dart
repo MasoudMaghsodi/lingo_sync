@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/app_messenger.dart';
+import 'package:lingo_sync/core/layout/main_navigation.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
-import 'package:lingo_sync/main_navigations.dart';
+import 'package:lingo_sync/core/utils/app_messenger.dart';
 
 import '../../application/auth_controller.dart';
 import '../../domain/auth_status.dart';
