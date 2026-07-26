@@ -1,11 +1,11 @@
 import 'dart:convert';
-
-import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
-import 'package:lingo_sync/core/result/result.dart';
-import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
+import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../core/logging/app_logger.dart';
+import '../../../../core/result/result.dart';
+import '../../../../core/services/error_handler_service.dart';
 import '../models/word_analysis_model.dart';
 import '../services/ai_server_client.dart';
 
@@ -19,41 +19,55 @@ WordRepository wordRepository(Ref ref) {
   );
 }
 
-/// Owns single-word dictionary lookups and personal-flashcard creation
-/// from a [WordAnalysis]. Split out of the old God-object
-/// `DictionaryRepository`, which also handled video analysis and the
-/// offline flashcard-review cache — none of which belongs here.
-///
-/// [saveToPersonalFlashcards] is also how grammar points get saved — see
-/// `VideoLessonPage._saveGrammarToAnki`, which builds a [WordAnalysis] from
-/// a `GrammarPoint` and calls this with `folder: 'Grammar'`. Routing both
-/// through this single method (instead of grammar points doing their own
-/// raw insert) is what keeps every flashcard row in one consistent shape —
-/// `word_id` pointing at `global_dictionary` — rather than the two
-/// divergent shapes the app used to write.
 class WordRepository {
   final SupabaseClient _supabase;
   final AiServerClient _aiClient;
 
+  // قفل حافظه برای جلوگیری از Cache Stampede (درخواست‌های تکراری همزمان)
+  final Map<String, Future<Result<WordAnalysis>>> _inflightRequests = {};
+
   WordRepository(this._supabase, this._aiClient);
 
   Future<Result<WordAnalysis>> fetchWordAnalysis(String word) async {
-    try {
-      final cleanWord = word.trim().toLowerCase();
+    final cleanWord = word.trim().toLowerCase();
 
+    // اگر همین الان درخواستی برای این کلمه در حال پردازش است، همان را برگردان
+    if (_inflightRequests.containsKey(cleanWord)) {
+      logger.debug(
+        'Returning in-flight request for: $cleanWord',
+        context: 'WordRepository',
+      );
+      return _inflightRequests[cleanWord]!;
+    }
+
+    // ایجاد یک فیوچر جدید و ذخیره در مپ قفل
+    final requestFuture = _executeWordFetch(cleanWord);
+    _inflightRequests[cleanWord] = requestFuture;
+
+    try {
+      return await requestFuture;
+    } finally {
+      // چه موفق شد و چه شکست خورد، قفل را باز کن
+      await _inflightRequests.remove(cleanWord);
+    }
+  }
+
+  Future<Result<WordAnalysis>> _executeWordFetch(String cleanWord) async {
+    try {
       // 1. چک کردن کش دیتابیس گلوبال
       final cachedData = await _supabase
           .from('global_dictionary')
           .select()
           .eq('word', cleanWord)
           .maybeSingle();
+
       if (cachedData != null) {
         return Result<WordAnalysis>.success(
           WordAnalysis.fromJson(cachedData['ai_analysis']),
         );
       }
 
-      // 2. درخواست به سرور اختصاصی Node.js (با تلاش مجدد خودکار روی خطای شبکه)
+      // 2. درخواست به سرور اختصاصی Node.js
       final response = await errorHandler.executeWithRetry(
         operation: () => _aiClient.postJson('/analyze_word', {
           'word': cleanWord,
@@ -63,14 +77,11 @@ class WordRepository {
 
       final aiResult = WordAnalysis.fromJson(jsonDecode(response.body));
 
-      // onConflict: 'word' اینجا حیاتی است — بدون آن، اگر همزمان دو درخواست
-      // برای یک لغت جدید بیایند (یا کش سراسری بین چک اول و اینجا پر شده
-      // باشد)، upsert به‌جای آپدیت رکورد موجود، سعی در insert می‌کند و به
-      // قید یکتای «word» می‌خورد (خطای duplicate key که در لاگ دیده شد).
       await _supabase.from('global_dictionary').upsert({
         'word': cleanWord,
         'ai_analysis': aiResult.toJson(),
       }, onConflict: 'word');
+
       return Result<WordAnalysis>.success(aiResult);
     } catch (e, st) {
       return Result<WordAnalysis>.failure(
@@ -83,8 +94,6 @@ class WordRepository {
     }
   }
 
-  /// Saves [wordData] as a personal flashcard for the current user, under
-  /// [folder] (defaults to 'General').
   Future<Result<void>> saveToPersonalFlashcards(
     WordAnalysis wordData, {
     String folder = 'General',
@@ -107,9 +116,12 @@ class WordRepository {
           .single();
 
       await _supabase.from('flashcards').insert({
-        'user_id': user.id, 'word_id': globalRes['id'],
-        'folder_name': folder, // پوشه‌بندی برای لغات و گرامر
-        'repetition': 0, 'interval': 0, 'ease_factor': 2.5,
+        'user_id': user.id,
+        'word_id': globalRes['id'],
+        'folder_name': folder,
+        'repetition': 0,
+        'interval': 0,
+        'ease_factor': 2.5,
         'next_review_date': DateTime.now().toUtc().toIso8601String(),
       });
       return Result<void>.success(null);

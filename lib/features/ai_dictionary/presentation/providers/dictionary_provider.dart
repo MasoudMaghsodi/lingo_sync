@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/video_analysis_model.dart';
 import '../../data/models/word_analysis_model.dart';
@@ -30,12 +28,6 @@ class Dictionary extends _$Dictionary {
     }
   }
 
-  /// Saves [wordData] to the user's personal flashcards under [folder]
-  /// (defaults to 'General'). Also used to save grammar points — see
-  /// `VideoLessonPage._saveGrammarToAnki`, which builds a [WordAnalysis]
-  /// from a `GrammarPoint` and calls this with `folder: 'Grammar'` so every
-  /// flashcard row is written the same way regardless of where it came
-  /// from.
   Future<void> saveWordToFlashcards(
     WordAnalysis wordData, {
     String folder = 'General',
@@ -48,8 +40,7 @@ class Dictionary extends _$Dictionary {
 }
 
 // ==========================================
-// پرووایدر ویدیو (تغییر نام برای جلوگیری از تداخل با مدل VideoAnalysis)
-// بازگشت متد حیاتی processAllPendingVideos
+// پرووایدر پردازش ویدیو
 // ==========================================
 @riverpod
 class VideoProcessing extends _$VideoProcessing {
@@ -72,39 +63,18 @@ class VideoProcessing extends _$VideoProcessing {
   Future<void> processAllPendingVideos() async {
     state = const AsyncValue.loading();
     try {
-      final supabase = Supabase.instance.client;
-      final pendingTasks = await supabase
-          .from('daily_tasks')
-          .select()
-          .not('video_url', 'is', null)
-          .eq('is_ai_processed', false);
+      // 🚀 ارتباط مستقیم با Supabase حذف شد و به گارسون محول شد
+      final result = await ref
+          .read(videoAnalysisRepositoryProvider)
+          .processAllPendingVideos();
 
-      if (pendingTasks.isEmpty) {
-        state = const AsyncValue.error(
-          'تمام ویدیوها پردازش شده‌اند.',
-          StackTrace.empty,
-        );
-        return;
-      }
-
-      for (final task in pendingTasks) {
-        final videoUrl = task['video_url'] as String;
-        final taskId = task['id'] as int;
-
-        try {
-          final result = await ref
-              .read(videoAnalysisRepositoryProvider)
-              .processYoutubeVideo(videoUrl);
-          result.getOrThrow();
-          await supabase
-              .from('daily_tasks')
-              .update({'is_ai_processed': true})
-              .eq('id', taskId);
-        } catch (e) {
-          debugPrint('Skipped task $taskId: $e');
-        }
-      }
-      state = const AsyncValue.data(null);
+      result.when(
+        success: (_) => state = const AsyncValue.data(null),
+        failure: (error) => state = AsyncValue.error(
+          error.message,
+          error.stackTrace ?? StackTrace.empty,
+        ),
+      );
     } catch (e, stack) {
       state = AsyncValue.error('خطا در پردازش گروهی: $e', stack);
     }

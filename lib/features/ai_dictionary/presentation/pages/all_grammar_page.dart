@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/constants/app_constants.dart';
-import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/core/services/tts_service.dart';
-import 'package:lingo_sync/core/widgets/persian_content_text.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constants/ui_constants.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/services/tts_service.dart';
+import '../../../../core/widgets/persian_content_text.dart';
 import '../../data/models/video_analysis_model.dart';
+import '../../data/repositories/video_analysis_repository.dart';
 
-/// Local-only grouping used purely for display in this page — carries
-/// whatever is needed to build a human title ("Grammar video, Day 3")
-/// without changing the shared [VideoAnalysis] model other pages rely on.
 class _GrammarVideoGroup {
   final String videoId;
   final String? title;
@@ -36,10 +33,6 @@ class AllGrammarPage extends ConsumerStatefulWidget {
 }
 
 class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
-  // Cached in initState — see the note in VideoLessonPage for why
-  // ref.read must never be called inside dispose().
   late final TtsService _tts;
 
   List<_GrammarVideoGroup> _videoGroups = [];
@@ -79,15 +72,13 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
       'shadowing': 'شادوینگ',
       'dictation': 'دیکته',
     };
-    final map = isPersian ? faMap : enMap;
-    return map[key] ?? taskType;
+    return (isPersian ? faMap[key] : enMap[key]) ?? taskType;
   }
 
   String _buildTitle(_GrammarVideoGroup video, bool isPersian) {
     if (video.title != null && video.title!.trim().isNotEmpty) {
       return video.title!.trim();
     }
-
     if (video.dayNumber != null) {
       final typeLabel = _taskTypeLabel(video.taskType, isPersian);
       if (isPersian) {
@@ -100,7 +91,6 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
             : 'Video, Day ${video.dayNumber}';
       }
     }
-
     final shortId = video.videoId.substring(
       0,
       video.videoId.length.clamp(0, 6),
@@ -109,50 +99,34 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
   }
 
   Future<void> _loadAllGrammars() async {
-    try {
-      final response = await _supabase
-          .from('video_analysis')
-          .select('video_id, title, day_number, task_id, grammar_points')
-          .order('day_number', ascending: true);
+    if (mounted) setState(() => _isLoading = true);
 
-      final rows = response as List;
+    // 🚀 واگذاری به ریپازیتوری
+    final repo = ref.read(videoAnalysisRepositoryProvider);
+    final result = await repo.getAllGrammarVideos();
 
-      final taskIds = rows
-          .map((r) => r['task_id'])
-          .whereType<int>()
-          .toSet()
-          .toList();
-
-      final Map<int, String> taskTypesById = {};
-      if (taskIds.isNotEmpty) {
-        final tasksResponse = await _supabase
-            .from('daily_tasks')
-            .select('id, task_type')
-            .inFilter('id', taskIds);
-        for (final row in tasksResponse as List) {
-          taskTypesById[row['id'] as int] = row['task_type'] as String;
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _videoGroups = rows.map((data) {
-            final taskId = data['task_id'] as int?;
-            return _GrammarVideoGroup(
-              videoId: data['video_id'],
-              title: data['title'] as String?,
-              dayNumber: data['day_number'] as int?,
-              taskType: taskId != null ? taskTypesById[taskId] : null,
-              grammarPoints: (data['grammar_points'] as List)
-                  .map((e) => GrammarPoint.fromJson(e))
-                  .toList(),
-            );
-          }).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+    if (mounted) {
+      result.when(
+        success: (rows) {
+          setState(() {
+            _videoGroups = rows.map((data) {
+              return _GrammarVideoGroup(
+                videoId: data['video_id'],
+                title: data['title'] as String?,
+                dayNumber: data['day_number'] as int?,
+                taskType: data['task_type'] as String?,
+                grammarPoints: (data['grammar_points'] as List)
+                    .map((e) => GrammarPoint.fromJson(e))
+                    .toList(),
+              );
+            }).toList();
+            _isLoading = false;
+          });
+        },
+        failure: (_) {
+          setState(() => _isLoading = false);
+        },
+      );
     }
   }
 
@@ -213,8 +187,7 @@ class _AllGrammarPageState extends ConsumerState<AllGrammarPage> {
                         ),
                       ),
                       subtitle: Text(
-                        '${video.grammarPoints.length} '
-                        '${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
+                        '${video.grammarPoints.length} ${AppLocalizations.getString('grammar_points_suffix', isPersian)}',
                       ),
                       childrenPadding: const EdgeInsets.all(
                         UIConstants.standardPadding,

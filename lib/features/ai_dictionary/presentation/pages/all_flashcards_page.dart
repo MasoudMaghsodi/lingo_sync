@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/services/tts_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/services/tts_service.dart';
 import '../../data/models/flashcard_entry.dart';
+import '../../data/repositories/flashcard_sync_repository.dart';
 import '../widgets/archive/archive_card_tile.dart';
 import '../widgets/archive/archive_filters_panel.dart';
 import '../widgets/archive/archive_folder_bar.dart';
@@ -19,8 +19,6 @@ class AllFlashcardsPage extends ConsumerStatefulWidget {
 }
 
 class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
   late final TtsService _tts;
 
   List<FlashcardEntry> _allCards = [];
@@ -48,45 +46,43 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
     super.dispose();
   }
 
-  void _showActionError(Object error) {
+  void _showActionError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$error'), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
     );
   }
 
   Future<void> _loadAllCards() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    if (mounted) setState(() => _isLoading = true);
 
-    try {
-      final response = await _supabase
-          .from('flashcards')
-          .select('*, global_dictionary(*)')
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+    // 🚀 واگذاری به گارسون (ریپازیتوری)
+    final repo = ref.read(flashcardSyncRepositoryProvider);
+    final result = await repo.getAllFlashcards();
 
-      final rows = List<Map<String, dynamic>>.from(response);
-      final cards = rows.map(FlashcardEntry.fromRow).toList();
-
-      if (mounted) {
-        setState(() {
-          _allCards = cards;
-          _folders = {'General', 'Grammar'};
-          for (final card in cards) {
-            if (card.folderName.trim().isNotEmpty) {
-              _folders.add(card.folderName);
+    if (mounted) {
+      result.when(
+        success: (cards) {
+          setState(() {
+            _allCards = cards;
+            _folders = {'General', 'Grammar'};
+            for (final card in cards) {
+              if (card.folderName.trim().isNotEmpty) {
+                _folders.add(card.folderName);
+              }
             }
-          }
-          _applyAdvancedFilters();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showActionError(e);
-      }
+            _applyAdvancedFilters();
+            _isLoading = false;
+          });
+        },
+        failure: (error) {
+          setState(() => _isLoading = false);
+          _showActionError(error.message);
+        },
+      );
     }
   }
 
@@ -96,14 +92,12 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
         if (_currentFolder != 'All' && card.folderName != _currentFolder) {
           return false;
         }
-
         if (_selectedCefrLevels.isNotEmpty) {
           final hasLevel = card.synonymsByLevel.keys.any(
             (key) => _selectedCefrLevels.contains(key),
           );
           if (!hasLevel) return false;
         }
-
         if (_selectedPartsOfSpeech.isNotEmpty) {
           final cleanPos = card.partOfSpeech.toLowerCase();
           final matchPos = _selectedPartsOfSpeech.any(
@@ -111,7 +105,6 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
           );
           if (!matchPos) return false;
         }
-
         return true;
       }).toList();
     });
@@ -119,22 +112,18 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
   void _onCefrToggled(String level, bool checked) {
     setState(() {
-      if (checked) {
-        _selectedCefrLevels.add(level);
-      } else {
-        _selectedCefrLevels.remove(level);
-      }
+      checked
+          ? _selectedCefrLevels.add(level)
+          : _selectedCefrLevels.remove(level);
     });
     _applyAdvancedFilters();
   }
 
   void _onPosToggled(String pos, bool checked) {
     setState(() {
-      if (checked) {
-        _selectedPartsOfSpeech.add(pos);
-      } else {
-        _selectedPartsOfSpeech.remove(pos);
-      }
+      checked
+          ? _selectedPartsOfSpeech.add(pos)
+          : _selectedPartsOfSpeech.remove(pos);
     });
     _applyAdvancedFilters();
   }
@@ -174,9 +163,7 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
             ElevatedButton(
               onPressed: () {
                 if (controller.text.trim().isNotEmpty) {
-                  setState(() {
-                    _folders.add(controller.text.trim());
-                  });
+                  setState(() => _folders.add(controller.text.trim()));
                   Navigator.pop(context);
                 }
               },
@@ -263,19 +250,21 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                 if (newName.isNotEmpty && newName != oldName) {
                   Navigator.pop(context);
                   setState(() => _isLoading = true);
-                  try {
-                    final userId = _supabase.auth.currentUser?.id;
-                    await _supabase
-                        .from('flashcards')
-                        .update({'folder_name': newName})
-                        .eq('folder_name', oldName)
-                        .eq('user_id', userId!);
-                    if (_currentFolder == oldName) _currentFolder = newName;
-                    await _loadAllCards();
-                  } catch (e) {
-                    setState(() => _isLoading = false);
-                    _showActionError(e);
-                  }
+
+                  // 🚀 استفاده از ریپازیتوری
+                  final repo = ref.read(flashcardSyncRepositoryProvider);
+                  final result = await repo.renameFolder(oldName, newName);
+
+                  await result.when(
+                    success: (_) async {
+                      if (_currentFolder == oldName) _currentFolder = newName;
+                      await _loadAllCards();
+                    },
+                    failure: (error) {
+                      setState(() => _isLoading = false);
+                      _showActionError(error.message);
+                    },
+                  );
                 }
               },
               child: Text(AppLocalizations.getString('save', isPersian)),
@@ -288,19 +277,21 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
 
   Future<void> _deleteFolder(String folderName, bool isPersian) async {
     setState(() => _isLoading = true);
-    try {
-      final userId = _supabase.auth.currentUser?.id;
-      await _supabase
-          .from('flashcards')
-          .update({'folder_name': 'General'})
-          .eq('folder_name', folderName)
-          .eq('user_id', userId!);
-      if (_currentFolder == folderName) _currentFolder = 'All';
-      await _loadAllCards();
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showActionError(e);
-    }
+
+    // 🚀 استفاده از ریپازیتوری
+    final repo = ref.read(flashcardSyncRepositoryProvider);
+    final result = await repo.deleteFolder(folderName);
+
+    await result.when(
+      success: (_) async {
+        if (_currentFolder == folderName) _currentFolder = 'All';
+        await _loadAllCards();
+      },
+      failure: (error) {
+        setState(() => _isLoading = false);
+        _showActionError(error.message);
+      },
+    );
   }
 
   void _moveCardToFolder(FlashcardEntry entry) {
@@ -339,16 +330,18 @@ class _AllFlashcardsPageState extends ConsumerState<AllFlashcardsPage> {
                     onPressed: () async {
                       Navigator.pop(context);
                       setState(() => _isLoading = true);
-                      try {
-                        await _supabase
-                            .from('flashcards')
-                            .update({'folder_name': folder})
-                            .eq('id', entry.id);
-                        await _loadAllCards();
-                      } catch (e) {
-                        setState(() => _isLoading = false);
-                        _showActionError(e);
-                      }
+
+                      // 🚀 استفاده از ریپازیتوری
+                      final repo = ref.read(flashcardSyncRepositoryProvider);
+                      final result = await repo.moveFlashcard(entry.id, folder);
+
+                      await result.when(
+                        success: (_) async => _loadAllCards(),
+                        failure: (error) {
+                          setState(() => _isLoading = false);
+                          _showActionError(error.message);
+                        },
+                      );
                     },
                   );
                 }).toList(),

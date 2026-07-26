@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
-import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/core/providers/app_shell_provider.dart';
-import 'package:lingo_sync/core/services/error_handler_service.dart';
-import 'package:lingo_sync/core/services/tts_service.dart';
-import 'package:lingo_sync/core/widgets/persian_content_text.dart';
+import 'package:lingo_sync/core/theme/app_theme.dart';
 
+import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/app_shell_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/services/error_handler_service.dart';
+import '../../../../core/services/tts_service.dart';
+import '../../../../core/widgets/persian_content_text.dart';
 import '../../data/models/word_analysis_model.dart';
 import '../providers/dictionary_provider.dart';
 import 'video_lesson_page.dart';
@@ -24,8 +25,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _ytController = TextEditingController();
 
-  // Cached in initState — see the note in VideoLessonPage for why
-  // ref.read must never be called inside dispose().
   late final TtsService _tts;
 
   @override
@@ -49,23 +48,28 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
     if (url.isEmpty) return;
 
     FocusScope.of(context).unfocus();
+    // این پرووایدر در مرحله بعدی (ریفکتور پرووایدرها) آپدیت خواهد شد
     ref.read(videoProcessingProvider.notifier).analyzeYoutubeVideo(url);
   }
 
   void _saveWordToAnki(WordAnalysis wordData) async {
     await HapticFeedback.lightImpact();
     final isPersian = ref.read(isPersianProvider);
+
     try {
       await ref
           .read(dictionaryProvider.notifier)
           .saveWordToFlashcards(wordData);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               AppLocalizations.getString('added_to_flashcards', isPersian),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor:
+                Theme.of(context).extension<AppColorsExtension>()?.success ??
+                Colors.green,
           ),
         );
       }
@@ -75,7 +79,10 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
             ? errorHandler.getUserMessage(e)
             : AppLocalizations.getString('save_error', isPersian);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
         );
       }
     }
@@ -95,6 +102,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
         final message = error is AppException
             ? errorHandler.getUserMessage(error)
             : AppLocalizations.getString('ai_connection_error', isPersian);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -134,7 +142,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
         ),
       ),
       body: Stack(
-        // 🚀 اضافه شدن Stack برای پومودورو
         children: [
           SafeArea(
             child: Padding(
@@ -229,9 +236,7 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 32),
-
                   TextField(
                     controller: _searchController,
                     style: const TextStyle(
@@ -276,7 +281,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
                         .read(dictionaryProvider.notifier)
                         .analyzeWord(value),
                   ),
-
                   const SizedBox(height: 24),
                   Expanded(
                     child: searchState.when(
@@ -400,7 +404,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
           wordData.persianMeaning,
           style: const TextStyle(fontSize: 18, height: 1.6, color: Colors.grey),
         ),
-
         if (wordData.examples.isNotEmpty) ...[
           const SizedBox(height: 32),
           _buildSectionTitle(
@@ -429,7 +432,6 @@ class _DictionaryPageState extends ConsumerState<DictionaryPage> {
             ),
           ),
         ],
-
         if (wordData.synonymsByLevel.isNotEmpty) ...[
           const SizedBox(height: 32),
           _buildSectionTitle(

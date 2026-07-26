@@ -94,7 +94,7 @@ final class VideoProcessingProvider
   }
 }
 
-String _$videoProcessingHash() => r'9d6b58605e281340d4657865dbbd39e54fb41113';
+String _$videoProcessingHash() => r'd8f6cf878cd4f8996e8c888bae209ee51f42b28c';
 
 abstract class _$VideoProcessing extends $Notifier<AsyncValue<VideoAnalysis?>> {
   AsyncValue<VideoAnalysis?> build();

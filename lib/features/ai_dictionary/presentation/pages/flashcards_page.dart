@@ -3,15 +3,15 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/providers/app_shell_provider.dart';
-import 'package:lingo_sync/core/services/tts_service.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/app_shell_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../../core/services/tts_service.dart';
 import '../../data/models/flashcard_entry.dart';
 import '../providers/flashcards_provider.dart';
 import 'all_flashcards_page.dart';
-import 'all_grammar_page.dart'; // 🚀 ایمپورت صفحه جدید گرامر
+import 'all_grammar_page.dart';
 
 class FlashcardsPage extends ConsumerStatefulWidget {
   const FlashcardsPage({super.key});
@@ -22,9 +22,6 @@ class FlashcardsPage extends ConsumerStatefulWidget {
 
 class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
   bool _isFlipped = false;
-
-  // Cached in initState — see the note in VideoLessonPage for why
-  // ref.read must never be called inside dispose().
   late final TtsService _tts;
 
   @override
@@ -67,7 +64,6 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
         ),
         title: Text(AppLocalizations.getString('smart_anki', isPersian)),
         actions: [
-          // 🚀 دکمه جدید گنجینه گرامر
           IconButton(
             icon: Icon(
               Icons.rule_folder_outlined,
@@ -85,7 +81,6 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
               );
             },
           ),
-          // دکمه آرشیو لغات
           IconButton(
             icon: Icon(
               Icons.inventory_2_outlined,
@@ -172,8 +167,7 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
                         child: Column(
                           children: [
                             Text(
-                              '${flashcards.length} '
-                              '${AppLocalizations.getString('cards_left_suffix', isPersian)}',
+                              '${flashcards.length} ${AppLocalizations.getString('cards_left_suffix', isPersian)}',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontWeight: FontWeight.bold,
@@ -335,8 +329,6 @@ class _FlashcardsPageState extends ConsumerState<FlashcardsPage> {
   }
 }
 
-/// The front face of a flashcard: just the word, a speaker button, and a
-/// hint to tap for the answer.
 class _FlashcardFront extends StatelessWidget {
   final FlashcardEntry card;
   final bool isPersian;
@@ -399,8 +391,6 @@ class _FlashcardFront extends StatelessWidget {
   }
 }
 
-/// The back face of a flashcard: full definition, part of speech, and
-/// (if available) an example sentence.
 class _FlashcardBack extends StatelessWidget {
   final FlashcardEntry card;
   final bool isPersian;
