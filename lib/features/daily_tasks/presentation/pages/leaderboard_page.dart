@@ -3,44 +3,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lingo_sync/core/constants/app_constants.dart';
-import 'package:lingo_sync/core/localization/app_localizations.dart';
-import 'package:lingo_sync/core/providers/app_shell_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/providers/app_shell_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../data/models/leaderboard_entry.dart';
-
-// ==== Data layer ====
-
-final leaderboardProvider = StreamProvider<List<LeaderboardEntry>>((
-  ref,
-) async* {
-  final profilesData = await Supabase.instance.client
-      .from('profiles')
-      .select('id, full_name, avatar_url');
-
-  final profiles = <String, Map<String, dynamic>>{};
-  for (final row in profilesData as List) {
-    final id = row['id']?.toString();
-    if (id != null) profiles[id] = row as Map<String, dynamic>;
-  }
-
-  yield* Supabase.instance.client
-      .from('user_stats')
-      .stream(primaryKey: ['id'])
-      .order('score', ascending: false)
-      .map((stats) {
-        return stats
-            .map(
-              (row) => LeaderboardEntry.fromStatsRow(
-                row,
-                profiles[row['id']?.toString()],
-              ),
-            )
-            .toList();
-      });
-});
+import '../providers/leaderboard_provider.dart';
 
 // ==== Bronze accent: the one metal missing from AppTheme, kept local ====
 const Color _bronze = Color(0xFFB08D57);
@@ -51,7 +20,10 @@ class LeaderboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🚀 واگذاری دریافت اطلاعات به پرووایدرِ استاندارد
     final leaderboardState = ref.watch(leaderboardProvider);
+    final currentUserId = ref.watch(currentUserIdProvider);
+
     final isPersian = ref.watch(isPersianProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -110,6 +82,7 @@ class LeaderboardPage extends ConsumerWidget {
                   height: 300,
                   child: _SummitPodium(
                     users: users,
+                    currentUserId: currentUserId,
                     isPersian: isPersian,
                     theme: theme,
                     isDark: isDark,
@@ -122,9 +95,7 @@ class LeaderboardPage extends ConsumerWidget {
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index < 3) return const SizedBox.shrink();
                     final user = users[index];
-                    final isMe =
-                        user.id ==
-                        Supabase.instance.client.auth.currentUser?.id;
+                    final isMe = user.id == currentUserId;
                     return _ClimberRow(
                       rank: index + 1,
                       user: user,
@@ -144,16 +115,18 @@ class LeaderboardPage extends ConsumerWidget {
   }
 }
 
-// ==== Podium: three peaks, each column fills fixed height via Expanded ====
+// ==== Podium ====
 
 class _SummitPodium extends StatelessWidget {
   final List<LeaderboardEntry> users;
+  final String? currentUserId;
   final bool isPersian;
   final ThemeData theme;
   final bool isDark;
 
   const _SummitPodium({
     required this.users,
+    required this.currentUserId,
     required this.isPersian,
     required this.theme,
     required this.isDark,
@@ -170,6 +143,7 @@ class _SummitPodium extends StatelessWidget {
             Expanded(
               child: _Peak(
                 user: users[1],
+                currentUserId: currentUserId,
                 rank: 2,
                 peakFlex: 3,
                 color: isDark ? Colors.white70 : Colors.blueGrey.shade300,
@@ -183,6 +157,7 @@ class _SummitPodium extends StatelessWidget {
             Expanded(
               child: _Peak(
                 user: users[0],
+                currentUserId: currentUserId,
                 rank: 1,
                 peakFlex: 4,
                 color: theme.colorScheme.primary,
@@ -195,6 +170,7 @@ class _SummitPodium extends StatelessWidget {
             Expanded(
               child: _Peak(
                 user: users[2],
+                currentUserId: currentUserId,
                 rank: 3,
                 peakFlex: 2,
                 color: isDark ? _bronzeDark : _bronze,
@@ -211,6 +187,7 @@ class _SummitPodium extends StatelessWidget {
 
 class _Peak extends StatelessWidget {
   final LeaderboardEntry user;
+  final String? currentUserId;
   final int rank;
   final int peakFlex;
   final Color color;
@@ -219,6 +196,7 @@ class _Peak extends StatelessWidget {
 
   const _Peak({
     required this.user,
+    required this.currentUserId,
     required this.rank,
     required this.peakFlex,
     required this.color,
@@ -231,7 +209,7 @@ class _Peak extends StatelessWidget {
     final initial = user.fullName.isNotEmpty
         ? user.fullName[0].toUpperCase()
         : '?';
-    final isMe = user.id == Supabase.instance.client.auth.currentUser?.id;
+    final isMe = user.id == currentUserId;
     final size = crowned ? 56.0 : 46.0;
 
     return Column(
@@ -481,8 +459,7 @@ class _ClimberRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        '${user.streakDays} '
-                        '${AppLocalizations.getString('days_suffix', isPersian)}',
+                        '${user.streakDays} ${AppLocalizations.getString('days_suffix', isPersian)}',
                         style: TextStyle(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.55,

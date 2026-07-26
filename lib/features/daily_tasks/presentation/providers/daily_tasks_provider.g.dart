@@ -57,45 +57,11 @@ final class DailyTaskRepositoryProvider
 String _$dailyTaskRepositoryHash() =>
     r'9a7e0365a0f80d8e5cf822f30ec60c59e3ffc815';
 
-/// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-///
-/// Riverpod generates a family provider automatically because [build] takes
-/// an argument — this replaces the old hand-written
-/// `StateNotifierProvider.family`, so this module now follows the same
-/// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-/// Pomodoro, Settings, Dictionary, Mentor).
-//
-// keepAlive: true — the original StateNotifierProvider.family was a plain
-// (non-autoDispose) provider, so each day's fetched task list stayed cached
-// for the app's lifetime once loaded. Keeping that same behavior here.
-
 @ProviderFor(DailyTasks)
 final dailyTasksProvider = DailyTasksFamily._();
 
-/// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-///
-/// Riverpod generates a family provider automatically because [build] takes
-/// an argument — this replaces the old hand-written
-/// `StateNotifierProvider.family`, so this module now follows the same
-/// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-/// Pomodoro, Settings, Dictionary, Mentor).
-//
-// keepAlive: true — the original StateNotifierProvider.family was a plain
-// (non-autoDispose) provider, so each day's fetched task list stayed cached
-// for the app's lifetime once loaded. Keeping that same behavior here.
 final class DailyTasksProvider
     extends $AsyncNotifierProvider<DailyTasks, List<DailyTaskModel>> {
-  /// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-  ///
-  /// Riverpod generates a family provider automatically because [build] takes
-  /// an argument — this replaces the old hand-written
-  /// `StateNotifierProvider.family`, so this module now follows the same
-  /// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-  /// Pomodoro, Settings, Dictionary, Mentor).
-  //
-  // keepAlive: true — the original StateNotifierProvider.family was a plain
-  // (non-autoDispose) provider, so each day's fetched task list stayed cached
-  // for the app's lifetime once loaded. Keeping that same behavior here.
   DailyTasksProvider._({
     required DailyTasksFamily super.from,
     required int super.argument,
@@ -132,19 +98,7 @@ final class DailyTasksProvider
   }
 }
 
-String _$dailyTasksHash() => r'ca39c8f1e24fcf94f4c0a4e2367b490ff78f2803';
-
-/// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-///
-/// Riverpod generates a family provider automatically because [build] takes
-/// an argument — this replaces the old hand-written
-/// `StateNotifierProvider.family`, so this module now follows the same
-/// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-/// Pomodoro, Settings, Dictionary, Mentor).
-//
-// keepAlive: true — the original StateNotifierProvider.family was a plain
-// (non-autoDispose) provider, so each day's fetched task list stayed cached
-// for the app's lifetime once loaded. Keeping that same behavior here.
+String _$dailyTasksHash() => r'73164b86fbd08379973c97ce44bb4d77a910a09b';
 
 final class DailyTasksFamily extends $Family
     with
@@ -164,36 +118,12 @@ final class DailyTasksFamily extends $Family
         isAutoDispose: false,
       );
 
-  /// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-  ///
-  /// Riverpod generates a family provider automatically because [build] takes
-  /// an argument — this replaces the old hand-written
-  /// `StateNotifierProvider.family`, so this module now follows the same
-  /// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-  /// Pomodoro, Settings, Dictionary, Mentor).
-  //
-  // keepAlive: true — the original StateNotifierProvider.family was a plain
-  // (non-autoDispose) provider, so each day's fetched task list stayed cached
-  // for the app's lifetime once loaded. Keeping that same behavior here.
-
   DailyTasksProvider call(int dayNumber) =>
       DailyTasksProvider._(argument: dayNumber, from: this);
 
   @override
   String toString() => r'dailyTasksProvider';
 }
-
-/// Tasks for a single day of the 50-day plan, keyed by [dayNumber].
-///
-/// Riverpod generates a family provider automatically because [build] takes
-/// an argument — this replaces the old hand-written
-/// `StateNotifierProvider.family`, so this module now follows the same
-/// `@riverpod` code-gen pattern used across the rest of the app (Auth,
-/// Pomodoro, Settings, Dictionary, Mentor).
-//
-// keepAlive: true — the original StateNotifierProvider.family was a plain
-// (non-autoDispose) provider, so each day's fetched task list stayed cached
-// for the app's lifetime once loaded. Keeping that same behavior here.
 
 abstract class _$DailyTasks extends $AsyncNotifier<List<DailyTaskModel>> {
   late final _$args = ref.$arg as int;
