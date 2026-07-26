@@ -40,7 +40,7 @@ final class SelectedDayProvider extends $NotifierProvider<SelectedDay, int> {
   }
 }
 
-String _$selectedDayHash() => r'f6a2b9f299791c20f536d50dd203cc4ad32b1347';
+String _$selectedDayHash() => r'7e986c058825c9cb405fb04107d9e5d74ca63e96';
 
 abstract class _$SelectedDay extends $Notifier<int> {
   int build();

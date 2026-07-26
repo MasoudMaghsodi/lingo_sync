@@ -1,10 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
@@ -15,11 +14,6 @@ import 'package:lingo_sync/features/auth/application/auth_controller.dart';
 import '../../data/profile_repository.dart';
 import '../providers/profile_provider.dart';
 
-/// The app-wide settings/profile drawer, reachable from every top-level
-/// tab page via the menu button in its AppBar (see `AppShellScaffoldKey`).
-/// Shows the user's avatar, name, email, English level, quick stats, and
-/// the language/theme toggles, cache clearing, and logout that used to
-/// only be reachable from the login screen.
 class AppSettingsDrawer extends ConsumerWidget {
   const AppSettingsDrawer({super.key});
 
@@ -157,21 +151,29 @@ class AppSettingsDrawer extends ConsumerWidget {
 
     if (confirmed != true) return;
 
-    await Hive.box('flashcards_cache').clear();
-    await Hive.box('pending_sync').clear();
-    // 🚀 کش عکس‌های آواتار (و بقیه‌ی تصاویر شبکه‌ای) هم بخشی از "کش
-    // آفلاین" اپه — پاک‌کردن کش باید شامل این هم بشه.
-    await CachedNetworkImage.evictFromCache('');
-    await DefaultCacheManager().emptyCache();
+    // 🚀 واگذاری تمام عملیات پاکسازی کش به لایه دیتا (معماری Clean)
+    final result = await ref.read(profileRepositoryProvider).clearAppCache();
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.getString('clear_cache_success', isPersian),
-          ),
-          backgroundColor: Colors.green,
-        ),
+      result.when(
+        success: (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.getString('clear_cache_success', isPersian),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        },
+        failure: (error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorHandler.getUserMessage(error)),
+              backgroundColor: Colors.red,
+            ),
+          );
+        },
       );
     }
   }
@@ -233,8 +235,7 @@ class AppSettingsDrawer extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${AppLocalizations.getString('app_version_label', isPersian)}: '
-              '${BusinessConstants.appVersion}',
+              '${AppLocalizations.getString('app_version_label', isPersian)}: ${BusinessConstants.appVersion}',
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 20),
@@ -362,7 +363,7 @@ class _ProfileHeader extends ConsumerWidget {
                     final result = await ref
                         .read(profileRepositoryProvider)
                         .updateProfile(englishLevel: level);
-                    result.getExceptionOrNull(); // surfaced via stream refresh
+                    result.getExceptionOrNull();
                   },
                 );
               }).toList(),
@@ -430,9 +431,6 @@ class _AvatarPickerState extends ConsumerState<_AvatarPicker> {
       onTap: _isUploading ? null : _pickAndUpload,
       child: Stack(
         children: [
-          // 🚀 CachedNetworkImageProvider به‌جای NetworkImage خام — بعد از
-          // اولین دانلود، عکس روی دیسک کش می‌شه؛ دفعات بعد فوری از کش
-          // خونده می‌شه، نه دوباره از شبکه.
           CircleAvatar(
             radius: 36,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
@@ -513,16 +511,14 @@ class _StatsRow extends StatelessWidget {
           _StatChip(
             icon: Icons.local_fire_department_rounded,
             label:
-                '${profile.streakDays} '
-                '${AppLocalizations.getString('days_suffix', isPersian)}',
+                '${profile.streakDays} ${AppLocalizations.getString('days_suffix', isPersian)}',
             theme: theme,
           ),
           const SizedBox(width: 8),
           _StatChip(
             icon: Icons.calendar_today_rounded,
             label:
-                '${AppLocalizations.getString('day', isPersian)} '
-                '${profile.currentDay}',
+                '${AppLocalizations.getString('day', isPersian)} ${profile.currentDay}',
             theme: theme,
           ),
         ],

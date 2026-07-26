@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:lingo_sync/core/constants/storage_constants.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/result/result.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
@@ -14,9 +18,6 @@ ProfileRepository profileRepository(Ref ref) {
   return ProfileRepository(Supabase.instance.client);
 }
 
-/// A merged, read-model view of the current user across `profiles` and
-/// `user_stats` — the settings drawer needs fields from both tables, and
-/// callers shouldn't need to know that split.
 class UserProfile {
   final String id;
   final String email;
@@ -44,23 +45,6 @@ class ProfileRepository {
 
   ProfileRepository(this._supabase);
 
-  /// Streams the current user's profile + stats, merged, updating live if
-  /// either row changes (e.g. score ticking up from another device).
-  ///
-  /// This deliberately merges two realtime streams manually with a plain
-  /// `StreamController`, rather than combining two Riverpod providers —
-  /// see `leaderboard_page.dart` for why "a provider watching two other
-  /// providers" is a real footgun. This lives entirely outside Riverpod's
-  /// provider graph, sidestepping that class of bug entirely.
-  ///
-  /// Both subscriptions pass an `onError` handler that forwards into the
-  /// controller as a stream error — without this, a subscription failure
-  /// (e.g. a table not yet added to the `supabase_realtime` publication)
-  /// surfaces as an uncaught top-level exception instead of a normal
-  /// `AsyncValue.error` the UI can render gracefully. This is exactly what
-  /// happened with `profiles` before it was added to the publication (see
-  /// the accompanying SQL fix) — this handler is what makes any *future*
-  /// table with the same oversight fail safely instead of crashing.
   Stream<UserProfile> watchCurrentUserProfile() {
     final user = _supabase.auth.currentUser;
     if (user == null) {
@@ -140,7 +124,7 @@ class ProfileRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) {
       return Result<void>.failure(
-        const AuthException('No authenticated user', code: 'not_authenticated'),
+        const AuthException('Not authenticated', code: 'not_authenticated'),
       );
     }
 
@@ -163,10 +147,6 @@ class ProfileRepository {
     }
   }
 
-  /// Uploads a new avatar image to Supabase Storage (bucket `avatars`,
-  /// path scoped to the user's own folder so the storage policies allow
-  /// it) and updates the profile's `avatar_url` to the resulting public
-  /// URL.
   Future<Result<String>> uploadAvatar(
     List<int> bytes, {
     required String fileExtension,
@@ -174,7 +154,7 @@ class ProfileRepository {
     final user = _supabase.auth.currentUser;
     if (user == null) {
       return Result<String>.failure(
-        const AuthException('No authenticated user', code: 'not_authenticated'),
+        const AuthException('Not authenticated', code: 'not_authenticated'),
       );
     }
 
@@ -204,6 +184,43 @@ class ProfileRepository {
           e,
           st,
           context: 'ProfileRepository.uploadAvatar',
+        ),
+      );
+    }
+  }
+
+  // ==========================================
+  // متدهای جدید (پاکسازی معماری)
+  // ==========================================
+
+  /// 🚀 آپدیت کردن روز کاربر در دیتابیس تا AI Mentor متوجه تغییر روز بشود
+  Future<void> syncCurrentDayToDatabase(int day) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      await _supabase
+          .from('user_stats')
+          .update({'current_day': day})
+          .eq('id', user.id);
+    } catch (_) {
+      // این فقط یک آپدیت در پس‌زمینه است، اگر قطع بود مهم نیست.
+    }
+  }
+
+  /// 🚀 پاکسازی کش به صورت ایزوله در لایه دیتا
+  Future<Result<void>> clearAppCache() async {
+    try {
+      await Hive.box(StorageConstants.hiveBoxFlashcards).clear();
+      await Hive.box(StorageConstants.hiveBoxCache).clear();
+      await CachedNetworkImage.evictFromCache('');
+      await DefaultCacheManager().emptyCache();
+      return Result.success(null);
+    } catch (e, st) {
+      return Result.failure(
+        errorHandler.toAppException(
+          e,
+          st,
+          context: 'ProfileRepository.clearAppCache',
         ),
       );
     }
