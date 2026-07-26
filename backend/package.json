@@ -1,0 +1,15 @@
+{
+  "name": "yt-proxy",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.110.8",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.21.1",
+    "youtube-transcript": "^1.2.1"
+  }
+}

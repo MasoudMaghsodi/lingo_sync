@@ -1,148 +1,170 @@
-# LingoSync — Architecture Guide
+# LingoSync — Architecture & Engineering Guide
 
-این سند خلاصه‌ی معماری نهایی پروژه بعد از ریفکتور کامل (فازهای ۱ تا ۵) است. هدفش
-این است که تصمیمات معماری این‌جا مستند بمانند تا در توسعه‌ی آینده دوباره تکرار
-نشوند.
+[🇺🇸 English](#english) | [🇮🇷 فارسی](#فارسی)
 
-## ساختار پوشه‌ها
+---
 
+<a name="english"></a>
+## 🇺🇸 English
+
+This document describes the actual, current architecture of the LingoSync codebase — both the Flutter client and the Node.js backend — and the engineering principles enforced across it.
+
+### 1. Monorepo Layout
+
+```text
+lingo_sync/
+├── lib/                       # Flutter client
+├── backend/                   # Node.js services
+│   ├── server.js
+│   ├── ai-server.js
+│   ├── mentor-server.js
+│   ├── docker-compose.yml
+│   └── package.json
+├── test/                      # Mirrors lib/ structure
+│   ├── core/
+│   └── features/
+└── .github/workflows/         # flutter_ci.yml
+```
+
+### 2. Backend Services (`backend/`)
+
+The backend is split into three focused Node.js entry points rather than one monolith:
+
+| File | Responsibility |
+|---|---|
+| `server.js` | Main API server — auth, profile, daily tasks, leaderboard |
+| `ai-server.js` | Dictionary lookups, video transcript/grammar/vocabulary analysis |
+| `mentor-server.js` | Real-time WebSocket proxy between the Flutter client and the Gemini Live API |
+| `docker-compose.yml` | Orchestrates all services for local/production deployment |
+
+Separating the mentor's WebSocket proxy from the REST API keeps the low-latency audio path isolated from ordinary CRUD traffic.
+
+### 3. Flutter Client (`lib/`)
+
+```text
 lib/
-├── main.dart, app.dart, app_messenger.dart, main_navigations.dart
+├── main.dart
 ├── core/
-│   ├── config/          # AppConfig — تنها نقطه‌ی خواندن .env
-│   ├── constants/        # AppConstants — مقادیر ثابت UI/timing
-│   ├── exceptions/        # AppException سیل‌شده — قرارداد واحد خطا
-│   ├── result/            # Result<T> — wrapper موفقیت/شکست
-│   ├── services/          # ErrorHandlerService, TtsService (سراسری، keepAlive)
-│   ├── logging/            # AppLogger
-│   ├── localization/        # AppLocalizations — تمام رشته‌های دوزبانه
-│   ├── theme/                # AppTheme — تنها منبع رنگ/تایپوگرافی/شکل ویجت‌ها
-│   ├── extensions/            # BuildContextExtensions
-│   └── providers/               # Providerهای سراسری (settings, pomodoro)
+│   ├── app/                   # app.dart — root widget & app-level wiring
+│   ├── config/                # app_config.dart, app_bootstrap.dart
+│   ├── constants/              # app / business / network / storage / ui constants
+│   ├── exceptions/             # app_exceptions.dart — sealed AppException hierarchy
+│   ├── extensions/             # build_context_extensions.dart
+│   ├── layout/                 # main_navigation.dart
+│   ├── localization/           # app_localizations.dart
+│   ├── logging/                 # log_level, log_entry, app_logger
+│   ├── providers/               # app_providers, app_shell_provider, settings_provider
+│   ├── result/                  # result.dart — Result<T> wrapper
+│   ├── services/                 # error_handler_service, tts_service
+│   ├── theme/                    # app_theme.dart
+│   ├── utils/                    # app_messenger.dart
+│   └── widgets/                  # persian_content_text.dart
 └── features/
-├── auth/          # data → domain → application → presentation
-├── daily_tasks/
-├── ai_dictionary/
-└── ai_mentor/
+    ├── auth/
+    │   ├── application/           # auth_controller, auth_providers
+    │   ├── data/                  # auth_repository, approval_repository
+    │   ├── domain/                # auth_status.dart
+    │   └── presentation/pages/    # login_page, auth_gate, awaiting_approval_page
+    ├── ai_mentor/
+    │   ├── data/models/           # mentor_state.dart
+    │   ├── presentation/          # ai_mentor_controller, ai_mentor_sheet
+    │   └── services/              # mentor_socket_service, mentor_audio_service
+    ├── ai_dictionary/
+    │   ├── data/
+    │   │   ├── models/            # word_analysis, flashcard_entry, video_analysis
+    │   │   ├── repositories/      # word, flashcard_sync, video_analysis repositories
+    │   │   └── services/          # ai_server_client
+    │   └── presentation/
+    │       ├── pages/             # dictionary, flashcards, all_flashcards, all_grammar, video_lesson
+    │       ├── providers/         # dictionary_provider, flashcards_provider
+    │       └── widgets/           # archive/*, video_lesson/*
+    ├── daily_tasks/
+    │   ├── data/                  # daily_task_model, leaderboard_entry, daily_task_repository
+    │   └── presentation/
+    │       ├── pages/             # daily_tasks_page, leaderboard_page
+    │       ├── providers/         # daily_tasks, leaderboard, pomodoro, selected_day
+    │       └── widgets/           # floating_pomodoro, pomodoro_home_card
+    └── settings/
+        ├── data/                  # profile_repository
+        └── presentation/
+            ├── providers/         # profile_provider
+            └── widgets/           # app_drawer
+```
 
-هر فیچر لایه‌بندی `data/ → (domain/) → presentation/` را دنبال می‌کند:
-- **data/repositories**: تنها لایه‌ای که مستقیم با Supabase/HTTP/Hive کار می‌کند.
-- **data/models**: کلاس‌های `fromJson`/`toJson`.
-- **presentation/providers**: پل بین ریپازیتوری و UI (Riverpod `@riverpod`).
-- **presentation/pages, presentation/widgets**: فقط UI.
+### 4. Feature Layering (Clean Architecture)
 
-## قرارداد خطا (Error Handling)
+Every feature strictly follows: `data/ → (domain/) → presentation/`
 
-- **هر متد ریپازیتوری که ممکن است شکست بخورد، `Future<Result<T>>` برمی‌گرداند**،
-  نه throw خام و نه `Either<String, T>`.
-- خطاها همیشه از نوع `AppException` (یا زیرکلاس‌های آن در
-  `core/exceptions/app_exceptions.dart`) هستند.
-- لایه‌ی provider با `result.getOrThrow()` نتیجه را باز می‌کند؛ این throw توسط
-  `AsyncNotifier`/`@riverpod` گرفته و به `AsyncValue.error` تبدیل می‌شود.
-- لایه‌ی UI هرگز پیام خطا را خودش نمی‌سازد؛ از
-  `errorHandler.getUserMessage(exception)` استفاده می‌کند تا پیام یکدست و
-  ترجمه‌شده باشد.
-- درخواست‌های شبکه‌ای حساس (AI server) از `errorHandler.executeWithRetry`
-  عبور می‌کنند تا خطاهای موقتی شبکه به‌طور خودکار retry شوند.
+- **`data/repositories`** — the *only* layer permitted to talk to the network, `Hive`, or `SharedPreferences`. UI code never touches storage or HTTP directly.
+- **`data/models`** — immutable data classes with safe `fromJson`/`toJson` mappings.
+- **`presentation/providers`** — Riverpod (`@riverpod`) controllers that orchestrate state; they call repositories, they never issue raw queries themselves.
+- **`presentation/pages` & `widgets`** — purely declarative UI, no business logic.
 
-## قرارداد i18n
+`auth` additionally has an `application/` layer and a `domain/` layer (`auth_status.dart`) since its state machine (unauthenticated → pending approval → authenticated) is more complex than a typical feature.
 
-- **هیچ رشته‌ی UI جدیدی نباید مستقیم `isPersian ? '...' : '...'` نوشته شود.**
-  همه‌ی رشته‌ها باید کلید جدید در `AppLocalizations._localizedValues` باشند و
-  با `AppLocalizations.getString('key', isPersian)` خوانده شوند.
-- استثنا: پیام‌های نگاشت‌شده از یک enum دامنه (مثل `AuthFailureReason` در
-  `LoginPage._describeFailure`) که منطقاً یک "ترجمه‌ی enum" هستند، نه یک رشته‌ی
-  آزاد — این‌ها هم باید در نهایت از `AppLocalizations` بخوانند.
+### 5. Core Engineering Principles
 
-## قرارداد Theme
+1. **Typed error handling** — repositories never throw raw exceptions; they return `Future<Result<T>>` (`core/result/result.dart`). Failures are wrapped as `AppException` subtypes (`core/exceptions/app_exceptions.dart`) and translated to user-facing messages by `ErrorHandlerService`.
+2. **Isolate-based audio processing** — `mentor_audio_service.dart` offloads `base64Encode`/`base64Decode` of PCM audio chunks to background isolates via `compute`, keeping the UI thread free during live mentor sessions.
+3. **Cache-stampede protection** — `word_repository.dart` maintains an in-memory `_inflightRequests` lock so concurrent lookups of the same word collapse into a single backend call instead of flooding `ai-server.js`.
+4. **Offline-first sync** — `flashcard_sync_repository.dart` queues review results locally and reconciles with the backend once connectivity is restored; `selected_day_provider` similarly caches the active timeline day via `SharedPreferences`.
+5. **Realtime state** — `leaderboard_provider` and `daily_tasks_provider` stream live updates so gamification state (streaks, rankings) stays in sync without manual refresh.
+6. **Logging** — a structured `AppLogger` with `LogLevel`/`LogEntry` types centralizes diagnostics across both client and backend boundaries.
 
-- تمام رنگ، تایپوگرافی، و شکل ویجت‌های استاندارد (AppBar, Card, Chip, SnackBar,
-  Button, Input) از `AppTheme` می‌آید. صفحات نباید دوباره `RoundedRectangleBorder`
-  یا `TextStyle` پایه را برای این ویجت‌ها بازتعریف کنند مگر برای یک استثنای
-  واقعاً خاص (مثل فلش‌کارت‌های رنگی یا پودیوم لیدربورد).
-- مقادیر padding/radius/duration پرکاربرد باید از `AppConstants` بیایند.
+### 6. Testing & CI/CD
 
-## قرارداد Provider (Riverpod)
+- `test/` mirrors the `lib/` structure (`test/core`, `test/features/ai_dictionary`, `test/features/daily_tasks`), covering exceptions, `Result`, and Pomodoro state logic.
+- `.github/workflows/flutter_ci.yml` runs the automated pipeline (analyze, test, build) on every push/PR, so the `main` branch is always in a demonstrably working state.
 
-- همه‌ی providerهای جدید با `@riverpod` code-gen نوشته می‌شوند (نه
-  `StateNotifierProvider`/`Provider` دستی)، مگر جایی که خودِ Riverpod چنین
-  الگویی را برای یک منظور خاص تحمیل کند (مثل `leaderboard_page.dart` که چند
-  Stream/Future را combine می‌کند).
-- `keepAlive: true` فقط برای providerهایی که باید در کل عمر اپ زنده بمانند
-  (Auth, Settings, Pomodoro, TtsService, repositoryهای سراسری) استفاده می‌شود.
-- **هرگز `ref.read`/`ref.watch` داخل `dispose()` صدا زده نمی‌شود.** اگر یک
-  سرویس/provider در `dispose()` لازم است، باید در `initState()` در یک فیلد
-  `late final` کش شود (نمونه: `TtsService` در تمام صفحاتی که ازش استفاده
-  می‌کنند).
-- تب‌های داخل `IndexedStack` (در `MainNavigation`) به‌صورت lazy ساخته می‌شوند —
-  فقط وقتی کاربر برای اولین بار به آن تب می‌رود، ویجت واقعی‌اش ساخته می‌شود؛ این
-  از subscribe شدن زودهنگام به providerهای stream-محور (مثل لیدربورد) در حین
-  build اولیه‌ی اپ جلوگیری می‌کند.
+---
 
-## Schema فلش‌کارت
+<a name="فارسی"></a>
+## 🇮🇷 فارسی
 
-هر ردیف جدید در جدول `flashcards` — چه از جستجوی لغت بیاید چه از ذخیره‌ی یک
-نکته‌ی گرامری — همیشه از طریق `WordRepository.saveToPersonalFlashcards` ساخته
-می‌شود و شکل یکسانی دارد: `word_id` که به `global_dictionary` اشاره می‌کند، به‌
-همراه `folder_name` (`'General'` یا `'Grammar'` یا پوشه‌ی سفارشی کاربر). رکوردهای
-قدیمی‌تر ممکن است شکل متفاوتی (`ai_analysis` inline بدون `word_id`) داشته باشند؛
-به همین دلیل لایه‌ی نمایش (`FlashcardsPage`, `AllFlashcardsPage`) همچنان fallback
-`globalDict['ai_analysis'] ?? card['ai_analysis']` را نگه می‌دارد.
+این سند معماری واقعی و فعلی پروژه LingoSync — هم کلاینت فلاتر و هم بک‌اند Node.js — و اصول مهندسی حاکم بر آن را شرح می‌دهد.
 
-## مسائل شناخته‌شده (Known Issues)
+### ۱. ساختار Monorepo
 
-### 🔴 باز — رفتار ناپایدار Auth در استارتاپ سرد (cold start)
-**علائم:** گاهی بلافاصله بعد از اجرای اپ، کاربر لاگ‌اوت می‌شود و/یا اپ متوقف
-می‌شود؛ نیاز به hot reload دستی برای بازیابی. بعد از reload، گاهی با توکن
-موجود خودکار لاگین می‌شود و گاهی باید دستی وارد شود.
+به بخش انگلیسی بالا برای درخت کامل پوشه‌ها مراجعه کنید؛ ساختار شامل `lib/` (کلاینت)، `backend/` (سرورها)، `test/` (تست‌ها، هم‌ساختار با `lib/`) و `.github/workflows/` (پایپ‌لاین CI) است.
 
-**فرضیه‌ی فعلی:** race بین بازیابی/رفرش سشن Supabase از دیسک (که یک عملیات
-شبکه‌ای async است) و آماده بودن شبکه‌ی دستگاه بلافاصله بعد از cold start؛ یک
-شکست موقت شبکه در این رفرش می‌تواند به‌اشتباه به‌عنوان `signedOut` واقعی تفسیر
-شود (`AuthController._onAuthEvent`)، چون در سطح event نمی‌توان "کاربر خودش خارج
-شد" را از "رفرش توکن به‌خاطر شبکه fail شد" تشخیص داد.
+### ۲. سرویس‌های بک‌اند (`backend/`)
 
-**وضعیت:** در انتظار لاگ کامل (از launch تا کرش) برای تشخیص دقیق قبل از هر
-تغییری در `AuthController` — به‌خاطر حساسیت این فایل برای کل مسیر ناوبری اپ،
-تغییر بدون مدرک انجام نمی‌شود.
+بک‌اند به‌جای یک سرور یکپارچه، به سه نقطه ورود مجزا تقسیم شده:
 
-## تست‌ها
+| فایل | مسئولیت |
+|---|---|
+| `server.js` | سرور اصلی API — احراز هویت، پروفایل، تسک‌های روزانه، لیدربورد |
+| `ai-server.js` | جستجوی لغات و تحلیل ترجمه/گرامر/واژگان ویدیو |
+| `mentor-server.js` | پروکسی WebSocket بلادرنگ بین کلاینت فلاتر و Gemini Live API |
+| `docker-compose.yml` | راه‌اندازی یکپارچه تمام سرویس‌ها |
 
-پوشه‌ی `test/` شامل تست‌های واحد برای منطق خالص (بدون نیاز به mock کردن
-Supabase/پلتفرم) است: `Result`, `AppException`, `DailyTaskModel`,
-`WordAnalysis`/`WordDetail`, و `PomodoroState`. تست‌های state machine‌های
-وابسته به Supabase (`AuthController`) یا platform channel (`TtsService`) در
-این فاز پوشش داده نشده‌اند چون نیازمند زیرساخت mock (مثل `mocktail` +
-`fake_async`) هستند که در فاز جداگانه‌ای می‌تواند اضافه شود.
+جدا کردن پروکسی صوتی استاد از API معمولی، مسیر حساس به تأخیر (Low-latency) صدا را از ترافیک عادی CRUD ایزوله نگه می‌دارد.
 
-## CI/CD
+### ۳. کلاینت فلاتر (`lib/`)
 
-`.github/workflows/flutter_ci.yml` runs `build_runner`, format-check,
-`flutter analyze`, and `flutter test` on every push/PR to `main`. See
-`.github/workflows/README.md` for details.
+ساختار کامل در بخش انگلیسی بالا آمده است: `core/` شامل تنظیمات، ثابت‌ها، خطاها، لاگینگ، پرووایدرهای سراسری، `Result<T>` و تم؛ و `features/` شامل پنج فیچر `auth`، `ai_mentor`، `ai_dictionary`، `daily_tasks` و `settings` است که هرکدام مستقل و ماژولار پیاده‌سازی شده‌اند.
 
-## Enterprise-readiness roadmap (Phase 4)
+### ۴. لایه‌بندی فیچرها (Clean Architecture)
 
-Tracked here so this doesn't get re-litigated from scratch later:
+هر فیچر دقیقاً از ساختار `data/ → (domain/) → presentation/` پیروی می‌کند:
 
-- [x] 4A — CI pipeline (analyze + test on every push)
-- [ ] 4B — Consistent domain layer across all features (not just auth):
-      thin `Entity`/`UseCase` types between repositories and UI, so
-      presentation never depends directly on Supabase's raw JSON row
-      shape.
-- [x] 4C — Uniform folder structure per feature. `daily_tasks` already
-      matched the standard shape on inspection (no changes needed).
-      `ai_mentor` was restructured: `mentor_state.dart` moved into
-      `data/models/`, and `ai_mentor_controller.dart` moved from its own
-      top-level `controller/` folder into `presentation/providers/` to
-      match every other feature's Riverpod-layer convention.
-- [x] 4D — Remaining magic-number `EdgeInsets`/`BorderRadius` literals
-      migrated to `AppConstants` in `leaderboard_page.dart` and all four
-      `video_lesson`/`archive` widget files. Values with no exact
-      `AppConstants` equivalent (e.g. bespoke `10/6` chip padding,
-      `blurRadius: 20` shadows) were deliberately left as-is rather than
-      forcing a mismatched constant onto them.
-- [ ] 4E — Widget tests for the highest-risk interactive flows (Pomodoro
-      timer, flashcard review flow, auth gate state transitions) and at
-      least one integration test for the login → daily tasks → flashcard
-      review path.
+- **`data/repositories`** — تنها لایه مجاز به ارتباط با شبکه، `Hive` یا `SharedPreferences`.
+- **`data/models`** — مدل‌های تغییرناپذیر با مپینگ امن `fromJson`/`toJson`.
+- **`presentation/providers`** — کنترلرهای Riverpod که فقط هماهنگ‌کننده وضعیت‌اند و مستقیماً کوئری اجرا نمی‌کنند.
+- **`presentation/pages` و `widgets`** — صرفاً UI اعلانی، بدون منطق تجاری.
+
+فیچر `auth` علاوه بر این، یک لایه `application/` و یک لایه `domain/` (`auth_status.dart`) دارد، چون ماشین وضعیتش (احراز نشده ← در انتظار تأیید ← احراز شده) پیچیده‌تر از فیچرهای دیگر است.
+
+### ۵. اصول مهندسی هسته
+
+۱. **مدیریت خطای Typed** — ریپازیتوری‌ها هرگز Exception خام پرتاب نمی‌کنند؛ `Future<Result<T>>` برمی‌گردانند و خطاها به‌صورت زیرکلاس‌های `AppException` کپسوله و توسط `ErrorHandlerService` برای کاربر ترجمه می‌شوند.
+۲. **پردازش صدا در Isolate** — `mentor_audio_service.dart` عملیات `base64Encode`/`base64Decode` استریم صدای PCM را با `compute` به نخ‌های پس‌زمینه منتقل می‌کند تا UI در طول مکالمه زنده فریز نشود.
+۳. **جلوگیری از Cache Stampede** — `word_repository.dart` با یک قفل درون‌حافظه‌ای (`_inflightRequests`) درخواست‌های همزمان یک لغت را در یک فراخوانی واحد ادغام می‌کند.
+۴. **همگام‌سازی آفلاین‌اول** — `flashcard_sync_repository.dart` نتایج مرور را محلی صف‌بندی و پس از اتصال مجدد با بک‌اند همگام می‌کند؛ `selected_day_provider` نیز روز فعال تایم‌لاین را با `SharedPreferences` کش می‌کند.
+۵. **وضعیت بلادرنگ** — `leaderboard_provider` و `daily_tasks_provider` به‌روزرسانی‌های زنده را استریم می‌کنند تا وضعیت گیمیفیکیشن بدون رفرش دستی همگام بماند.
+۶. **لاگینگ** — یک `AppLogger` ساختاریافته با انواع `LogLevel`/`LogEntry` تشخیص خطا را در کلاینت و بک‌اند متمرکز می‌کند.
+
+### ۶. تست و CI/CD
+
+- پوشه `test/` هم‌ساختار با `lib/` است (`test/core`، `test/features/ai_dictionary`، `test/features/daily_tasks`) و منطق `Exception`ها، `Result` و وضعیت پومودورو را پوشش می‌دهد.
+- `.github/workflows/flutter_ci.yml` پایپ‌لاین خودکار (آنالیز، تست، بیلد) را روی هر push/PR اجرا می‌کند تا شاخه `main` همیشه در وضعیت قابل‌اثبات سالم باقی بماند.
