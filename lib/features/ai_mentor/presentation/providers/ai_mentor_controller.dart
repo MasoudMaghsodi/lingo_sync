@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import 'package:lingo_sync/core/config/app_config.dart';
+import 'package:lingo_sync/core/logging/app_logger.dart';
 import 'package:lingo_sync/features/ai_mentor/data/models/mentor_state.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_audio_service.dart';
 import 'package:lingo_sync/features/ai_mentor/services/mentor_socket_service.dart';
@@ -11,10 +13,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'ai_mentor_controller.g.dart';
 
-// Deliberately NOT keepAlive — this controller (and the socket + mic it
-// owns) should only exist while the mentor sheet is open. The moment the
-// sheet is popped and nothing watches this provider anymore, Riverpod
-// disposes it, which tears down the socket and stops the microphone.
 @riverpod
 class AiMentorController extends _$AiMentorController {
   late final MentorSocketService _socket;
@@ -24,6 +22,9 @@ class AiMentorController extends _$AiMentorController {
   Timer? _autoRestartTimer;
   int _autoReconnectAttempts = 0;
   int _autoRestartAttempts = 0;
+
+  // 🚀 فلگ امنیتی برای جلوگیری از باز شدن زودهنگام میکروفون
+  bool _isWaitingForTurnComplete = false;
 
   @override
   AiMentorSessionState build() {
@@ -47,9 +48,6 @@ class AiMentorController extends _$AiMentorController {
   }
 
   Future<void> _initSession() async {
-    // Mic hardware starts once for the whole session; muting is handled by
-    // gating inside _onAmplitude/_onPcmChunk, not by stopping/restarting
-    // the recorder every turn.
     await _audio.startMicStream(
       onAmplitude: _onAmplitude,
       onPcmChunk: _onPcmChunk,
@@ -62,12 +60,20 @@ class AiMentorController extends _$AiMentorController {
     try {
       await _socket.connect(Uri.parse(AppConfig.mentorSocketUrl));
       _sendSetup();
+    } on Exception catch (e) {
+      logger.warning(
+        'Mentor socket connection failed',
+        error: e,
+        context: 'AiMentorController',
+      );
+      _handleDisconnect();
     } catch (_) {
       _handleDisconnect();
     }
   }
 
   void _sendSetup() {
+    // در آینده بهتر است این توکن از طریق authRepository تامین شود
     final token = Supabase.instance.client.auth.currentSession?.accessToken;
     if (token == null) {
       _handleDisconnect();
@@ -77,16 +83,11 @@ class AiMentorController extends _$AiMentorController {
     _socket.sendSetup(token);
   }
 
-  /// AI's turn on the *server's* Gemini connection died (mentor-server.js
-  /// still has our socket open) — just ask it to set up again. Called both
-  /// automatically (see [_scheduleAutoRestart]) and from a manual tap.
   void restartAiSession() {
     HapticFeedback.mediumImpact();
     _sendSetup();
   }
 
-  /// Our own socket to mentor-server.js died — full reconnect. Called both
-  /// automatically (see [_scheduleAutoReconnect]) and from a manual tap.
   void reconnect() {
     HapticFeedback.lightImpact();
     _connect();
@@ -100,9 +101,25 @@ class AiMentorController extends _$AiMentorController {
       case MentorPhase.disconnected:
         reconnect();
         break;
+      case MentorPhase.receivingAudio:
+        // 🚀 قابلیت قطع کردن حرف استاد با زدن روی گوی (Interrupt)
+        HapticFeedback.heavyImpact();
+        _interruptMentor();
+        break;
       default:
         break;
     }
+  }
+
+  Future<void> _interruptMentor() async {
+    _pcmBuffer.clear();
+    _isWaitingForTurnComplete = false;
+    await _audio.stopPlayback();
+    // ارسال سیگنال به سرور که کاربر حرفت را قطع کرد (باید در سرور هندل شود)
+    if (_socket.isOpen) {
+      _socket.send({'type': 'client_interrupt'});
+    }
+    _enterReadyState();
   }
 
   void _handleDisconnect() {
@@ -110,11 +127,6 @@ class AiMentorController extends _$AiMentorController {
     _scheduleAutoReconnect();
   }
 
-  /// Automatically retries the socket connection instead of leaving the
-  /// user stuck on "No Internet Connection!" until they tap it themselves
-  /// — a brief hiccup should heal itself. Backs off gradually (1s, 2s, 3s
-  /// ... capped at 8s) so a genuinely offline device doesn't hammer
-  /// reconnect attempts in a tight loop.
   void _scheduleAutoReconnect() {
     _autoReconnectTimer?.cancel();
     _autoReconnectAttempts++;
@@ -126,9 +138,6 @@ class AiMentorController extends _$AiMentorController {
     });
   }
 
-  /// Same idea as [_scheduleAutoReconnect] but for the Gemini-side session
-  /// ending — this is what used to require the user to manually tap the
-  /// orb after "just one message" before the conversation would continue.
   void _scheduleAutoRestart() {
     _autoRestartTimer?.cancel();
     _autoRestartAttempts++;
@@ -155,22 +164,31 @@ class AiMentorController extends _$AiMentorController {
         break;
 
       case 'audio':
+        _isWaitingForTurnComplete = true; // قفل کردن میکروفون
         if (state.phase != MentorPhase.receivingAudio) {
           state = state.copyWith(
             phase: MentorPhase.receivingAudio,
             isMicMuted: true,
           );
         }
-        _pcmBuffer.addAll(base64Decode(data['data'] as String));
+
+        // 🚀 انتقال دیکد کردن به پس‌زمینه (Isolate) برای جلوگیری از لگ زدن UI و قطع سوکت
+        final String base64Data = data['data'] as String;
+        if (base64Data.isNotEmpty) {
+          final decodedBytes = await compute(base64Decode, base64Data);
+          _pcmBuffer.addAll(decodedBytes);
+        }
         break;
 
       case 'interrupt':
         _pcmBuffer.clear();
+        _isWaitingForTurnComplete = false;
         await _audio.stopPlayback();
         _enterReadyState();
         break;
 
       case 'turn_complete':
+        _isWaitingForTurnComplete = false; // باز کردن قفل
         if (_pcmBuffer.isNotEmpty) {
           state = state.copyWith(
             phase: MentorPhase.receivingAudio,
@@ -193,15 +211,15 @@ class AiMentorController extends _$AiMentorController {
 
   Future<void> _onPlaybackCompleted() async {
     if (state.phase != MentorPhase.receivingAudio) return;
-    // Small delay to avoid the mentor's own last word echoing into the mic.
+
+    // 🚀 اگر هنوز پیام turn_complete نیامده (مثلا وسط حرف مکث کرده)، میکروفون را باز نکن!
+    if (_isWaitingForTurnComplete) return;
+
     await Future.delayed(const Duration(milliseconds: 500));
     _enterReadyState();
   }
 
   void _enterReadyState() {
-    // A successful turn means both the socket and the Gemini session are
-    // healthy again — reset the backoff counters so the next real failure
-    // starts retrying quickly instead of inheriting a long delay.
     _autoReconnectAttempts = 0;
     _autoRestartAttempts = 0;
     state = state.copyWith(
@@ -218,6 +236,10 @@ class AiMentorController extends _$AiMentorController {
 
   void _onPcmChunk(List<int> chunk) {
     if (state.isMicMuted || state.phase != MentorPhase.ready) return;
-    _socket.sendAudioChunk(base64Encode(chunk));
+
+    // 🚀 تبدیل اینکد به پس‌زمینه برای روان شدن UI هنگام حرف زدن کاربر
+    compute(base64Encode, chunk).then((encoded) {
+      _socket.sendAudioChunk(encoded);
+    });
   }
 }
