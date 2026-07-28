@@ -7,6 +7,7 @@
   [![Architecture](https://img.shields.io/badge/Architecture-Clean-success.svg)](ARCHITECTURE.md)
   [![State Management](https://img.shields.io/badge/State-Riverpod-orange.svg)](https://riverpod.dev/)
   [![Backend](https://img.shields.io/badge/Backend-Node.js-green.svg)](#)
+  [![Database](https://img.shields.io/badge/BaaS-Supabase-3ECF8E.svg)](https://supabase.com/)
   [![AI Engine](https://img.shields.io/badge/AI-Google%20Gemini%20Live-purple.svg)](https://deepmind.google/technologies/gemini/)
   [![CI](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg)](.github/workflows/flutter_ci.yml)
 </div>
@@ -29,6 +30,13 @@
 - 🏆 **Live Leaderboard & Streaks** — Gamified daily tasks with real-time leaderboard updates.
 - 🌓 **Full i18n & Theming** — Material 3 design with instant Light/Dark and English/Persian switching.
 - ✅ **Tested & Automated** — Unit/widget tests under `test/`, with continuous integration via GitHub Actions (`.github/workflows/flutter_ci.yml`).
+
+### 🛠️ Tech Stack
+
+- **Frontend:** Flutter, Riverpod, Hive (offline caching)
+- **Database & BaaS:** Supabase (PostgreSQL, Auth, Realtime, RPCs, RLS)
+- **AI & Middleware Server:** Node.js, WebSockets, Docker
+- **LLM Engine:** Google Gemini Live API
 
 ### 📁 Repository Layout
 
@@ -59,24 +67,48 @@ git clone https://github.com/MasoudMaghsodi/lingo_sync.git
 cd lingo_sync
 ```
 
-**2. Backend setup**
+**2. Supabase setup**
+- Create a project at [supabase.com](https://supabase.com).
+- Apply your schema (tables, RLS policies, and RPC functions) to the project.
+
+**3. Backend setup (Node.js)**
+
+Create `backend/.env`:
+```env
+GEMINI_API_KEY=your_gemini_api_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+```
+
+Then deploy:
 ```bash
 cd backend
-cp .env.example .env   # fill in your Gemini API key & config
 docker-compose up -d
 ```
 
-**3. Flutter client setup**
+**4. Flutter client setup**
+
+Create a `.env` in the project root:
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+AI_SERVER_BASE_URL=http://localhost:3002/api
+MENTOR_SOCKET_URL=ws://localhost:3001
+```
+
+Then run:
 ```bash
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-**4. Run tests**
+**5. Run tests**
 ```bash
 flutter test
 ```
+
+> **Note:** the exact env var names, ports, and URLs above are placeholders matching this document's assumptions — swap in whatever your `app_config.dart` and backend actually read.
 
 *For the full engineering breakdown of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md).*
 
@@ -97,6 +129,13 @@ flutter test
 - 🌓 **پشتیبانی کامل دو زبانه و تم** — طراحی متریال ۳ با سوییچ آنی بین تاریک/روشن و فارسی/انگلیسی.
 - ✅ **تست‌شده و خودکار** — تست‌های واحد و ویجت در `test/`، همراه با CI/CD از طریق GitHub Actions.
 
+### 🛠️ پشته فناوری (Tech Stack)
+
+- **فرانت‌اند:** Flutter، Riverpod، Hive (کش آفلاین)
+- **دیتابیس و BaaS:** Supabase (PostgreSQL، Auth، Realtime، RPC، RLS)
+- **سرور هوش مصنوعی و میان‌افزار:** Node.js، WebSocket، Docker
+- **موتور LLM:** Google Gemini Live API
+
 ### 📁 ساختار مخزن
 
 این پروژه یک Monorepo شامل کلاینت فلاتر، بک‌اند Node.js، تست‌ها و پیکربندی CI است (به بخش انگلیسی بالا برای درخت کامل پوشه‌ها مراجعه کنید).
@@ -109,23 +148,47 @@ git clone https://github.com/MasoudMaghsodi/lingo_sync.git
 cd lingo_sync
 ```
 
-**۲. راه‌اندازی بک‌اند:**
+**۲. راه‌اندازی Supabase:**
+- یک پروژه در [supabase.com](https://supabase.com) بساز.
+- اسکیمای خودت (جداول، قوانین RLS و توابع RPC) را روی آن اعمال کن.
+
+**۳. راه‌اندازی بک‌اند (Node.js):**
+
+فایل `backend/.env` را بساز:
+```env
+GEMINI_API_KEY=your_gemini_api_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+```
+
+سپس اجرا کن:
 ```bash
 cd backend
-cp .env.example .env   # کلید API جمینای و تنظیمات را وارد کنید
 docker-compose up -d
 ```
 
-**۳. راه‌اندازی کلاینت فلاتر:**
+**۴. راه‌اندازی کلاینت فلاتر:**
+
+یک فایل `.env` در ریشه پروژه بساز:
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+AI_SERVER_BASE_URL=http://localhost:3002/api
+MENTOR_SOCKET_URL=ws://localhost:3001
+```
+
+سپس اجرا کن:
 ```bash
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-**۴. اجرای تست‌ها:**
+**۵. اجرای تست‌ها:**
 ```bash
 flutter test
 ```
+
+> **نکته:** نام دقیق متغیرهای محیطی، پورت‌ها و URLها بالا فقط فرضی هستند تا با ساختار همین سند هماهنگ باشند — آن‌ها را با چیزی که واقعاً در `app_config.dart` و بک‌اندت خوانده می‌شود جایگزین کن.
 
 *برای جزئیات کامل مهندسی و معماری پروژه، به فایل [ARCHITECTURE.md](ARCHITECTURE.md) مراجعه کنید.*
