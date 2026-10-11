@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
-import '../../../data/models/word_analysis_model.dart';
+import '../../../domain/entities/word_analysis.dart';
 import '../../providers/dictionary_provider.dart';
 
 /// The "Vocabulary" tab of `VideoLessonPage`: one card per extracted

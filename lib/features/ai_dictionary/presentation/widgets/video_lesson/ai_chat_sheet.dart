@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
+import '../../providers/dictionary_provider.dart';
 
-/// Pure UI for the "Ask the AI Mentor" bottom sheet content shown from
-/// `VideoLessonPage`. All state (question text, loading flag, last
-/// answer) lives in the parent page — this widget only renders what it's
-/// given and reports user actions via callbacks.
-class AiChatSheetContent extends StatelessWidget {
+class AiChatSheetContent extends ConsumerWidget {
   final TextEditingController questionController;
   final bool isAsking;
   final String? response;
@@ -26,8 +25,9 @@ class AiChatSheetContent extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -154,11 +154,56 @@ class AiChatSheetContent extends StatelessWidget {
                           ],
                         ),
                         const Divider(),
-                        // 🚀 متن قابل انتخاب (کپی کردن و ترنسلیت)
-                        SelectableText(
-                          response!,
-                          style: const TextStyle(fontSize: 15, height: 1.8),
-                          cursorColor: theme.colorScheme.primary,
+                        // SelectableText با قابلیت افزودن مستقیم به لایتنر
+                        Directionality(
+                          textDirection:
+                              TextDirection.rtl, // پاسخ AI همیشه فارسی است
+                          child: SelectableText(
+                            response!,
+                            style: const TextStyle(fontSize: 15, height: 1.8),
+                            cursorColor: theme.colorScheme.primary,
+                            contextMenuBuilder:
+                                (
+                                  BuildContext context,
+                                  EditableTextState editableTextState,
+                                ) {
+                                  final List<ContextMenuButtonItem>
+                                  buttonItems =
+                                      editableTextState.contextMenuButtonItems;
+
+                                  buttonItems.insert(
+                                    0,
+                                    ContextMenuButtonItem(
+                                      label: 'افزودن به لایتنر',
+                                      onPressed: () {
+                                        final selectedText = editableTextState
+                                            .textEditingValue
+                                            .selection
+                                            .textInside(
+                                              editableTextState
+                                                  .textEditingValue
+                                                  .text,
+                                            );
+                                        if (selectedText.trim().isNotEmpty) {
+                                          HapticFeedback.selectionClick();
+                                          ref
+                                              .read(dictionaryProvider.notifier)
+                                              .analyzeAndSaveFromSelection(
+                                                selectedText,
+                                              );
+                                        }
+                                        editableTextState.hideToolbar();
+                                      },
+                                    ),
+                                  );
+
+                                  return AdaptiveTextSelectionToolbar.buttonItems(
+                                    anchors:
+                                        editableTextState.contextMenuAnchors,
+                                    buttonItems: buttonItems,
+                                  );
+                                },
+                          ),
                         ),
                       ],
                     ),

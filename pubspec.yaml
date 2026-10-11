@@ -49,7 +49,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/
 
   # fonts:

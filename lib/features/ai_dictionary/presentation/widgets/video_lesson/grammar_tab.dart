@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/widgets/persian_content_text.dart';
-import '../../../data/models/video_analysis_model.dart';
+import '../../../domain/entities/video_analysis.dart';
 
 /// The "Kid-Friendly Grammar" tab of `VideoLessonPage`: one expandable
 /// card per grammar point extracted from the video.

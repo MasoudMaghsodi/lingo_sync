@@ -2,13 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/result/result.dart';
-import 'package:lingo_sync/features/ai_dictionary/data/models/word_analysis_model.dart';
-import 'package:lingo_sync/features/ai_dictionary/data/repositories/word_repository.dart';
+import 'package:lingo_sync/features/ai_dictionary/data/repositories/word_repository_impl.dart';
+import 'package:lingo_sync/features/ai_dictionary/domain/entities/word_analysis.dart';
+import 'package:lingo_sync/features/ai_dictionary/domain/repositories/i_word_repository.dart';
 import 'package:lingo_sync/features/ai_dictionary/presentation/providers/dictionary_provider.dart';
 import 'package:mocktail/mocktail.dart';
 
 // 🚀 ساخت یک دیتابیس تقلبی (Mock)
-class MockWordRepository extends Mock implements WordRepository {}
+class MockWordRepository extends Mock implements IWordRepository {}
 
 void main() {
   late MockWordRepository mockRepository;
@@ -28,7 +29,7 @@ void main() {
   group('DictionaryProvider', () {
     test('analyzeWord updates state to data on success', () async {
       final container = makeContainer();
-      final mockWord = WordAnalysis(
+      const mockWord = WordAnalysis(
         word: 'test',
         partOfSpeech: 'noun',
         englishMeaning: 'a procedure',

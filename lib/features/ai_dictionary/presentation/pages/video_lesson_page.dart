@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/services/tts_service.dart';
-import '../../data/models/video_analysis_model.dart';
-import '../../data/models/word_analysis_model.dart';
-import '../../data/repositories/video_analysis_repository.dart';
+import '../../data/repositories/video_analysis_repository_impl.dart';
+import '../../domain/entities/video_analysis.dart';
+import '../../domain/entities/word_analysis.dart';
 import '../providers/dictionary_provider.dart';
 import '../widgets/video_lesson/ai_chat_sheet.dart';
 import '../widgets/video_lesson/grammar_tab.dart';
@@ -325,7 +325,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
               isPersian: isPersian,
             ),
             VideoTranscriptTab(
-              transcript: widget.videoData.fullTranscriptTranslation,
+              persianTranscript: widget.videoData.fullTranscriptTranslation,
             ),
             VideoGrammarTab(
               grammarPoints: widget.videoData.grammarPoints,

@@ -10,7 +10,7 @@ import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/services/error_handler_service.dart';
 import '../../../../core/services/tts_service.dart';
 import '../../../../core/widgets/persian_content_text.dart';
-import '../../data/models/word_analysis_model.dart';
+import '../../domain/entities/word_analysis.dart';
 import '../providers/dictionary_provider.dart';
 import 'video_lesson_page.dart';
 

@@ -8,7 +8,7 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/providers/app_shell_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/services/tts_service.dart';
-import '../../data/models/flashcard_entry.dart';
+import '../../domain/entities/flashcard_entry.dart';
 import '../providers/flashcards_provider.dart';
 import 'all_flashcards_page.dart';
 import 'all_grammar_page.dart';

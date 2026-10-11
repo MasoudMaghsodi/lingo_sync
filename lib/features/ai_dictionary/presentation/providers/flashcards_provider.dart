@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../data/models/flashcard_entry.dart';
-import '../../data/repositories/flashcard_sync_repository.dart';
+
+import '../../data/repositories/flashcard_sync_repository_impl.dart';
+import '../../domain/entities/flashcard_entry.dart';
 
 part 'flashcards_provider.g.dart';
 
@@ -29,10 +31,7 @@ class Flashcards extends _$Flashcards {
       }),
     );
 
-    // The repository (data layer) still deals in raw rows — this is the
-    // one place that maps them into the domain type the rest of the app
-    // sees.
-    return cached.map(FlashcardEntry.fromRow).toList();
+    return cached;
   }
 
   Future<void> reviewCard(FlashcardEntry card, bool remembered) async {

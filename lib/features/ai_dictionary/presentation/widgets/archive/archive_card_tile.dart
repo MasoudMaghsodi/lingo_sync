@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lingo_sync/core/constants/app_constants.dart';
 import 'package:lingo_sync/core/localization/app_localizations.dart';
-import '../../../data/models/flashcard_entry.dart';
+import '../../../domain/entities/flashcard_entry.dart';
 
 /// One expandable flashcard entry in `AllFlashcardsPage`'s archive list.
 class ArchiveCardTile extends StatelessWidget {
