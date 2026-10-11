@@ -1,0 +1,61 @@
+name: Backend CI & Deploy
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend_ci.yml'
+    branches: [main]
+  pull_request:
+    paths:
+      - 'backend/**'
+    branches: [main]
+
+jobs:
+  validate:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package.json
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Validate Server Syntax
+        run: |
+          node -c server.js
+          node -c ai-server.js
+          node -c mentor-server.js
+
+  # بخش استقرار خودکار روی سرور هلند (در صورت تنظیم Secret های SSH در GitHub)
+  deploy:
+    name: Deploy to Netherlands Server
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        continue-on-error: true
+        with:
+          host: ${{ secrets.SERVER_HOST || '194.246.82.160' }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
+          script: |
+            cd /app/lingo_sync/backend || cd ~/lingo_sync/backend
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
