@@ -1,44 +1,51 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
-import 'package:lingo_sync/core/result/result.dart';
-import 'package:lingo_sync/core/services/error_handler_service.dart';
-import 'package:lingo_sync/features/ai_dictionary/data/models/flashcard_entry.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../../core/constants/storage_constants.dart';
+import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
+import '../../../../core/result/result.dart';
+import '../../../../core/services/error_handler_service.dart';
+import '../../domain/entities/flashcard_entry.dart';
+import '../../domain/repositories/i_flashcard_sync_repository.dart';
+import '../models/flashcard_entry_dto.dart';
 
-part 'flashcard_sync_repository.g.dart';
+part 'flashcard_sync_repository_impl.g.dart';
 
 @riverpod
-FlashcardSyncRepository flashcardSyncRepository(Ref ref) {
-  return FlashcardSyncRepository(Supabase.instance.client);
+IFlashcardSyncRepository flashcardSyncRepository(Ref ref) {
+  return FlashcardSyncRepositoryImpl(Supabase.instance.client);
 }
 
-class FlashcardSyncRepository {
+class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
   final SupabaseClient _supabase;
 
-  // استفاده از فایل Constants که در فاز ۱ ساختیم
+  // Hive Cache Boxes
   final Box _flashcardsBox = Hive.box(StorageConstants.hiveBoxFlashcards);
-  final Box _pendingSyncBox = Hive.box(
-    StorageConstants.hiveBoxCache,
-  ); // آپدیت شد به نام باکس استاندارد
+  final Box _pendingSyncBox = Hive.box(StorageConstants.hiveBoxCache);
 
-  FlashcardSyncRepository(this._supabase);
+  // Protected system folders that cannot be renamed or deleted
+  static const List<String> _protectedFolders = ['General', 'Grammar'];
+
+  FlashcardSyncRepositoryImpl(this._supabase);
 
   String _cacheKey(String userId) => 'due_$userId';
 
-  List<Map<String, dynamic>> getCachedDueFlashcards(String userId) {
+  @override
+  List<FlashcardEntry> getCachedDueFlashcards(String userId) {
     final cachedData = _flashcardsBox.get(_cacheKey(userId));
     if (cachedData == null) return [];
-    return List<Map<String, dynamic>>.from(
+
+    final rawList = List<Map<String, dynamic>>.from(
       (cachedData as List).map((e) => Map<String, dynamic>.from(e)),
     );
+
+    return rawList.map(FlashcardEntryDto.fromRow).toList();
   }
 
+  @override
   Future<bool> refreshDueFlashcardsFromRemote(String userId) async {
-    // اگر سینک‌های قبلی شکست بخورد، ریکوئست‌های جدید را اسپم نمی‌کنیم
     final syncSuccess = await syncPendingActions();
     if (!syncSuccess) return false;
 
@@ -59,6 +66,7 @@ class FlashcardSyncRepository {
     }
   }
 
+  @override
   Future<void> updateFlashcardReview({
     required String userId,
     required int flashcardId,
@@ -67,15 +75,17 @@ class FlashcardSyncRepository {
   }) async {
     final cacheKey = _cacheKey(userId);
     final cachedData = _flashcardsBox.get(cacheKey);
+
     if (cachedData != null) {
       final list = List<dynamic>.from(cachedData);
       list.removeWhere((item) => item['id'] == flashcardId);
       await _flashcardsBox.put(cacheKey, list);
     }
+
     try {
       await _updateRemote(userId, flashcardId, quality, updatedData);
     } catch (e) {
-      // ذخیره در صف آفلاین
+      // Offline mode: queue for sync
       await _pendingSyncBox.add({
         'type': 'update_review',
         'user_id': userId,
@@ -86,7 +96,7 @@ class FlashcardSyncRepository {
       });
       logger.warning(
         'Offline mode: Review queued for sync',
-        context: 'FlashcardSync',
+        context: 'FlashcardSyncImpl',
       );
     }
   }
@@ -106,6 +116,7 @@ class FlashcardSyncRepository {
           'next_review_date': data['next_review_date'],
         })
         .eq('id', flashcardId);
+
     await _supabase.from('review_logs').insert({
       'user_id': userId,
       'flashcard_id': flashcardId,
@@ -113,7 +124,7 @@ class FlashcardSyncRepository {
     });
   }
 
-  /// خروجی این تابع حالا bool است. اگر به دلیل قطعی نت متوقف شود، false برمی‌گرداند.
+  @override
   Future<bool> syncPendingActions() async {
     if (_pendingSyncBox.isEmpty) return true;
 
@@ -132,19 +143,15 @@ class FlashcardSyncRepository {
       } catch (e) {
         logger.warning(
           'Sync interrupted due to network failure',
-          context: 'FlashcardSync',
+          context: 'FlashcardSyncImpl',
         );
-        return false; // خروج سریع (Fail-Fast) به جای لوپ شدن روی تمام آیتم‌های صف
+        return false;
       }
     }
     return true;
   }
 
-  // ==========================================
-  // متدهای جدید اضافه‌شده برای پاکسازی لایه UI
-  // ==========================================
-
-  /// دریافت تمامی فلش‌کارت‌های کاربر (برای صفحه آرشیو)
+  @override
   Future<Result<List<FlashcardEntry>>> getAllFlashcards() async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -161,21 +168,28 @@ class FlashcardSyncRepository {
           .order('created_at', ascending: false);
 
       final rows = List<Map<String, dynamic>>.from(response);
-      final cards = rows.map(FlashcardEntry.fromRow).toList();
+      final cards = rows.map(FlashcardEntryDto.fromRow).toList();
+
       return Result.success(cards);
     } catch (e, st) {
       return Result.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'FlashcardSyncRepository.getAllFlashcards',
+          context: 'FlashcardSyncImpl.getAllFlashcards',
         ),
       );
     }
   }
 
-  /// تغییر نام یک پوشه
+  @override
   Future<Result<void>> renameFolder(String oldName, String newName) async {
+    if (_protectedFolders.contains(oldName)) {
+      return Result.failure(
+        const ValidationException('Cannot rename system folders.'),
+      );
+    }
+
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
       return Result.failure(const AuthException('Not authenticated'));
@@ -187,44 +201,53 @@ class FlashcardSyncRepository {
           .update({'folder_name': newName})
           .eq('folder_name', oldName)
           .eq('user_id', userId);
+
       return Result.success(null);
     } catch (e, st) {
       return Result.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'FlashcardSyncRepository.renameFolder',
+          context: 'FlashcardSyncImpl.renameFolder',
         ),
       );
     }
   }
 
-  /// حذف یک پوشه (انتقال کارت‌های آن به General)
+  @override
   Future<Result<void>> deleteFolder(String folderName) async {
+    if (_protectedFolders.contains(folderName)) {
+      return Result.failure(
+        const ValidationException('Cannot delete system folders.'),
+      );
+    }
+
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
       return Result.failure(const AuthException('Not authenticated'));
     }
 
     try {
+      // Moves flashcards back to General instead of deleting them
       await _supabase
           .from('flashcards')
           .update({'folder_name': 'General'})
           .eq('folder_name', folderName)
           .eq('user_id', userId);
+
       return Result.success(null);
     } catch (e, st) {
       return Result.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'FlashcardSyncRepository.deleteFolder',
+          context: 'FlashcardSyncImpl.deleteFolder',
         ),
       );
     }
   }
 
-  /// انتقال یک فلش‌کارت خاص به یک پوشه دیگر
+  @override
   Future<Result<void>> moveFlashcard(int flashcardId, String newFolder) async {
     try {
       await _supabase
@@ -237,7 +260,7 @@ class FlashcardSyncRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'FlashcardSyncRepository.moveFlashcard',
+          context: 'FlashcardSyncImpl.moveFlashcard',
         ),
       );
     }

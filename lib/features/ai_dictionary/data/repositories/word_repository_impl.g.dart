@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'word_repository.dart';
+part of 'word_repository_impl.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -13,8 +13,9 @@ part of 'word_repository.dart';
 final wordRepositoryProvider = WordRepositoryProvider._();
 
 final class WordRepositoryProvider
-    extends $FunctionalProvider<WordRepository, WordRepository, WordRepository>
-    with $Provider<WordRepository> {
+    extends
+        $FunctionalProvider<IWordRepository, IWordRepository, IWordRepository>
+    with $Provider<IWordRepository> {
   WordRepositoryProvider._()
     : super(
         from: null,
@@ -31,21 +32,21 @@ final class WordRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<WordRepository> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<IWordRepository> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  WordRepository create(Ref ref) {
+  IWordRepository create(Ref ref) {
     return wordRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(WordRepository value) {
+  Override overrideWithValue(IWordRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<WordRepository>(value),
+      providerOverride: $SyncValueProvider<IWordRepository>(value),
     );
   }
 }
 
-String _$wordRepositoryHash() => r'5b3323b3e0019d970102b492c753ad4c30905ab5';
+String _$wordRepositoryHash() => r'f1434254548a3dbe751069df6204e9416bde3aa4';

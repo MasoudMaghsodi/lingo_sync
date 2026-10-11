@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'video_analysis_repository.dart';
+part of 'video_analysis_repository_impl.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -15,11 +15,11 @@ final videoAnalysisRepositoryProvider = VideoAnalysisRepositoryProvider._();
 final class VideoAnalysisRepositoryProvider
     extends
         $FunctionalProvider<
-          VideoAnalysisRepository,
-          VideoAnalysisRepository,
-          VideoAnalysisRepository
+          IVideoAnalysisRepository,
+          IVideoAnalysisRepository,
+          IVideoAnalysisRepository
         >
-    with $Provider<VideoAnalysisRepository> {
+    with $Provider<IVideoAnalysisRepository> {
   VideoAnalysisRepositoryProvider._()
     : super(
         from: null,
@@ -36,23 +36,23 @@ final class VideoAnalysisRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<VideoAnalysisRepository> $createElement(
+  $ProviderElement<IVideoAnalysisRepository> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  VideoAnalysisRepository create(Ref ref) {
+  IVideoAnalysisRepository create(Ref ref) {
     return videoAnalysisRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(VideoAnalysisRepository value) {
+  Override overrideWithValue(IVideoAnalysisRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<VideoAnalysisRepository>(value),
+      providerOverride: $SyncValueProvider<IVideoAnalysisRepository>(value),
     );
   }
 }
 
 String _$videoAnalysisRepositoryHash() =>
-    r'e217bd1be75e4f3faa28ccab9d6ebedea5d14f86';
+    r'de391776002f27ca23aaea4c516304c5861a2591';

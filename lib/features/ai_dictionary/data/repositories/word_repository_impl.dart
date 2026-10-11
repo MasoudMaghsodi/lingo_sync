@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
@@ -6,55 +7,55 @@ import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/error_handler_service.dart';
-import '../models/word_analysis_model.dart';
+import '../../domain/entities/word_analysis.dart';
+import '../../domain/repositories/i_word_repository.dart';
+import '../models/word_analysis_dto.dart';
 import '../services/ai_server_client.dart';
 
-part 'word_repository.g.dart';
+part 'word_repository_impl.g.dart';
 
 @riverpod
-WordRepository wordRepository(Ref ref) {
-  return WordRepository(
+IWordRepository wordRepository(Ref ref) {
+  return WordRepositoryImpl(
     Supabase.instance.client,
     ref.watch(aiServerClientProvider),
   );
 }
 
-class WordRepository {
+class WordRepositoryImpl implements IWordRepository {
   final SupabaseClient _supabase;
   final AiServerClient _aiClient;
 
-  // قفل حافظه برای جلوگیری از Cache Stampede (درخواست‌های تکراری همزمان)
+  // Cache Stampede prevention map
   final Map<String, Future<Result<WordAnalysis>>> _inflightRequests = {};
 
-  WordRepository(this._supabase, this._aiClient);
+  WordRepositoryImpl(this._supabase, this._aiClient);
 
+  @override
   Future<Result<WordAnalysis>> fetchWordAnalysis(String word) async {
     final cleanWord = word.trim().toLowerCase();
 
-    // اگر همین الان درخواستی برای این کلمه در حال پردازش است، همان را برگردان
     if (_inflightRequests.containsKey(cleanWord)) {
       logger.debug(
         'Returning in-flight request for: $cleanWord',
-        context: 'WordRepository',
+        context: 'WordRepositoryImpl',
       );
       return _inflightRequests[cleanWord]!;
     }
 
-    // ایجاد یک فیوچر جدید و ذخیره در مپ قفل
     final requestFuture = _executeWordFetch(cleanWord);
     _inflightRequests[cleanWord] = requestFuture;
 
     try {
       return await requestFuture;
     } finally {
-      // چه موفق شد و چه شکست خورد، قفل را باز کن
       await _inflightRequests.remove(cleanWord);
     }
   }
 
   Future<Result<WordAnalysis>> _executeWordFetch(String cleanWord) async {
     try {
-      // 1. چک کردن کش دیتابیس گلوبال
+      // 1. Check Global Dictionary Cache
       final cachedData = await _supabase
           .from('global_dictionary')
           .select()
@@ -63,23 +64,24 @@ class WordRepository {
 
       if (cachedData != null) {
         return Result<WordAnalysis>.success(
-          WordAnalysis.fromJson(cachedData['ai_analysis']),
+          WordAnalysisDto.fromJson(cachedData['ai_analysis']),
         );
       }
 
-      // 2. درخواست به سرور اختصاصی Node.js
+      // 2. Fetch from Node.js AI Express Server
       final response = await errorHandler.executeWithRetry(
         operation: () => _aiClient.postJson('/analyze_word', {
           'word': cleanWord,
         }, timeout: const Duration(seconds: 30)),
-        context: 'WordRepository.fetchWordAnalysis',
+        context: 'WordRepositoryImpl.fetchWordAnalysis',
       );
 
-      final aiResult = WordAnalysis.fromJson(jsonDecode(response.body));
+      final aiResult = WordAnalysisDto.fromJson(jsonDecode(response.body));
 
+      // 3. Upsert to Global Dictionary
       await _supabase.from('global_dictionary').upsert({
         'word': cleanWord,
-        'ai_analysis': aiResult.toJson(),
+        'ai_analysis': WordAnalysisDto.toJson(aiResult),
       }, onConflict: 'word');
 
       return Result<WordAnalysis>.success(aiResult);
@@ -88,12 +90,13 @@ class WordRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'WordRepository.fetchWordAnalysis',
+          context: 'WordRepositoryImpl.fetchWordAnalysis',
         ),
       );
     }
   }
 
+  @override
   Future<Result<void>> saveToPersonalFlashcards(
     WordAnalysis wordData, {
     String folder = 'General',
@@ -106,15 +109,17 @@ class WordRepository {
     }
 
     try {
+      // Ensure word exists in global dictionary before linking
       final globalRes = await _supabase
           .from('global_dictionary')
           .upsert({
             'word': wordData.word.toLowerCase(),
-            'ai_analysis': wordData.toJson(),
+            'ai_analysis': WordAnalysisDto.toJson(wordData),
           }, onConflict: 'word')
           .select('id')
           .single();
 
+      // Insert into user's personal flashcards
       await _supabase.from('flashcards').insert({
         'user_id': user.id,
         'word_id': globalRes['id'],
@@ -124,15 +129,25 @@ class WordRepository {
         'ease_factor': 2.5,
         'next_review_date': DateTime.now().toUtc().toIso8601String(),
       });
+
       return Result<void>.success(null);
     } catch (e, st) {
       return Result<void>.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'WordRepository.saveToPersonalFlashcards',
+          context: 'WordRepositoryImpl.saveToPersonalFlashcards',
         ),
       );
     }
+  }
+
+  @override
+  Future<Result<void>> addCustomWordManually(
+    WordAnalysis customWord, {
+    String folder = 'General',
+  }) async {
+    // Reusing the same saving logic since WordAnalysis is cleanly decoupled
+    return saveToPersonalFlashcards(customWord, folder: folder);
   }
 }

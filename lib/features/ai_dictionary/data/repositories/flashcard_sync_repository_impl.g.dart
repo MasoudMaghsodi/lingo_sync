@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'flashcard_sync_repository.dart';
+part of 'flashcard_sync_repository_impl.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -15,11 +15,11 @@ final flashcardSyncRepositoryProvider = FlashcardSyncRepositoryProvider._();
 final class FlashcardSyncRepositoryProvider
     extends
         $FunctionalProvider<
-          FlashcardSyncRepository,
-          FlashcardSyncRepository,
-          FlashcardSyncRepository
+          IFlashcardSyncRepository,
+          IFlashcardSyncRepository,
+          IFlashcardSyncRepository
         >
-    with $Provider<FlashcardSyncRepository> {
+    with $Provider<IFlashcardSyncRepository> {
   FlashcardSyncRepositoryProvider._()
     : super(
         from: null,
@@ -36,23 +36,23 @@ final class FlashcardSyncRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FlashcardSyncRepository> $createElement(
+  $ProviderElement<IFlashcardSyncRepository> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  FlashcardSyncRepository create(Ref ref) {
+  IFlashcardSyncRepository create(Ref ref) {
     return flashcardSyncRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FlashcardSyncRepository value) {
+  Override overrideWithValue(IFlashcardSyncRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FlashcardSyncRepository>(value),
+      providerOverride: $SyncValueProvider<IFlashcardSyncRepository>(value),
     );
   }
 }
 
 String _$flashcardSyncRepositoryHash() =>
-    r'cddc649c38a107a1401d81ea85e8831202e3799a';
+    r'a9293b5fbc0a929803120e1926d7457cd7be34fe';

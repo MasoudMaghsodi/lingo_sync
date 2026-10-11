@@ -1,30 +1,33 @@
 import 'dart:convert';
 
-import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
-import 'package:lingo_sync/core/logging/app_logger.dart';
-import 'package:lingo_sync/core/result/result.dart';
-import 'package:lingo_sync/core/services/error_handler_service.dart';
+import 'package:lingo_sync/features/ai_dictionary/data/models/word_analysis_dto.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
-import '../models/video_analysis_model.dart';
+import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../core/logging/app_logger.dart';
+import '../../../../core/result/result.dart';
+import '../../../../core/services/error_handler_service.dart';
+import '../../domain/entities/video_analysis.dart';
+import '../../domain/repositories/i_video_analysis_repository.dart';
+import '../models/video_analysis_dto.dart';
 import '../services/ai_server_client.dart';
 
-part 'video_analysis_repository.g.dart';
+part 'video_analysis_repository_impl.g.dart';
 
 @riverpod
-VideoAnalysisRepository videoAnalysisRepository(Ref ref) {
-  return VideoAnalysisRepository(
+IVideoAnalysisRepository videoAnalysisRepository(Ref ref) {
+  return VideoAnalysisRepositoryImpl(
     Supabase.instance.client,
     ref.watch(aiServerClientProvider),
   );
 }
 
-class VideoAnalysisRepository {
+class VideoAnalysisRepositoryImpl implements IVideoAnalysisRepository {
   final SupabaseClient _supabase;
   final AiServerClient _aiClient;
 
-  VideoAnalysisRepository(this._supabase, this._aiClient);
+  VideoAnalysisRepositoryImpl(this._supabase, this._aiClient);
 
   String? _extractYoutubeVideoId(String url) {
     final regExp = RegExp(
@@ -36,19 +39,20 @@ class VideoAnalysisRepository {
     return null;
   }
 
+  @override
   Future<Result<VideoAnalysis>> processYoutubeVideo(String url) async {
     try {
       final videoId = _extractYoutubeVideoId(url);
-
       if (videoId != null) {
         final cachedData = await _supabase
             .from('video_analysis')
             .select()
             .eq('video_id', videoId)
             .maybeSingle();
+
         if (cachedData != null) {
           return Result<VideoAnalysis>.success(
-            VideoAnalysis.fromJson(cachedData),
+            VideoAnalysisDto.fromJson(cachedData),
           );
         }
       }
@@ -57,11 +61,14 @@ class VideoAnalysisRepository {
         operation: () => _aiClient.postJson('/process_youtube', {
           'videoUrl': url,
         }, timeout: const Duration(seconds: 60)),
-        context: 'VideoAnalysisRepository.processYoutubeVideo',
+        context: 'VideoAnalysisRepositoryImpl.processYoutubeVideo',
       );
 
-      final videoAnalysis = VideoAnalysis.fromJson(jsonDecode(response.body));
+      final videoAnalysis = VideoAnalysisDto.fromJson(
+        jsonDecode(response.body),
+      );
 
+      // Persist to Supabase Database
       await _supabase.from('video_analysis').upsert({
         'video_id': videoAnalysis.videoId,
         'summary': videoAnalysis.summary,
@@ -75,7 +82,9 @@ class VideoAnalysisRepository {
               },
             )
             .toList(),
-        'vocabulary': videoAnalysis.vocabulary.map((e) => e.toJson()).toList(),
+        'vocabulary': videoAnalysis.vocabulary
+            .map((e) => WordAnalysisDto.toJson(e))
+            .toList(),
       });
 
       return Result<VideoAnalysis>.success(videoAnalysis);
@@ -84,17 +93,13 @@ class VideoAnalysisRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.processYoutubeVideo',
+          context: 'VideoAnalysisRepositoryImpl.processYoutubeVideo',
         ),
       );
     }
   }
 
-  // ==========================================
-  // متدهای جدید اضافه‌شده برای پاکسازی لایه UI
-  // ==========================================
-
-  /// دریافت تمامی گرامرهای استخراج‌شده از دیتابیس برای صفحه AllGrammarPage
+  @override
   Future<Result<List<Map<String, dynamic>>>> getAllGrammarVideos() async {
     try {
       final response = await _supabase
@@ -103,19 +108,19 @@ class VideoAnalysisRepository {
           .order('day_number', ascending: true);
 
       final rows = List<Map<String, dynamic>>.from(response);
-
       final taskIds = rows
           .map((r) => r['task_id'])
           .whereType<int>()
           .toSet()
           .toList();
-      final Map<int, String> taskTypesById = {};
 
+      final Map<int, String> taskTypesById = {};
       if (taskIds.isNotEmpty) {
         final tasksResponse = await _supabase
             .from('daily_tasks')
             .select('id, task_type')
             .inFilter('id', taskIds);
+
         for (final row in tasksResponse as List) {
           taskTypesById[row['id'] as int] = row['task_type'] as String;
         }
@@ -134,13 +139,13 @@ class VideoAnalysisRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.getAllGrammarVideos',
+          context: 'VideoAnalysisRepositoryImpl.getAllGrammarVideos',
         ),
       );
     }
   }
 
-  /// بارگذاری یادداشت شخصی کاربر برای یک ویدیوی خاص
+  @override
   Future<Result<String?>> loadUserNote(String videoId) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -156,19 +161,20 @@ class VideoAnalysisRepository {
           .eq('user_id', userId)
           .eq('reference_id', videoId)
           .maybeSingle();
+
       return Result.success(response?['content'] as String?);
     } catch (e, st) {
       return Result.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.loadUserNote',
+          context: 'VideoAnalysisRepositoryImpl.loadUserNote',
         ),
       );
     }
   }
 
-  /// ذخیره یادداشت شخصی کاربر برای یک ویدیو
+  @override
   Future<Result<void>> saveUserNote(String videoId, String content) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
@@ -190,13 +196,13 @@ class VideoAnalysisRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.saveUserNote',
+          context: 'VideoAnalysisRepositoryImpl.saveUserNote',
         ),
       );
     }
   }
 
-  /// پرسش از هوش مصنوعی با استفاده از کلاینت استاندارد (به جای http مستقیم)
+  @override
   Future<Result<String>> askVideoAi(String videoId, String question) async {
     try {
       final response = await errorHandler.executeWithRetry(
@@ -204,7 +210,7 @@ class VideoAnalysisRepository {
           'videoId': videoId,
           'question': question,
         }, timeout: const Duration(seconds: 30)),
-        context: 'VideoAnalysisRepository.askVideoAi',
+        context: 'VideoAnalysisRepositoryImpl.askVideoAi',
       );
 
       final answer = jsonDecode(response.body)['answer'] as String;
@@ -214,13 +220,13 @@ class VideoAnalysisRepository {
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.askVideoAi',
+          context: 'VideoAnalysisRepositoryImpl.askVideoAi',
         ),
       );
     }
   }
 
-  /// پردازش گروهی تمام ویدیوهای تسک‌های روزانه که هنوز توسط هوش مصنوعی بررسی نشده‌اند
+  @override
   Future<Result<void>> processAllPendingVideos() async {
     try {
       final pendingTasks = await _supabase
@@ -231,7 +237,7 @@ class VideoAnalysisRepository {
 
       if (pendingTasks.isEmpty) {
         return Result.failure(
-          const UnknownException('تمام ویدیوها پردازش شده‌اند.'),
+          const UnknownException('No tasks pending processing.'),
         );
       }
 
@@ -250,17 +256,18 @@ class VideoAnalysisRepository {
         } catch (e) {
           logger.warning(
             'Skipped automated task $taskId',
-            context: 'VideoAnalysisRepository.processAllPendingVideos',
+            context: 'VideoAnalysisRepositoryImpl.processAllPendingVideos',
           );
         }
       }
+
       return Result.success(null);
     } catch (e, st) {
       return Result.failure(
         errorHandler.toAppException(
           e,
           st,
-          context: 'VideoAnalysisRepository.processAllPendingVideos',
+          context: 'VideoAnalysisRepositoryImpl.processAllPendingVideos',
         ),
       );
     }
