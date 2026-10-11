@@ -7,10 +7,19 @@ services:
       - yt_api_node_modules:/app/node_modules
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
-    command: sh -c "npm install && node server.js"
+      - PORT=3000
+    command: sh -c "npm install --omit=dev && node server.js"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   ai-mentor:
     image: node:22-alpine
@@ -20,9 +29,11 @@ services:
       - ai_mentor_node_modules:/app/node_modules
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
-    command: sh -c "npm install ws dotenv @supabase/supabase-js && node mentor-server.js"
+    command: sh -c "npm install --omit=dev && node mentor-server.js"
     restart: unless-stopped
 
   ai-express:
@@ -33,10 +44,22 @@ services:
       - ai_express_node_modules:/app/node_modules
     ports:
       - "3002:3002"
+    env_file:
+      - .env
     environment:
       - NODE_OPTIONS=--dns-result-order=ipv4first
-    command: sh -c "npm install express cors @google/generative-ai @supabase/supabase-js dotenv node-fetch && node ai-server.js"
+      - YT_PROXY_HOST=yt-api
+    command: sh -c "npm install --omit=dev && node ai-server.js"
+    depends_on:
+      yt-api:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   yt_api_node_modules:

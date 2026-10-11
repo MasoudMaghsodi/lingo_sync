@@ -1,10 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
@@ -14,8 +17,33 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const NL_SERVER_IP = "194.246.82.160";
-const SECRET_KEY = process.env.YT_PROXY_SECRET_KEY || "LingoSync_TopSecret_2026";
+const YT_PROXY_HOST = process.env.YT_PROXY_HOST || process.env.NL_SERVER_IP || "127.0.0.1";
+const SECRET_KEY = process.env.YT_PROXY_SECRET_KEY;
+if (!SECRET_KEY) {
+    console.error('❌ FATAL: YT_PROXY_SECRET_KEY environment variable is not defined.');
+    process.exit(1);
+}
+
+// Rate Limiting برای جلوگیری از مصرف بی رویه سهمیه جمینای
+const aiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60, // حداکثر 60 درخواست AI در 15 دقیقه به ازای هر IP
+    message: { error: 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً چند دقیقه بعد تلاش کنید.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use('/api/', aiLimiter);
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'ai-express',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
 
 const MAIN_CONTENT_MAX_TOKENS = 8192;
 const VOCABULARY_MAX_TOKENS = 8192;
@@ -48,7 +76,7 @@ async function fetchTranscript(videoId) {
     let transcriptRes;
     try {
         transcriptRes = await fetch(
-            `http://${NL_SERVER_IP}:3000/transcript?videoId=${videoId}&key=${SECRET_KEY}`
+            `http://${YT_PROXY_HOST}:3000/transcript?videoId=${videoId}&key=${SECRET_KEY}`
         );
     } catch (networkErr) {
         throw new Error(`خطا در اتصال به سرور واسط ترنسکریپت: ${networkErr.message}`);
@@ -68,25 +96,33 @@ async function fetchTranscript(videoId) {
     return transcriptRes.json();
 }
 
-async function generateJsonFromGemini(prompt, maxOutputTokens) {
-    const model = genAI.getGenerativeModel({
-        model: "gemini-3.1-flash-lite",
-        generationConfig: { maxOutputTokens },
-    });
+const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
 
-    let result;
-    try {
-        result = await model.generateContent(prompt);
-    } catch (error) {
-        if (isQuotaOrRateLimitError(error)) {
-            const quotaError = new Error('QUOTA_EXCEEDED');
-            quotaError.isQuotaError = true;
-            throw quotaError;
+async function generateContentWithFallback(prompt, generationConfig = {}) {
+    let lastError = null;
+    for (const modelName of CANDIDATE_MODELS) {
+        try {
+            const model = genAI.getGenerativeModel({
+                model: modelName,
+                generationConfig,
+            });
+            const result = await model.generateContent(prompt);
+            return result.response.text();
+        } catch (error) {
+            lastError = error;
+            console.warn(`⚠️ Model ${modelName} failed (${error.message}). Attempting next fallback...`);
         }
-        throw error;
     }
+    if (isQuotaOrRateLimitError(lastError)) {
+        const quotaError = new Error('QUOTA_EXCEEDED');
+        quotaError.isQuotaError = true;
+        throw quotaError;
+    }
+    throw lastError;
+}
 
-    const rawText = result.response.text();
+async function generateJsonFromGemini(prompt, maxOutputTokens) {
+    const rawText = await generateContentWithFallback(prompt, { maxOutputTokens });
     const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     if (!jsonText.startsWith('{')) {
@@ -312,23 +348,9 @@ app.post('/api/ask_video_ai', async (req, res) => {
         const transcriptData = await fetchTranscript(videoId);
         const transcript = transcriptData.map(t => t.text).join(' ');
 
-        const model = genAI.getGenerativeModel({
-            model: "gemini-3.1-flash-lite",
-            generationConfig: { maxOutputTokens: MAIN_CONTENT_MAX_TOKENS },
-        });
         const prompt = `You are a helpful AI. Answer ONLY based on this transcript: "${transcript}". \nUser Question: "${question}"\nAnswer in Persian politely.`;
-
-        let result;
-        try {
-            result = await model.generateContent(prompt);
-        } catch (error) {
-            if (isQuotaOrRateLimitError(error)) {
-                return res.status(429).json({ error: 'محدودیت استفاده از هوش مصنوعی موقتاً پر شده. بعداً دوباره تلاش کنید.' });
-            }
-            throw error;
-        }
-
-        res.json({ answer: result.response.text() });
+        const answer = await generateContentWithFallback(prompt, { maxOutputTokens: MAIN_CONTENT_MAX_TOKENS });
+        res.json({ answer });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -433,4 +455,13 @@ setInterval(async () => {
     } catch (e) { console.error('Auto-process error:', e.message); }
 }, 1000 * 60 * 60);
 
-app.listen(3002, () => console.log('🚀 AI Express Server running on port 3002'));
+const server = app.listen(3002, () => console.log('🚀 AI Express Server running on port 3002'));
+
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing AI Express server');
+    server.close(() => {
+        console.log('AI Express server closed');
+        process.exit(0);
+    });
+});

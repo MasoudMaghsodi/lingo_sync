@@ -152,6 +152,7 @@ wss.on('connection', (ws) => {
     let geminiWs = null;
     let isSetupComplete = false;
     let turnCompleteSent = false;
+    let silenceTimer = null;
     let authenticatedUserId = null;
 
     ws.on('message', async (data) => {
@@ -188,6 +189,13 @@ wss.on('connection', (ws) => {
             geminiWs.send(JSON.stringify({
                 realtimeInput: { mediaChunks: [{ mimeType: 'audio/pcm;rate=16000', data: payload.data }] }
             }));
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => {
+                if (geminiWs?.readyState === WebSocket.OPEN && !turnCompleteSent) {
+                    console.log(`⏱️ [Session: ${sessionId}] User pause detected -> triggering turnComplete`);
+                    geminiWs.send(JSON.stringify({ clientContent: { turnComplete: true } }));
+                }
+            }, 800);
         }
     });
 
@@ -205,7 +213,7 @@ wss.on('connection', (ws) => {
 
             geminiWs.send(JSON.stringify({
                 setup: {
-                    model: 'models/gemini-2.5-flash-native-audio-latest',
+                    model: 'models/gemini-3.8-live',
                     generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } } },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 }
@@ -232,6 +240,7 @@ wss.on('connection', (ws) => {
                     }
 
                     if (sc.modelTurn) {
+                        clearTimeout(silenceTimer);
                         for (let part of sc.modelTurn.parts) {
                             if (part.inlineData && clientWs.readyState === WebSocket.OPEN) {
                                 clientWs.send(JSON.stringify({ type: 'audio', data: part.inlineData.data }));
@@ -258,9 +267,19 @@ wss.on('connection', (ws) => {
     }
 
     ws.on('close', () => {
+        clearTimeout(silenceTimer);
         console.log(`🔌 [Session: ${sessionId}] CLIENT_PHYSICALLY_DISCONNECTED`);
         if (geminiWs && geminiWs.readyState === WebSocket.OPEN) geminiWs.close();
     });
 });
 
 console.log(`🚀 [NODE] THICK SERVER Architecture running on port ${PORT}`);
+
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing WebSocket server');
+    wss.close(() => {
+        console.log('WebSocket server closed');
+        process.exit(0);
+    });
+});
