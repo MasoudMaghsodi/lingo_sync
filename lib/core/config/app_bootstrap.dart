@@ -22,8 +22,29 @@ abstract final class AppBootstrap {
     logger.info('Bootstrapping application services...');
 
     try {
-      // ۳. لود کردن متغیرهای محیطی
-      await dotenv.load(fileName: ".env");
+      // ۳. لود کردن متغیرهای محیطی با پشتیبانی کامل از دارت دیفاین و حالت اختیاری فایل
+      await dotenv.load(
+        fileName: '.env',
+        isOptional: true,
+        mergeWith: {
+          'SUPABASE_URL': const String.fromEnvironment(
+            'SUPABASE_URL',
+            defaultValue: 'https://dfcsvcfxnfyazqzbpkho.supabase.co',
+          ),
+          'SUPABASE_ANON_KEY': const String.fromEnvironment(
+            'SUPABASE_ANON_KEY',
+            defaultValue: 'sb_publishable_KExxFLOkor9T8Yl5PdUABw_W4-R-uLv',
+          ),
+          'AI_SERVER_BASE_URL': const String.fromEnvironment(
+            'AI_SERVER_BASE_URL',
+            defaultValue: 'http://194.246.82.160:3002/api',
+          ),
+          'MENTOR_SOCKET_URL': const String.fromEnvironment(
+            'MENTOR_SOCKET_URL',
+            defaultValue: 'wss://safer.privatepath.ir/ws',
+          ),
+        },
+      );
 
       // ۴. اجرای موازی (Parallel) تسک‌ها برای افزایش چشمگیر سرعت لودینگ اولیه اپ
       final results = await Future.wait([

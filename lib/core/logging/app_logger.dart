@@ -5,7 +5,7 @@ import 'package:lingo_sync/core/logging/log_entry.dart';
 import 'package:lingo_sync/core/logging/log_level.dart';
 
 /// Global logger instance - accessed anywhere with `logger`
-late final AppLogger logger;
+AppLogger logger = AppLogger();
 
 /// Central logging service for the entire application.
 ///
