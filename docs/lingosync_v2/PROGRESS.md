@@ -25,8 +25,8 @@
 | **P1-2** | Server-side Quotas, Proxy Metering, VAD, Session Cap | Phase 1 | **DONE** | SQL migration, 15m session cap, silence VAD (10s/30s), atomic decrement |
 | **P1-3** | Global Caches, CEFR Validation, Report Error Flow | Phase 1 | **DONE** | SQL migration, case-insensitive indexing, CEFR normalization, /api/report_error |
 | **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | **DONE** | Guest placement test sheet, Daily Sync 10-min mission card, tab routing |
-| **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | **IN PROGRESS** | Pure functions, IANA timezones, vacation freeze |
-| **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | QUEUED | 500-800 tokens budget |
+| **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | **DONE** | SQL migration, pure StreakCalculator, freeze consumption, vacation mode, 9 unit tests |
+| **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | **IN PROGRESS** | 500-800 tokens budget, dynamic memory injection |
 
 ### 4. Open Questions (Awaiting User Input)
 1. **Payment Provider Priority**: Choice between Bazaar/Myket in-app billing, Zarinpal web gateway, or Google Play Billing for initial Phase 2 launch.
