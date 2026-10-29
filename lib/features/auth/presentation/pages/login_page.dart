@@ -7,6 +7,7 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../application/auth_providers.dart';
+import '../widgets/placement_test_sheet.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -387,6 +388,48 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                          ),
+                          const SizedBox(height: 14),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              side: BorderSide(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            icon: const Icon(Icons.psychology_alt_rounded, size: 20),
+                            label: Text(
+                              isPersian
+                                  ? 'آزمون سریع تعیین سطح هوش مصنوعی'
+                                  : 'Quick AI Placement Test (90s)',
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => PlacementTestSheet(
+                                  onLevelSelected: (level) {
+                                    setState(() {
+                                      _isLoginMode = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isPersian
+                                              ? 'سطح شما ($level) ذخیره شد. برای شروع، ثبت‌نام کنید.'
+                                              : 'Level $level selected. Sign up to begin!',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

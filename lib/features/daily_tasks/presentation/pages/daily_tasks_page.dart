@@ -10,9 +10,11 @@ import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 
+import '../../../../core/layout/main_navigation.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../providers/daily_tasks_provider.dart';
 import '../providers/selected_day_provider.dart';
+import '../widgets/daily_sync_mission_card.dart';
 import '../widgets/pomodoro_home_card.dart';
 
 class DailyTasksPage extends ConsumerStatefulWidget {
@@ -202,6 +204,20 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
             ),
           ),
           const Divider(height: 1, thickness: 1),
+
+          // ماموریت روزانه ۱۰ دقیقه‌ای
+          DailySyncMissionCard(
+            completedMissionsCount: tasksState.maybeWhen(
+              data: (tasks) => tasks.where((t) => t.isCompleted).length.clamp(0, 3),
+              orElse: () => 0,
+            ),
+            onOpenVideo: () {
+              ref.read(mainNavigationTabProvider.notifier).setTab(1); // تب دیکشنری و ویدیو
+            },
+            onOpenFlashcards: () {
+              ref.read(mainNavigationTabProvider.notifier).setTab(3); // تب فلش‌کارت‌ها
+            },
+          ),
 
           // لیست تسک‌ها با انیمیشن
           Expanded(

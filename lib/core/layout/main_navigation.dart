@@ -12,6 +12,17 @@ import 'package:lingo_sync/features/settings/presentation/widgets/app_drawer.dar
 import '../../core/providers/app_shell_provider.dart';
 import '../../core/providers/settings_provider.dart';
 
+class MainNavigationTabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setTab(int index) => state = index;
+}
+
+final mainNavigationTabProvider = NotifierProvider<MainNavigationTabNotifier, int>(
+  MainNavigationTabNotifier.new,
+);
+
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
   @override
@@ -19,7 +30,6 @@ class MainNavigation extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationState extends ConsumerState<MainNavigation> {
-  int _currentIndex = 0;
   final Set<int> _builtIndices = {0};
 
   static final List<Widget Function()> _pageBuilders = [
@@ -32,14 +42,16 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
 
   void _selectTab(int index) {
     if (index == 2) return;
+    ref.read(mainNavigationTabProvider.notifier).setTab(index);
     setState(() {
-      _currentIndex = index;
       _builtIndices.add(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(mainNavigationTabProvider);
+    _builtIndices.add(currentIndex);
     final scaffoldKey = ref.watch(appShellScaffoldKeyProvider);
     final pomodoro = ref.watch(pomodoroProvider);
     final showFloatingPomodoro = pomodoro.isGloballyVisible;
@@ -51,7 +63,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
       body: Stack(
         children: [
           IndexedStack(
-            index: _currentIndex,
+            index: currentIndex,
             children: List.generate(
               _pageBuilders.length,
               (index) => _builtIndices.contains(index)
@@ -63,11 +75,11 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
         ],
       ),
       // استفاده از Stack برای قرار دادن داک شناور در پایین صفحه
-      bottomNavigationBar: _buildFloating3DNavBar(context),
+      bottomNavigationBar: _buildFloating3DNavBar(context, currentIndex),
     );
   }
 
-  Widget _buildFloating3DNavBar(BuildContext context) {
+  Widget _buildFloating3DNavBar(BuildContext context, int currentIndex) {
     final theme = Theme.of(context);
     final isPersian = ref.watch(isPersianProvider);
     final isDark = theme.brightness == Brightness.dark;
@@ -145,7 +157,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     String labelKey,
     bool isPersian,
   ) {
-    final isSelected = _currentIndex == index;
+    final isSelected = ref.watch(mainNavigationTabProvider) == index;
     final theme = Theme.of(context);
 
     return GestureDetector(
