@@ -40,6 +40,28 @@ async function verifyUser(accessToken) {
     }
 }
 
+async function checkVoiceQuota(userId) {
+    if (!userId) return { allowed: true, balance: 900 };
+    try {
+        const { data, error } = await supabase.rpc('get_user_quota', { p_user_id: userId });
+        if (!error && data) {
+            return {
+                allowed: (data.voice_seconds_balance > 0 || data.tier === 'unlimited'),
+                balance: data.voice_seconds_balance,
+                tier: data.tier
+            };
+        }
+    } catch (_) {}
+    return { allowed: true, balance: 900 };
+}
+
+async function decrementVoiceQuota(userId, seconds) {
+    if (!userId || seconds <= 0) return;
+    try {
+        await supabase.rpc('decrement_voice_seconds', { p_user_id: userId, p_seconds: seconds });
+    } catch (_) {}
+}
+
 async function fetchOmniContext(userId) {
     try {
         const [profileRes, statsRes, dueFlashcardsRes] = await Promise.all([
@@ -147,6 +169,11 @@ INSTRUCTIONS
 - CRITICAL AUDIO RULE: You MUST speak in extremely short, bite-sized bursts (1 to 3 sentences maximum). DO NOT give long monologues. Pause frequently and ask short follow-up questions to keep the conversation perfectly real-time and ping-pong style.`;
 }
 
+const SESSION_HARD_CAP_SEC = 900;       // 15 minutes hard cap
+const SESSION_WARNING_SEC = 840;        // 14 minutes warning
+const VAD_SILENCE_PAUSE_SEC = 10;       // 10s silence pause
+const VAD_SILENCE_DISCONNECT_SEC = 30;  // 30s silence disconnect
+
 wss.on('connection', (ws) => {
     const sessionId = generateSessionId();
     console.log(`\n🟢 [Session: ${sessionId}] CLIENT_CONNECTED`);
@@ -159,8 +186,36 @@ wss.on('connection', (ws) => {
     let sessionStartTime = null;
     let audioInChunks = 0;
     let audioOutChunks = 0;
+    let capWarningSent = false;
+    let sessionCapTimer = null;
+    let vadPauseTimer = null;
+    let vadDisconnectTimer = null;
+
+    function resetVadTimers() {
+        clearTimeout(vadPauseTimer);
+        clearTimeout(vadDisconnectTimer);
+
+        vadPauseTimer = setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN && isSetupComplete) {
+                console.log(`⏸️ [Session: ${sessionId}] 10s silence detected -> sending vad_pause`);
+                ws.send(JSON.stringify({ type: 'vad_pause', message: 'مکالمه به دلیل ۱۰ ثانیه سکوت موقتاً متوقف شد.' }));
+            }
+        }, VAD_SILENCE_PAUSE_SEC * 1000);
+
+        vadDisconnectTimer = setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                console.log(`⏹️ [Session: ${sessionId}] 30s silence detected -> sending vad_disconnect`);
+                ws.send(JSON.stringify({ type: 'vad_disconnect', message: 'اتصال به دلیل ۳۰ ثانیه عدم فعالیت قطع شد.' }));
+                ws.close();
+            }
+        }, VAD_SILENCE_DISCONNECT_SEC * 1000);
+    }
 
     function recordSessionTelemetry() {
+        if (sessionCapTimer) clearInterval(sessionCapTimer);
+        if (vadPauseTimer) clearTimeout(vadPauseTimer);
+        if (vadDisconnectTimer) clearTimeout(vadDisconnectTimer);
+
         if (authenticatedUserId && sessionStartTime) {
             const durationSec = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
             const estimatedAudioInSec = Math.min(durationSec, Math.round(audioInChunks * 0.1 * 10) / 10);
@@ -177,6 +232,9 @@ wss.on('connection', (ws) => {
                 latencyMs: durationSec * 1000,
                 userId: authenticatedUserId
             }).catch(() => {});
+
+            // Atomic decrement in database
+            decrementVoiceQuota(authenticatedUserId, durationSec);
             sessionStartTime = null;
         }
     }
@@ -205,6 +263,18 @@ wss.on('connection', (ws) => {
 
             authenticatedUserId = user.id;
 
+            // Check voice quota balance
+            const quota = await checkVoiceQuota(authenticatedUserId);
+            if (!quota.allowed) {
+                console.log(`⛔ [Session: ${sessionId}] INSUFFICIENT_VOICE_QUOTA for user ${authenticatedUserId}`);
+                ws.send(JSON.stringify({
+                    type: 'ai_disconnected',
+                    error: 'اعتبار مکالمه صوتی روزانه شما به پایان رسیده است.'
+                }));
+                ws.close();
+                return;
+            }
+
             // Daily spend circuit breaker check ($1.50)
             const spendCheck = await checkDailySpendBreaker({
                 supabase,
@@ -231,6 +301,8 @@ wss.on('connection', (ws) => {
         if (payload.type === 'audio' && isSetupComplete && geminiWs?.readyState === WebSocket.OPEN) {
             turnCompleteSent = false;
             audioInChunks++;
+            resetVadTimers();
+
             geminiWs.send(JSON.stringify({
                 realtimeInput: { mediaChunks: [{ mimeType: 'audio/pcm;rate=16000', data: payload.data }] }
             }));
@@ -272,6 +344,30 @@ wss.on('connection', (ws) => {
                 if (response.setupComplete) {
                     console.log(`✅ [Session: ${sid}] SETUP_COMPLETE`);
                     isSetupComplete = true;
+                    resetVadTimers();
+
+                    // Start session hard-cap monitor (15 minutes)
+                    if (sessionCapTimer) clearInterval(sessionCapTimer);
+                    sessionCapTimer = setInterval(() => {
+                        if (!sessionStartTime || !clientWs || clientWs.readyState !== WebSocket.OPEN) return;
+                        const elapsedSec = Math.round((Date.now() - sessionStartTime) / 1000);
+                        if (elapsedSec >= SESSION_WARNING_SEC && !capWarningSent) {
+                            capWarningSent = true;
+                            console.log(`⚠️ [Session: ${sid}] 14-min session warning sent`);
+                            clientWs.send(JSON.stringify({ type: 'session_warning', message: 'یک دقیقه از جلسه مکالمه شما باقی مانده است.' }));
+                        }
+                        if (elapsedSec >= SESSION_HARD_CAP_SEC) {
+                            console.log(`⏱️ [Session: ${sid}] 15-min hard cap reached -> closing`);
+                            clientWs.send(JSON.stringify({
+                                type: 'session_ended',
+                                reason: 'time_limit',
+                                message: 'جلسه ۱۵ دقیقه‌ای شما به پایان رسید. خسته نباشید!'
+                            }));
+                            clearInterval(sessionCapTimer);
+                            clientWs.close();
+                        }
+                    }, 1000);
+
                     if (clientWs.readyState === WebSocket.OPEN) clientWs.send(JSON.stringify({ type: 'ready' }));
                     return;
                 }
@@ -286,6 +382,9 @@ wss.on('connection', (ws) => {
 
                     if (sc.modelTurn) {
                         clearTimeout(silenceTimer);
+                        clearTimeout(vadPauseTimer);
+                        clearTimeout(vadDisconnectTimer);
+
                         for (let part of sc.modelTurn.parts) {
                             if (part.inlineData && clientWs.readyState === WebSocket.OPEN) {
                                 audioOutChunks++;
@@ -298,6 +397,7 @@ wss.on('connection', (ws) => {
                         if (!turnCompleteSent) {
                             console.log(`🏁 [Session: ${sid}] TURN_COMPLETE`);
                             turnCompleteSent = true;
+                            resetVadTimers();
                             if (clientWs.readyState === WebSocket.OPEN) clientWs.send(JSON.stringify({ type: 'turn_complete' }));
                         }
                     }

@@ -358,6 +358,22 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
           ),
         ),
         const SizedBox(height: 28),
+        if (session.statusMessage != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade900.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+            ),
+            child: Text(
+              session.statusMessage!,
+              style: const TextStyle(fontSize: 12, color: Colors.amber, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
         Text(
           'برای شروع یا توقف مکالمه ضربه بزنید',
           style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
