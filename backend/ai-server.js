@@ -18,6 +18,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const { recordAiTelemetry, checkDailySpendBreaker } = require('./telemetry-service');
+const { buildThreeTierContext } = require('./context-builder');
 
 const YT_PROXY_HOST = process.env.YT_PROXY_HOST || process.env.NL_SERVER_IP || "127.0.0.1";
 const SECRET_KEY = process.env.YT_PROXY_SECRET_KEY;
@@ -594,26 +595,21 @@ app.post('/api/mentor_chat', verifyAuthOrSecret, circuitBreakerMiddleware, async
         let userContextStr = '';
         if (userId) {
             try {
-                const [profileRes, statsRes, dueCountRes] = await Promise.all([
+                const [profileRes, statsRes, dueCountRes, todayTasksRes] = await Promise.all([
                     supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
                     supabase.from('user_stats').select('*').eq('id', userId).maybeSingle(),
                     supabase.from('flashcards').select('id', { count: 'exact', head: true })
                         .eq('user_id', userId)
-                        .lte('next_review_date', new Date().toISOString())
+                        .lte('next_review_date', new Date().toISOString()),
+                    supabase.from('daily_tasks').select('id, title, task_type').limit(3)
                 ]);
 
-                const profile = profileRes.data || {};
-                const stats = statsRes.data || {};
-                const dueCount = dueCountRes.count ?? 0;
-
-                userContextStr = `
-اطلاعات زبان‌آموز:
-- نام: ${profile.full_name || 'کاربر'}
-- سطح زبان: ${profile.english_level || 'B2'}
-- امتیاز کل: ${stats.score ?? 0} XP
-- روز جاری در دوره: روز ${stats.current_day ?? 1}
-- زنجیره فعالیت: ${stats.streak_days ?? 0} روز پیاپی
-- تعداد فلش‌کارت‌های نیازمند مرور امروز: ${dueCount} لغت`;
+                userContextStr = buildThreeTierContext({
+                    profile: profileRes.data || {},
+                    stats: statsRes.data || {},
+                    pendingVocabCount: dueCountRes.count ?? 0,
+                    todayTasks: todayTasksRes.data || []
+                });
             } catch (_) {}
         }
 

@@ -2,6 +2,7 @@ require('dotenv').config();
 const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 const { recordAiTelemetry, checkDailySpendBreaker } = require('./telemetry-service');
+const { buildMentorLiveSystemPrompt } = require('./context-builder');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'models/gemini-3.8-live';
@@ -119,55 +120,6 @@ async function fetchOmniContext(userId) {
     }
 }
 
-function buildSystemPrompt(ctx) {
-    const name = ctx?.profile?.full_name || 'زبان‌آموز';
-    const level = ctx?.profile?.english_level || 'نامشخص';
-    const score = ctx?.stats?.score ?? 0;
-    const streak = ctx?.stats?.streak_days ?? 0;
-    const day = ctx?.currentDay ?? 1;
-
-    const todayTasksStr = (ctx?.todayTasks || [])
-        .map((t) => `- (${t.task_type}) ${t.title}`)
-        .join('\n') || 'هیچ تسکی برای امروز ثبت نشده.';
-
-    const completedStr = (ctx?.completedTasks || [])
-        .map((t) => `- روز ${t.day_number}: (${t.task_type}) ${t.title}`)
-        .join('\n') || 'هنوز هیچ تسکی رو کامل نکرده.';
-
-    const learnedWordsStr = (ctx?.learnedWords || []).join('، ') || 'هنوز لغتی به فلش‌کارت‌هاش اضافه نکرده.';
-
-    const videosStr = (ctx?.watchedVideoSummaries || [])
-        .map((v) => `- ${v.title || v.video_id}: ${v.summary || 'بدون خلاصه'}`)
-        .join('\n') || 'ویدیوی تحلیل‌شده‌ای برای امروز موجود نیست.';
-
-    return `You are an elite, warm, and encouraging TOEFL/IELTS speaking mentor talking live with your student in English (respond in English unless they switch to Persian).
-
-STUDENT PROFILE
-- Name: ${name}
-- Level: ${level}
-- Current day in program: ${day}
-- Total score: ${score} XP
-- Current streak: ${streak} days
-- Words due for flashcard review: ${ctx?.pendingVocabCount ?? 0}
-
-TODAY'S PLAN (day ${day})
-${todayTasksStr}
-
-RECENTLY COMPLETED TASKS (most recent first)
-${completedStr}
-
-RECENTLY LEARNED VOCABULARY (already in their flashcard deck)
-${learnedWordsStr}
-
-TODAY'S VIDEO LESSON(S)
-${videosStr}
-
-INSTRUCTIONS
-- Use the above naturally in conversation — e.g. congratulate streaks, reference words they've already learned instead of re-teaching them, ask about todays video/topic, nudge them toward due flashcards if there are many.
-- Never invent facts about their progress that aren't listed above.
-- Keep answers natural, concise, and conversational — this is a live voice call, not an essay.
-- CRITICAL AUDIO RULE: You MUST speak in extremely short, bite-sized bursts (1 to 3 sentences maximum). DO NOT give long monologues. Pause frequently and ask short follow-up questions to keep the conversation perfectly real-time and ping-pong style.`;
-}
 
 const SESSION_HARD_CAP_SEC = 900;       // 15 minutes hard cap
 const SESSION_WARNING_SEC = 840;        // 14 minutes warning
@@ -326,7 +278,7 @@ wss.on('connection', (ws) => {
 
         geminiWs.on('open', () => {
             console.log(`🚀 [Session: ${sid}] GEMINI_OPEN -> Sending Setup (model: ${GEMINI_LIVE_MODEL})`);
-            const systemPrompt = buildSystemPrompt(ctx);
+            const systemPrompt = buildMentorLiveSystemPrompt(ctx);
 
             geminiWs.send(JSON.stringify({
                 setup: {

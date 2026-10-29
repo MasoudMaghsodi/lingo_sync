@@ -26,7 +26,7 @@
 | **P1-3** | Global Caches, CEFR Validation, Report Error Flow | Phase 1 | **DONE** | SQL migration, case-insensitive indexing, CEFR normalization, /api/report_error |
 | **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | **DONE** | Guest placement test sheet, Daily Sync 10-min mission card, tab routing |
 | **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | **DONE** | SQL migration, pure StreakCalculator, freeze consumption, vacation mode, 9 unit tests |
-| **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | **IN PROGRESS** | 500-800 tokens budget, dynamic memory injection |
+| **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | **DONE** | Created `context-builder.js`, 500-800 token budget, integrated into live voice & mentor chat |
 
 ### 4. Open Questions (Awaiting User Input)
 1. **Payment Provider Priority**: Choice between Bazaar/Myket in-app billing, Zarinpal web gateway, or Google Play Billing for initial Phase 2 launch.
