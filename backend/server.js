@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { YoutubeTranscript } = require('youtube-transcript');
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(helmet());
 
 // کلید امنیتی اختصاصی از محیط

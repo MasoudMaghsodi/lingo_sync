@@ -213,7 +213,7 @@ wss.on('connection', (ws) => {
 
             geminiWs.send(JSON.stringify({
                 setup: {
-                    model: 'models/gemini-3.8-live',
+                    model: 'models/gemini-2.5-flash-native-audio-latest',
                     generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } } },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 }

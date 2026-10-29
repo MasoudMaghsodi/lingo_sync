@@ -7,6 +7,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -34,6 +35,26 @@ const aiLimiter = rateLimit({
 });
 
 app.use('/api/', aiLimiter);
+
+// Middleware: اعتبارسنجی توکن کاربر یا کلید امنیتی سرور
+async function verifyAuthOrSecret(req, res, next) {
+    const secret = req.headers['x-secret-key'];
+    if (secret && secret === SECRET_KEY) {
+        return next();
+    }
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser(token);
+            if (!error && user) {
+                req.authenticatedUser = user;
+                return next();
+            }
+        } catch (_) {}
+    }
+    return res.status(401).json({ error: 'دسترسی غیرمجاز: نیاز به لاگین یا کلید امنیتی است.' });
+}
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
@@ -96,9 +117,17 @@ async function fetchTranscript(videoId) {
     return transcriptRes.json();
 }
 
-const CANDIDATE_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
 
-async function generateContentWithFallback(prompt, generationConfig = {}) {
+function withTimeout(promise, ms, label = 'Operation') {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    });
+    return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+async function generateContentWithFallback(prompt, generationConfig = {}, timeoutMs = 8000) {
     let lastError = null;
     for (const modelName of CANDIDATE_MODELS) {
         try {
@@ -106,7 +135,11 @@ async function generateContentWithFallback(prompt, generationConfig = {}) {
                 model: modelName,
                 generationConfig,
             });
-            const result = await model.generateContent(prompt);
+            const result = await withTimeout(
+                model.generateContent(prompt),
+                timeoutMs,
+                `Model ${modelName}`
+            );
             return result.response.text();
         } catch (error) {
             lastError = error;
@@ -266,6 +299,7 @@ app.post('/api/process_youtube', async (req, res) => {
             video_id: videoId,
             title: mainContent.title,
             summary: mainContent.summary,
+            full_transcript: transcript,
             full_transcript_translation: mainContent.full_transcript_translation,
             grammar_points: mainContent.grammar_points,
             vocabulary,
@@ -275,6 +309,7 @@ app.post('/api/process_youtube', async (req, res) => {
             video_id: analysis.video_id,
             title: analysis.title || null,
             summary: analysis.summary,
+            full_transcript: analysis.full_transcript,
             full_transcript_translation: analysis.full_transcript_translation,
             grammar_points: analysis.grammar_points,
             vocabulary: analysis.vocabulary,
@@ -406,6 +441,128 @@ app.post('/api/add_to_flashcards', async (req, res) => {
             alreadyHad: existingIds.size,
             notFoundInDictionary: normalizedWords.length - dictRows.length,
         });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// ۵. شورای تحلیل چند ایجنتی هوش مصنوعی (Multi-Agent Consensus Council)
+// ==========================================
+app.post('/api/multi_agent_consensus', verifyAuthOrSecret, async (req, res) => {
+    try {
+        const { topic, context = '', question } = req.body;
+        if (!topic && !question) throw new Error("موضوع یا سوال کاربر الزامی است.");
+
+        const query = question || topic;
+
+        // ایجنت ۱: تحلیل‌گر ساختار و گرامر (Linguistic & Grammar Analyst)
+        const agent1Prompt = `Role: Senior Linguistic & Grammar Analyst for TOEFL/IELTS.
+Context: "${context}"
+User Query: "${query}"
+Task: Analyze grammatical structures, syntax, part of speech, formal vs informal rules, and common mistakes Persian speakers make with this concept. Be concise, authoritative, and structured.`;
+
+        // ایجنت ۲: مربی کاربرد طبیعی و مکالمه (Colloquial & Pragmatic Coach)
+        const agent2Prompt = `Role: Native Pragmatic & Everyday Usage Coach.
+Context: "${context}"
+User Query: "${query}"
+Task: Provide real-world colloquial examples, CEFR level assessment, natural spoken idioms, and modern native phrasing alternatives. Keep it practical and engaging.`;
+
+        // اجرای موازی دو ایجنت اول
+        const [grammarAnalysis, pragmaticAnalysis] = await Promise.all([
+            generateContentWithFallback(agent1Prompt, { maxOutputTokens: 800 }).catch(e => `تحلیل گرامری: ${e.message}`),
+            generateContentWithFallback(agent2Prompt, { maxOutputTokens: 800 }).catch(e => `تحلیل کاربردی: ${e.message}`)
+        ]);
+
+        // ایجنت ۳: استاد ارشد و داور جمع‌بندی‌کننده (Synthesizer & Master Mentor)
+        const synthesizerPrompt = `Role: Master Mentor & Synthesizer for English Learners (Persian speaking).
+User Query: "${query}"
+Context: "${context}"
+
+Perspective 1 (Grammar Specialist):
+${grammarAnalysis}
+
+Perspective 2 (Everyday Usage Coach):
+${pragmaticAnalysis}
+
+Task: Review both perspectives, resolve any nuances, and provide a single, masterfully unified, friendly, and complete lesson in Persian (with English examples).
+Structure:
+1. نتیجه‌گیری و پاسخ روشن به سوال
+2. نکات کلیدی گرامری و ساختاری
+3. مثال‌های واقعی و مکالمه‌ای
+4. یک توصیه کوتاه آموزشی برای به خاطر سپردن`;
+
+        const finalConsensus = await generateContentWithFallback(synthesizerPrompt, { maxOutputTokens: 1400 });
+
+        res.json({
+            consensus: finalConsensus,
+            perspectives: {
+                grammar: grammarAnalysis,
+                pragmatic: pragmaticAnalysis
+            }
+        });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// ۶. چت متنی همراه با کانتکست کامل کاربر (Omni-Context Mentor Chat)
+// ==========================================
+app.post('/api/mentor_chat', verifyAuthOrSecret, async (req, res) => {
+    try {
+        const { message, history = [], userId: bodyUserId } = req.body;
+        const userId = req.authenticatedUser?.id || bodyUserId;
+        if (!message) throw new Error("متن پیام الزامی است.");
+
+        let userContextStr = '';
+        if (userId) {
+            try {
+                const [profileRes, statsRes, dueCountRes] = await Promise.all([
+                    supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+                    supabase.from('user_stats').select('*').eq('id', userId).maybeSingle(),
+                    supabase.from('flashcards').select('id', { count: 'exact', head: true })
+                        .eq('user_id', userId)
+                        .lte('next_review_date', new Date().toISOString())
+                ]);
+
+                const profile = profileRes.data || {};
+                const stats = statsRes.data || {};
+                const dueCount = dueCountRes.count ?? 0;
+
+                userContextStr = `
+اطلاعات زبان‌آموز:
+- نام: ${profile.full_name || 'کاربر'}
+- سطح زبان: ${profile.english_level || 'B2'}
+- امتیاز کل: ${stats.score ?? 0} XP
+- روز جاری در دوره: روز ${stats.current_day ?? 1}
+- زنجیره فعالیت: ${stats.streak_days ?? 0} روز پیاپی
+- تعداد فلش‌کارت‌های نیازمند مرور امروز: ${dueCount} لغت`;
+            } catch (_) {}
+        }
+
+        const historyContext = (Array.isArray(history) ? history : [])
+            .slice(-6)
+            .map(h => `${h.sender === 'user' ? 'کاربر' : 'منتور'}: ${h.text}`)
+            .join('\n');
+
+        const prompt = `You are "LingoSync AI Mentor", a warm, inspiring, expert TOEFL/IELTS English mentor and coach.
+${userContextStr}
+
+تاریخچه گفتگوی اخیر:
+${historyContext}
+
+پیام جدید کاربر:
+"${message}"
+
+دستورالعمل‌ها:
+- اگر کاربر فارسی نوشت، به فارسی روان و صمیمی پاسخ بده اما کلمات و عبارات انگلیسی را با مثال آموزش بده. اگر انگلیسی نوشت، به انگلیسی بنویس.
+- پیشرفت کاربر را در نظر بگیر و او را تشویق کن (مثلاً اگر امتیاز یا زنجیره روزانه دارد).
+- اگر درباره گرامر، لغت، ترجمه یا برنامه درسی سوالی پرسید، با متد آموزشی استاندارد و مثال‌های کاربردی راهنمایی کن.
+- پاسخ صمیمی، منظم و همراه با اشتیاق آموزشی باشد.`;
+
+        const reply = await generateContentWithFallback(prompt, { maxOutputTokens: 1200 });
+        res.json({ reply });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
