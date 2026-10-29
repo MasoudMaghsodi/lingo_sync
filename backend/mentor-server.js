@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'models/gemini-3.8-live';
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
@@ -208,12 +209,12 @@ wss.on('connection', (ws) => {
         geminiWs = new WebSocket(url);
 
         geminiWs.on('open', () => {
-            console.log(`🚀 [Session: ${sid}] GEMINI_OPEN -> Sending Setup`);
+            console.log(`🚀 [Session: ${sid}] GEMINI_OPEN -> Sending Setup (model: ${GEMINI_LIVE_MODEL})`);
             const systemPrompt = buildSystemPrompt(ctx);
 
             geminiWs.send(JSON.stringify({
                 setup: {
-                    model: 'models/gemini-2.5-flash-native-audio-latest',
+                    model: GEMINI_LIVE_MODEL,
                     generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } } },
                     systemInstruction: { parts: [{ text: systemPrompt }] }
                 }

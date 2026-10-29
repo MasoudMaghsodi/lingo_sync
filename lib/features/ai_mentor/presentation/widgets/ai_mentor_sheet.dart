@@ -310,7 +310,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
         ),
         const SizedBox(height: 8),
         Text(
-          'Gemini 2.5 Native Audio Live',
+          'Gemini 3.8 Live Voice',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey.shade400,
