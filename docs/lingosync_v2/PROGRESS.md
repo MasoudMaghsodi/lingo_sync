@@ -21,8 +21,8 @@
 |---|---|---|---|---|
 | **P0-DISC** | Codebase Map, Model Audit, Gap Analysis, Plan | Phase 0 | **DONE** | Complete audit delivered |
 | **P1-0** | Hotfix: Live Voice migration to `gemini-3.8-live` | Phase 1 | **DONE** | Migrated proxy, verified live WSS `setupComplete` & audio roundtrip |
-| **P1-1** | Telemetry, Pricing Config, Spend Circuit Breaker | Phase 1 | **IN PROGRESS** | `ai_pricing_config`, `ai_telemetry_logs` |
-| **P1-2** | Server-side Quotas, Proxy Metering, VAD, Session Cap | Phase 1 | QUEUED | Atomic SQL RPCs, 15m cap |
+| **P1-1** | Telemetry, Pricing Config, Spend Circuit Breaker | Phase 1 | **DONE** | Created SQL migration, `telemetry-service.js`, spend circuit breaker ($1.50/day) |
+| **P1-2** | Server-side Quotas, Proxy Metering, VAD, Session Cap | Phase 1 | **IN PROGRESS** | Atomic SQL RPCs, 15m session cap |
 | **P1-3** | Global Caches, CEFR Validation, Report Error Flow | Phase 1 | QUEUED | `global_dictionary_cache`, `global_video_lessons_cache` |
 | **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | QUEUED | Anonymous auth -> placement dialog |
 | **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | QUEUED | Pure functions, IANA timezones |

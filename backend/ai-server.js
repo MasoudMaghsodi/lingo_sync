@@ -17,12 +17,32 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const { recordAiTelemetry, checkDailySpendBreaker } = require('./telemetry-service');
 
 const YT_PROXY_HOST = process.env.YT_PROXY_HOST || process.env.NL_SERVER_IP || "127.0.0.1";
 const SECRET_KEY = process.env.YT_PROXY_SECRET_KEY;
 if (!SECRET_KEY) {
     console.error('❌ FATAL: YT_PROXY_SECRET_KEY environment variable is not defined.');
     process.exit(1);
+}
+
+// Circuit Breaker Middleware: سقف مصرف روزانه هوش مصنوعی ($1.50 برای هر کاربر)
+async function circuitBreakerMiddleware(req, res, next) {
+    const userId = req.authenticatedUser?.id || req.body?.userId;
+    if (userId) {
+        try {
+            const check = await checkDailySpendBreaker({ supabase, userId, dailyLimitUsd: 1.50 });
+            if (!check.allowed) {
+                return res.status(429).json({
+                    error: 'سقف مصرف روزانه هوش مصنوعی ($1.50) برای حساب شما به پایان رسیده است.',
+                    quota_exceeded: true,
+                    todaySpendUsd: check.todaySpendUsd,
+                    dailyLimitUsd: check.dailyLimitUsd
+                });
+            }
+        } catch (_) {}
+    }
+    next();
 }
 
 // Rate Limiting برای جلوگیری از مصرف بی رویه سهمیه جمینای
@@ -127,9 +147,14 @@ function withTimeout(promise, ms, label = 'Operation') {
     return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
-async function generateContentWithFallback(prompt, generationConfig = {}, timeoutMs = 8000) {
+async function generateContentWithFallback(prompt, generationConfig = {}, timeoutMs = 8000, options = {}) {
     let lastError = null;
-    for (const modelName of CANDIDATE_MODELS) {
+    let fallbackTriggered = false;
+    const startTime = Date.now();
+
+    for (let i = 0; i < CANDIDATE_MODELS.length; i++) {
+        const modelName = CANDIDATE_MODELS[i];
+        if (i > 0) fallbackTriggered = true;
         try {
             const model = genAI.getGenerativeModel({
                 model: modelName,
@@ -140,7 +165,24 @@ async function generateContentWithFallback(prompt, generationConfig = {}, timeou
                 timeoutMs,
                 `Model ${modelName}`
             );
-            return result.response.text();
+            const responseText = result.response.text();
+            const latencyMs = Date.now() - startTime;
+
+            // Record telemetry asynchronously (non-blocking)
+            const tokensIn = Math.round(prompt.length / 4);
+            const tokensOut = Math.round(responseText.length / 4);
+            recordAiTelemetry({
+                supabase,
+                module: options.module || 'general',
+                model: modelName,
+                fallbackTriggered,
+                tokensIn,
+                tokensOut,
+                latencyMs,
+                userId: options.userId || null
+            }).catch(() => {});
+
+            return responseText;
         } catch (error) {
             lastError = error;
             console.warn(`⚠️ Model ${modelName} failed (${error.message}). Attempting next fallback...`);
@@ -154,8 +196,8 @@ async function generateContentWithFallback(prompt, generationConfig = {}, timeou
     throw lastError;
 }
 
-async function generateJsonFromGemini(prompt, maxOutputTokens) {
-    const rawText = await generateContentWithFallback(prompt, { maxOutputTokens });
+async function generateJsonFromGemini(prompt, maxOutputTokens, options = {}) {
+    const rawText = await generateContentWithFallback(prompt, { maxOutputTokens }, 8000, options);
     const jsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     if (!jsonText.startsWith('{')) {
@@ -203,7 +245,7 @@ async function syncVocabularyToGlobalDictionary(vocabulary) {
     return { synced, failed };
 }
 
-async function generateMainContent(transcript, videoId) {
+async function generateMainContent(transcript, videoId, userId = null) {
     const prompt = `
       Act as an expert English-Persian linguist and TOEFL mentor. Analyze the following transcript.
       Return ONLY a valid JSON object.
@@ -224,10 +266,10 @@ async function generateMainContent(transcript, videoId) {
       }
       Transcript: ${transcript}
     `;
-    return generateJsonFromGemini(prompt, MAIN_CONTENT_MAX_TOKENS);
+    return generateJsonFromGemini(prompt, MAIN_CONTENT_MAX_TOKENS, { module: 'video_main', userId });
 }
 
-async function generateVocabulary(transcript) {
+async function generateVocabulary(transcript, userId = null) {
     const prompt = `
       Act as an expert English-Persian linguist and TOEFL mentor. Analyze the following transcript.
       Return ONLY a valid JSON object with a single key "vocabulary".
@@ -251,15 +293,16 @@ async function generateVocabulary(transcript) {
       }
       Transcript: ${transcript}
     `;
-    return generateJsonFromGemini(prompt, VOCABULARY_MAX_TOKENS);
+    return generateJsonFromGemini(prompt, VOCABULARY_MAX_TOKENS, { module: 'video_vocab', userId });
 }
 
 // ==========================================
 // ۱. پردازش ویدیو + گرامر کودکانه + ترجمه ترنسکریپت
 // ==========================================
-app.post('/api/process_youtube', async (req, res) => {
+app.post('/api/process_youtube', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
         const { videoUrl, taskId } = req.body;
+        const currentUserId = req.authenticatedUser?.id || null;
         if (!videoUrl) throw new Error("لینک ویدیو ارسال نشده است.");
 
         let dayNumber = null;
@@ -284,11 +327,11 @@ app.post('/api/process_youtube', async (req, res) => {
         const transcript = transcriptData.map(t => t.text).join(' ');
         if (!transcript.trim()) throw new Error("زیرنویس این ویدیو خالی است.");
 
-        const mainContent = await generateMainContent(transcript, videoId);
+        const mainContent = await generateMainContent(transcript, videoId, currentUserId);
 
         let vocabulary = [];
         try {
-            const vocabResult = await generateVocabulary(transcript);
+            const vocabResult = await generateVocabulary(transcript, currentUserId);
             vocabulary = Array.isArray(vocabResult.vocabulary) ? vocabResult.vocabulary : [];
         } catch (vocabError) {
             if (vocabError.isQuotaError) throw vocabError;
@@ -345,9 +388,10 @@ app.post('/api/process_youtube', async (req, res) => {
 // ==========================================
 // ۲. تحلیل لغت (با سیستم سینونیم CEFR و هندلینگ JSON)
 // ==========================================
-app.post('/api/analyze_word', async (req, res) => {
+app.post('/api/analyze_word', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
         const { word } = req.body;
+        const currentUserId = req.authenticatedUser?.id || null;
         if (!word) throw new Error("کلمه‌ای ارسال نشده است.");
 
         const prompt = `Act as an expert English-Persian linguist. Analyze the word "${word}".
@@ -361,7 +405,10 @@ app.post('/api/analyze_word', async (req, res) => {
             "antonyms": [{"word": "...", "persian": "..."}], "collocations": [{"word": "...", "persian": "..."}]
         }`;
 
-        const analysis = await generateJsonFromGemini(prompt, MAIN_CONTENT_MAX_TOKENS);
+        const analysis = await generateJsonFromGemini(prompt, MAIN_CONTENT_MAX_TOKENS, {
+            module: 'dictionary_word',
+            userId: currentUserId
+        });
         await syncVocabularyToGlobalDictionary([analysis]);
 
         res.json(analysis);
@@ -377,14 +424,18 @@ app.post('/api/analyze_word', async (req, res) => {
 // ==========================================
 // ۳. پرسش از هوش مصنوعی درباره ویدیو
 // ==========================================
-app.post('/api/ask_video_ai', async (req, res) => {
+app.post('/api/ask_video_ai', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
         const { videoId, question } = req.body;
+        const currentUserId = req.authenticatedUser?.id || null;
         const transcriptData = await fetchTranscript(videoId);
         const transcript = transcriptData.map(t => t.text).join(' ');
 
         const prompt = `You are a helpful AI. Answer ONLY based on this transcript: "${transcript}". \nUser Question: "${question}"\nAnswer in Persian politely.`;
-        const answer = await generateContentWithFallback(prompt, { maxOutputTokens: MAIN_CONTENT_MAX_TOKENS });
+        const answer = await generateContentWithFallback(prompt, { maxOutputTokens: MAIN_CONTENT_MAX_TOKENS }, 8000, {
+            module: 'ask_video_ai',
+            userId: currentUserId
+        });
         res.json({ answer });
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -449,9 +500,10 @@ app.post('/api/add_to_flashcards', async (req, res) => {
 // ==========================================
 // ۵. شورای تحلیل چند ایجنتی هوش مصنوعی (Multi-Agent Consensus Council)
 // ==========================================
-app.post('/api/multi_agent_consensus', verifyAuthOrSecret, async (req, res) => {
+app.post('/api/multi_agent_consensus', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
         const { topic, context = '', question } = req.body;
+        const currentUserId = req.authenticatedUser?.id || null;
         if (!topic && !question) throw new Error("موضوع یا سوال کاربر الزامی است.");
 
         const query = question || topic;
@@ -470,8 +522,14 @@ Task: Provide real-world colloquial examples, CEFR level assessment, natural spo
 
         // اجرای موازی دو ایجنت اول
         const [grammarAnalysis, pragmaticAnalysis] = await Promise.all([
-            generateContentWithFallback(agent1Prompt, { maxOutputTokens: 800 }).catch(e => `تحلیل گرامری: ${e.message}`),
-            generateContentWithFallback(agent2Prompt, { maxOutputTokens: 800 }).catch(e => `تحلیل کاربردی: ${e.message}`)
+            generateContentWithFallback(agent1Prompt, { maxOutputTokens: 800 }, 8000, {
+                module: 'multi_agent_grammar',
+                userId: currentUserId
+            }).catch(e => `تحلیل گرامری: ${e.message}`),
+            generateContentWithFallback(agent2Prompt, { maxOutputTokens: 800 }, 8000, {
+                module: 'multi_agent_pragmatic',
+                userId: currentUserId
+            }).catch(e => `تحلیل کاربردی: ${e.message}`)
         ]);
 
         // ایجنت ۳: استاد ارشد و داور جمع‌بندی‌کننده (Synthesizer & Master Mentor)
@@ -492,7 +550,10 @@ Structure:
 3. مثال‌های واقعی و مکالمه‌ای
 4. یک توصیه کوتاه آموزشی برای به خاطر سپردن`;
 
-        const finalConsensus = await generateContentWithFallback(synthesizerPrompt, { maxOutputTokens: 1400 });
+        const finalConsensus = await generateContentWithFallback(synthesizerPrompt, { maxOutputTokens: 1400 }, 8000, {
+            module: 'multi_agent_consensus',
+            userId: currentUserId
+        });
 
         res.json({
             consensus: finalConsensus,
@@ -509,7 +570,7 @@ Structure:
 // ==========================================
 // ۶. چت متنی همراه با کانتکست کامل کاربر (Omni-Context Mentor Chat)
 // ==========================================
-app.post('/api/mentor_chat', verifyAuthOrSecret, async (req, res) => {
+app.post('/api/mentor_chat', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
         const { message, history = [], userId: bodyUserId } = req.body;
         const userId = req.authenticatedUser?.id || bodyUserId;
@@ -561,7 +622,10 @@ ${historyContext}
 - اگر درباره گرامر، لغت، ترجمه یا برنامه درسی سوالی پرسید، با متد آموزشی استاندارد و مثال‌های کاربردی راهنمایی کن.
 - پاسخ صمیمی، منظم و همراه با اشتیاق آموزشی باشد.`;
 
-        const reply = await generateContentWithFallback(prompt, { maxOutputTokens: 1200 });
+        const reply = await generateContentWithFallback(prompt, { maxOutputTokens: 1200 }, 8000, {
+            module: 'mentor_chat',
+            userId
+        });
         res.json({ reply });
     } catch (error) {
         res.status(400).json({ error: error.message });

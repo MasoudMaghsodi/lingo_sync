@@ -1,6 +1,7 @@
 require('dotenv').config();
 const WebSocket = require('ws');
 const { createClient } = require('@supabase/supabase-js');
+const { recordAiTelemetry, checkDailySpendBreaker } = require('./telemetry-service');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || 'models/gemini-3.8-live';
@@ -155,6 +156,30 @@ wss.on('connection', (ws) => {
     let turnCompleteSent = false;
     let silenceTimer = null;
     let authenticatedUserId = null;
+    let sessionStartTime = null;
+    let audioInChunks = 0;
+    let audioOutChunks = 0;
+
+    function recordSessionTelemetry() {
+        if (authenticatedUserId && sessionStartTime) {
+            const durationSec = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
+            const estimatedAudioInSec = Math.min(durationSec, Math.round(audioInChunks * 0.1 * 10) / 10);
+            const estimatedAudioOutSec = Math.min(durationSec, Math.round(audioOutChunks * 0.1 * 10) / 10);
+            recordAiTelemetry({
+                supabase,
+                module: 'live_voice',
+                model: GEMINI_LIVE_MODEL,
+                fallbackTriggered: false,
+                tokensIn: Math.round(estimatedAudioInSec * 25),
+                tokensOut: Math.round(estimatedAudioOutSec * 25),
+                audioSecondsIn: estimatedAudioInSec,
+                audioSecondsOut: estimatedAudioOutSec,
+                latencyMs: durationSec * 1000,
+                userId: authenticatedUserId
+            }).catch(() => {});
+            sessionStartTime = null;
+        }
+    }
 
     ws.on('message', async (data) => {
         let payload;
@@ -179,6 +204,24 @@ wss.on('connection', (ws) => {
             }
 
             authenticatedUserId = user.id;
+
+            // Daily spend circuit breaker check ($1.50)
+            const spendCheck = await checkDailySpendBreaker({
+                supabase,
+                userId: authenticatedUserId,
+                dailyLimitUsd: 1.50
+            });
+            if (!spendCheck.allowed) {
+                console.log(`⛔ [Session: ${sessionId}] DAILY_SPEND_EXCEEDED for user ${authenticatedUserId}`);
+                ws.send(JSON.stringify({
+                    type: 'ai_disconnected',
+                    error: 'سقف مصرف روزانه هوش مصنوعی شما به پایان رسیده است.'
+                }));
+                ws.close();
+                return;
+            }
+
+            sessionStartTime = Date.now();
             console.log(`🔄 [Session: ${sessionId}] SETUP_RECEIVED for user ${authenticatedUserId}`);
             const omniContext = await fetchOmniContext(authenticatedUserId);
             initializeGemini(ws, omniContext, sessionId);
@@ -187,6 +230,7 @@ wss.on('connection', (ws) => {
 
         if (payload.type === 'audio' && isSetupComplete && geminiWs?.readyState === WebSocket.OPEN) {
             turnCompleteSent = false;
+            audioInChunks++;
             geminiWs.send(JSON.stringify({
                 realtimeInput: { mediaChunks: [{ mimeType: 'audio/pcm;rate=16000', data: payload.data }] }
             }));
@@ -244,6 +288,7 @@ wss.on('connection', (ws) => {
                         clearTimeout(silenceTimer);
                         for (let part of sc.modelTurn.parts) {
                             if (part.inlineData && clientWs.readyState === WebSocket.OPEN) {
+                                audioOutChunks++;
                                 clientWs.send(JSON.stringify({ type: 'audio', data: part.inlineData.data }));
                             }
                         }
@@ -262,6 +307,7 @@ wss.on('connection', (ws) => {
 
         geminiWs.on('close', () => {
             console.log(`🔴 [Session: ${sid}] GEMINI_DISCONNECTED`);
+            recordSessionTelemetry();
             isSetupComplete = false;
             if (clientWs.readyState === WebSocket.OPEN) clientWs.send(JSON.stringify({ type: 'ai_disconnected' }));
         });
@@ -270,6 +316,7 @@ wss.on('connection', (ws) => {
     ws.on('close', () => {
         clearTimeout(silenceTimer);
         console.log(`🔌 [Session: ${sessionId}] CLIENT_PHYSICALLY_DISCONNECTED`);
+        recordSessionTelemetry();
         if (geminiWs && geminiWs.readyState === WebSocket.OPEN) geminiWs.close();
     });
 });
