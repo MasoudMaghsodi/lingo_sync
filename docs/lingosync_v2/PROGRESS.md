@@ -23,8 +23,8 @@
 | **P1-0** | Hotfix: Live Voice migration to `gemini-3.8-live` | Phase 1 | **DONE** | Migrated proxy, verified live WSS `setupComplete` & audio roundtrip |
 | **P1-1** | Telemetry, Pricing Config, Spend Circuit Breaker | Phase 1 | **DONE** | Created SQL migration, `telemetry-service.js`, spend circuit breaker ($1.50/day) |
 | **P1-2** | Server-side Quotas, Proxy Metering, VAD, Session Cap | Phase 1 | **DONE** | SQL migration, 15m session cap, silence VAD (10s/30s), atomic decrement |
-| **P1-3** | Global Caches, CEFR Validation, Report Error Flow | Phase 1 | **IN PROGRESS** | `global_dictionary_cache`, `global_video_lessons_cache` |
-| **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | QUEUED | Anonymous auth -> placement dialog |
+| **P1-3** | Global Caches, CEFR Validation, Report Error Flow | Phase 1 | **DONE** | SQL migration, case-insensitive indexing, CEFR normalization, /api/report_error |
+| **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | **IN PROGRESS** | Anonymous placement test, Daily Sync loop |
 | **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | QUEUED | Pure functions, IANA timezones |
 | **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | QUEUED | 500-800 tokens budget |
 

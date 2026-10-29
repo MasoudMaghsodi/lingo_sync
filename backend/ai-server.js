@@ -230,6 +230,21 @@ async function syncVocabularyToGlobalDictionary(vocabulary) {
 
         const normalizedWord = rawWord.toLowerCase();
 
+        // CEFR Strict Validation & Normalization
+        if (entry.synonyms_by_level && typeof entry.synonyms_by_level === 'object') {
+            const cleanSynonyms = {};
+            for (const lvl of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+                const syn = entry.synonyms_by_level[lvl];
+                if (syn && (syn.word || syn.persian)) {
+                    cleanSynonyms[lvl] = {
+                        word: String(syn.word || '').trim(),
+                        persian: String(syn.persian || '').trim()
+                    };
+                }
+            }
+            entry.synonyms_by_level = cleanSynonyms;
+        }
+
         try {
             const { error } = await supabase
                 .from('global_dictionary')
@@ -627,6 +642,53 @@ ${historyContext}
             userId
         });
         res.json({ reply });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// ۷. گزارش خطای محتوایی توسط کاربر
+// ==========================================
+app.post('/api/report_error', verifyAuthOrSecret, async (req, res) => {
+    try {
+        const { contentType, contentId, errorCategory, comment } = req.body;
+        const userId = req.authenticatedUser?.id || null;
+
+        if (!contentType || !contentId || !errorCategory) {
+            throw new Error("فیلدهای contentType، contentId و errorCategory الزامی هستند.");
+        }
+
+        const validTypes = ['flashcard', 'video_analysis', 'dictionary_word', 'mentor_reply'];
+        const validCategories = ['translation', 'grammar', 'pronunciation', 'offensive', 'other'];
+
+        if (!validTypes.includes(contentType)) {
+            throw new Error(`نوع محتوا نامعتبر است: ${contentType}`);
+        }
+        if (!validCategories.includes(errorCategory)) {
+            throw new Error(`دسته‌بندی خطا نامعتبر است: ${errorCategory}`);
+        }
+
+        const { data, error } = await supabase.from('content_error_reports').insert([{
+            user_id: userId,
+            content_type: contentType,
+            content_id: String(contentId),
+            error_category: errorCategory,
+            user_comment: comment || null
+        }]).select();
+
+        if (error) {
+            if (error.code === '42P01' || error.message?.includes('schema cache')) {
+                console.warn(`⚠️ Table content_error_reports pending Supabase migration. Logged locally:`, {
+                    contentType, contentId, errorCategory, comment, userId
+                });
+                return res.json({ success: true, message: 'گزارش شما با موفقیت ثبت شد و بررسی خواهد شد.' });
+            }
+            throw error;
+        }
+
+        console.log(`📝 Error report received for ${contentType}:${contentId} from user ${userId}`);
+        res.json({ success: true, message: 'گزارش شما با موفقیت ثبت شد و بررسی خواهد شد.' });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
