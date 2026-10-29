@@ -7,6 +7,7 @@ import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/error_handler_service.dart';
+import '../../../../core/utils/map_utils.dart';
 import '../../domain/entities/flashcard_entry.dart';
 import '../../domain/repositories/i_flashcard_sync_repository.dart';
 import '../models/flashcard_entry_dto.dart';
@@ -35,13 +36,9 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
   @override
   List<FlashcardEntry> getCachedDueFlashcards(String userId) {
     final cachedData = _flashcardsBox.get(_cacheKey(userId));
-    if (cachedData == null) return [];
+    if (cachedData == null || cachedData is! List) return [];
 
-    final rawList = List<Map<String, dynamic>>.from(
-      (cachedData as List).map((e) => Map<String, dynamic>.from(e)),
-    );
-
-    return rawList.map(FlashcardEntryDto.fromRow).toList();
+    return cachedData.map(FlashcardEntryDto.fromRow).toList();
   }
 
   @override
@@ -129,14 +126,14 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
     if (_pendingSyncBox.isEmpty) return true;
 
     for (final key in _pendingSyncBox.keys.toList()) {
-      final action = _pendingSyncBox.get(key);
+      final action = safeMap(_pendingSyncBox.get(key));
       try {
         if (action['type'] == 'update_review') {
           await _updateRemote(
-            action['user_id'],
-            action['flashcard_id'],
-            action['quality'],
-            Map<String, dynamic>.from(action['data']),
+            action['user_id']?.toString() ?? '',
+            (action['flashcard_id'] as num?)?.toInt() ?? 0,
+            (action['quality'] as num?)?.toInt() ?? 0,
+            safeMap(action['data']),
           );
         }
         await _pendingSyncBox.delete(key);
@@ -167,8 +164,7 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      final rows = List<Map<String, dynamic>>.from(response);
-      final cards = rows.map(FlashcardEntryDto.fromRow).toList();
+      final cards = (response as List).map(FlashcardEntryDto.fromRow).toList();
 
       return Result.success(cards);
     } catch (e, st) {

@@ -1,8 +1,13 @@
+import '../../../../core/utils/map_utils.dart';
 import '../../domain/entities/word_analysis.dart';
 
 class WordDetailDto {
-  static WordDetail fromJson(Map<String, dynamic> json) {
-    return WordDetail(word: json['word'] ?? '', persian: json['persian'] ?? '');
+  static WordDetail fromJson(dynamic rawJson) {
+    final json = safeMap(rawJson);
+    return WordDetail(
+      word: json['word']?.toString() ?? '',
+      persian: json['persian']?.toString() ?? '',
+    );
   }
 
   static Map<String, dynamic> toJson(WordDetail domain) {
@@ -11,33 +16,36 @@ class WordDetailDto {
 }
 
 class WordAnalysisDto {
-  static WordAnalysis fromJson(Map<String, dynamic> json) {
-    final Map<String, dynamic> synJson = json['synonyms_by_level'] ?? {};
+  static WordAnalysis fromJson(dynamic rawJson) {
+    final json = safeMap(rawJson);
+    final synJson = safeMap(json['synonyms_by_level']);
     final Map<String, WordDetail> parsedSynonyms = {};
 
     synJson.forEach((key, value) {
-      if (value is Map<String, dynamic> && value.isNotEmpty) {
-        parsedSynonyms[key] = WordDetailDto.fromJson(value);
+      if (value is Map && value.isNotEmpty) {
+        parsedSynonyms[key] = WordDetailDto.fromJson(safeMap(value));
       }
     });
 
+    final antonymsList = json['antonyms'] is List ? (json['antonyms'] as List) : [];
+    final collocationsList = json['collocations'] is List ? (json['collocations'] as List) : [];
+    final examplesList = json['examples'] is List ? (json['examples'] as List) : [];
+
     return WordAnalysis(
-      word: json['word'] ?? '',
-      partOfSpeech: json['part_of_speech'] ?? '',
-      englishMeaning: json['english_meaning'] ?? '',
-      persianMeaning: json['persian_meaning'] ?? '',
-      examples: List<String>.from(json['examples'] ?? []),
+      word: json['word']?.toString() ?? '',
+      partOfSpeech: json['part_of_speech']?.toString() ?? '',
+      englishMeaning: json['english_meaning']?.toString() ?? '',
+      persianMeaning: json['persian_meaning']?.toString() ?? '',
+      examples: examplesList.map((e) => e.toString()).toList(),
       synonymsByLevel: parsedSynonyms,
-      antonyms:
-          (json['antonyms'] as List<dynamic>?)
-              ?.map((e) => WordDetailDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      collocations:
-          (json['collocations'] as List<dynamic>?)
-              ?.map((e) => WordDetailDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      antonyms: antonymsList
+          .whereType<Map>()
+          .map((e) => WordDetailDto.fromJson(safeMap(e)))
+          .toList(),
+      collocations: collocationsList
+          .whereType<Map>()
+          .map((e) => WordDetailDto.fromJson(safeMap(e)))
+          .toList(),
     );
   }
 
