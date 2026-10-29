@@ -73,6 +73,7 @@ class VideoAnalysisRepositoryImpl implements IVideoAnalysisRepository {
         'video_id': videoAnalysis.videoId,
         'summary': videoAnalysis.summary,
         'full_transcript_translation': videoAnalysis.fullTranscriptTranslation,
+        'full_transcript': videoAnalysis.englishTranscript,
         'grammar_points': videoAnalysis.grammarPoints
             .map(
               (e) => {
@@ -203,8 +204,26 @@ class VideoAnalysisRepositoryImpl implements IVideoAnalysisRepository {
   }
 
   @override
-  Future<Result<String>> askVideoAi(String videoId, String question) async {
+  Future<Result<String>> askVideoAi(
+    String videoId,
+    String question, {
+    bool useCouncil = false,
+    String context = '',
+  }) async {
     try {
+      if (useCouncil) {
+        final response = await errorHandler.executeWithRetry(
+          operation: () => _aiClient.postJson('/multi_agent_consensus', {
+            'question': question,
+            'context': context,
+          }, timeout: const Duration(seconds: 60)),
+          context: 'VideoAnalysisRepositoryImpl.askMultiAgentConsensus',
+        );
+        final data = jsonDecode(response.body);
+        final consensus = data['consensus'] as String? ?? 'پاسخی یافت نشد';
+        return Result.success(consensus);
+      }
+
       final response = await errorHandler.executeWithRetry(
         operation: () => _aiClient.postJson('/ask_video_ai', {
           'videoId': videoId,

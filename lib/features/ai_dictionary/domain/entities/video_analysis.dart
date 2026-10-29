@@ -16,6 +16,7 @@ class VideoAnalysis {
   final String videoId;
   final String summary;
   final String fullTranscriptTranslation;
+  final String englishTranscript;
   final List<GrammarPoint> grammarPoints;
   final List<WordAnalysis> vocabulary;
 
@@ -23,6 +24,7 @@ class VideoAnalysis {
     required this.videoId,
     required this.summary,
     required this.fullTranscriptTranslation,
+    this.englishTranscript = '',
     required this.grammarPoints,
     required this.vocabulary,
   });

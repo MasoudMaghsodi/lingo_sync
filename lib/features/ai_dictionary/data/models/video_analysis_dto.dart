@@ -1,30 +1,40 @@
+import '../../../../core/utils/map_utils.dart';
 import '../../domain/entities/video_analysis.dart';
 import 'word_analysis_dto.dart';
 
 class VideoAnalysisDto {
-  static GrammarPoint grammarFromJson(Map<String, dynamic> json) {
+  static GrammarPoint grammarFromJson(dynamic rawJson) {
+    final json = safeMap(rawJson);
     return GrammarPoint(
-      structureName: json['structure_name'] ?? '',
-      persianExplanation: json['persian_explanation'] ?? '',
-      exampleFromTranscript: json['example_from_transcript'] ?? '',
+      structureName: json['structure_name']?.toString() ?? '',
+      persianExplanation: json['persian_explanation']?.toString() ?? '',
+      exampleFromTranscript: json['example_from_transcript']?.toString() ?? '',
     );
   }
 
-  static VideoAnalysis fromJson(Map<String, dynamic> json) {
+  static VideoAnalysis fromJson(dynamic rawJson) {
+    final json = safeMap(rawJson);
+    final grammarList = json['grammar_points'] is List ? (json['grammar_points'] as List) : [];
+    final vocabList = json['vocabulary'] is List ? (json['vocabulary'] as List) : [];
+
+    final englishTranscript = json['full_transcript']?.toString() ??
+        json['english_transcript']?.toString() ??
+        json['raw_transcript']?.toString() ??
+        '';
+
     return VideoAnalysis(
-      videoId: json['video_id'] ?? '',
-      summary: json['summary'] ?? '',
-      fullTranscriptTranslation: json['full_transcript_translation'] ?? '',
-      grammarPoints:
-          (json['grammar_points'] as List?)
-              ?.map((e) => grammarFromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      vocabulary:
-          (json['vocabulary'] as List?)
-              ?.map((e) => WordAnalysisDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      videoId: json['video_id']?.toString() ?? '',
+      summary: json['summary']?.toString() ?? '',
+      fullTranscriptTranslation: json['full_transcript_translation']?.toString() ?? '',
+      englishTranscript: englishTranscript,
+      grammarPoints: grammarList
+          .whereType<Map>()
+          .map(grammarFromJson)
+          .toList(),
+      vocabulary: vocabList
+          .whereType<Map>()
+          .map(WordAnalysisDto.fromJson)
+          .toList(),
     );
   }
 }

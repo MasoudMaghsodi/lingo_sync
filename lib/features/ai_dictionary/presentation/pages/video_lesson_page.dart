@@ -31,6 +31,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
   bool _isLoadingNote = true;
   bool _isSavingNote = false;
   bool _isAskingAi = false;
+  bool _useCouncilInVideoChat = false;
   String? _aiResponse;
   bool _isSpeakingAi = false;
 
@@ -165,6 +166,10 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
     final result = await repository.askVideoAi(
       widget.videoData.videoId,
       question,
+      useCouncil: _useCouncilInVideoChat,
+      context: widget.videoData.fullTranscriptTranslation.isNotEmpty
+          ? widget.videoData.fullTranscriptTranslation
+          : widget.videoData.summary,
     );
 
     if (mounted) {
@@ -237,6 +242,11 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
               response: _aiResponse,
               isSpeakingResponse: _isSpeakingAi,
               isPersian: isPersian,
+              useCouncil: _useCouncilInVideoChat,
+              onToggleCouncil: (val) {
+                setSheetState(() => _useCouncilInVideoChat = val);
+                setState(() => _useCouncilInVideoChat = val);
+              },
               onAsk: () async {
                 setSheetState(() => _isAskingAi = true);
                 await _askAi();
@@ -326,6 +336,7 @@ class _VideoLessonPageState extends ConsumerState<VideoLessonPage> {
             ),
             VideoTranscriptTab(
               persianTranscript: widget.videoData.fullTranscriptTranslation,
+              englishTranscript: widget.videoData.englishTranscript,
             ),
             VideoGrammarTab(
               grammarPoints: widget.videoData.grammarPoints,
