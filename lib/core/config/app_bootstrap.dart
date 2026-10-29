@@ -37,7 +37,7 @@ abstract final class AppBootstrap {
           ),
           'AI_SERVER_BASE_URL': const String.fromEnvironment(
             'AI_SERVER_BASE_URL',
-            defaultValue: 'http://194.246.82.160:3002/api',
+            defaultValue: 'https://safer.privatepath.ir/lingosync-api',
           ),
           'MENTOR_SOCKET_URL': const String.fromEnvironment(
             'MENTOR_SOCKET_URL',
