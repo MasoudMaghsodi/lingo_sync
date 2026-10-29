@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../../core/constants/storage_constants.dart';
 import '../../../../core/exceptions/app_exceptions.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/services/error_handler_service.dart';
-import '../../../../core/utils/map_utils.dart';
+import '../../../../core/sync/outbox_sync_service.dart';
+import '../../../../core/utils/uuid_generator.dart';
 import '../../domain/entities/flashcard_entry.dart';
 import '../../domain/repositories/i_flashcard_sync_repository.dart';
 import '../models/flashcard_entry_dto.dart';
@@ -21,15 +23,16 @@ IFlashcardSyncRepository flashcardSyncRepository(Ref ref) {
 
 class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
   final SupabaseClient _supabase;
+  final OutboxSyncService _outboxSync;
 
   // Hive Cache Boxes
   final Box _flashcardsBox = Hive.box(StorageConstants.hiveBoxFlashcards);
-  final Box _pendingSyncBox = Hive.box(StorageConstants.hiveBoxCache);
 
   // Protected system folders that cannot be renamed or deleted
   static const List<String> _protectedFolders = ['General', 'Grammar'];
 
-  FlashcardSyncRepositoryImpl(this._supabase);
+  FlashcardSyncRepositoryImpl(this._supabase, [OutboxSyncService? outboxSync])
+      : _outboxSync = outboxSync ?? OutboxSyncService();
 
   String _cacheKey(String userId) => 'due_$userId';
 
@@ -70,6 +73,7 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
     required int quality,
     required Map<String, dynamic> updatedData,
   }) async {
+    // 1. Optimistic local cache update for instant UI feedback
     final cacheKey = _cacheKey(userId);
     final cachedData = _flashcardsBox.get(cacheKey);
 
@@ -79,73 +83,32 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
       await _flashcardsBox.put(cacheKey, list);
     }
 
-    try {
-      await _updateRemote(userId, flashcardId, quality, updatedData);
-    } catch (e) {
-      // Offline mode: queue for sync
-      await _pendingSyncBox.add({
-        'type': 'update_review',
+    // 2. Queue into offline outbox with client-generated event UUID
+    final clientEventId = UuidGenerator.v4();
+    await _outboxSync.enqueue(
+      explicitId: clientEventId,
+      actionType: 'srs_review',
+      payload: {
         'user_id': userId,
         'flashcard_id': flashcardId,
         'quality': quality,
-        'data': updatedData,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-      logger.warning(
-        'Offline mode: Review queued for sync',
-        context: 'FlashcardSyncImpl',
-      );
-    }
-  }
+        'repetition': updatedData['repetition'],
+        'interval': updatedData['interval'],
+        'ease_factor': updatedData['ease_factor'],
+        'next_review_date': updatedData['next_review_date'],
+        'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+        'device_id': 'flutter_mobile',
+      },
+    );
 
-  Future<void> _updateRemote(
-    String userId,
-    int flashcardId,
-    int quality,
-    Map<String, dynamic> data,
-  ) async {
-    await _supabase
-        .from('flashcards')
-        .update({
-          'repetition': data['repetition'],
-          'interval': data['interval'],
-          'ease_factor': data['ease_factor'],
-          'next_review_date': data['next_review_date'],
-        })
-        .eq('id', flashcardId);
-
-    await _supabase.from('review_logs').insert({
-      'user_id': userId,
-      'flashcard_id': flashcardId,
-      'quality': quality,
-    });
+    // 3. Attempt immediate flush in background (idempotent, no-op if offline)
+    unawaited(_outboxSync.flush(_supabase));
   }
 
   @override
   Future<bool> syncPendingActions() async {
-    if (_pendingSyncBox.isEmpty) return true;
-
-    for (final key in _pendingSyncBox.keys.toList()) {
-      final action = safeMap(_pendingSyncBox.get(key));
-      try {
-        if (action['type'] == 'update_review') {
-          await _updateRemote(
-            action['user_id']?.toString() ?? '',
-            (action['flashcard_id'] as num?)?.toInt() ?? 0,
-            (action['quality'] as num?)?.toInt() ?? 0,
-            safeMap(action['data']),
-          );
-        }
-        await _pendingSyncBox.delete(key);
-      } catch (e) {
-        logger.warning(
-          'Sync interrupted due to network failure',
-          context: 'FlashcardSyncImpl',
-        );
-        return false;
-      }
-    }
-    return true;
+    final result = await _outboxSync.flush(_supabase);
+    return !result.hasNetworkError;
   }
 
   @override
