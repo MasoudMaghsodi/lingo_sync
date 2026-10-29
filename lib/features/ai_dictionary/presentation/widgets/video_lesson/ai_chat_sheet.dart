@@ -10,6 +10,8 @@ class AiChatSheetContent extends ConsumerWidget {
   final String? response;
   final bool isSpeakingResponse;
   final bool isPersian;
+  final bool useCouncil;
+  final ValueChanged<bool>? onToggleCouncil;
   final VoidCallback onAsk;
   final VoidCallback onToggleSpeech;
 
@@ -20,6 +22,8 @@ class AiChatSheetContent extends ConsumerWidget {
     required this.response,
     required this.isSpeakingResponse,
     required this.isPersian,
+    this.useCouncil = false,
+    this.onToggleCouncil,
     required this.onAsk,
     required this.onToggleSpeech,
   });
@@ -98,7 +102,48 @@ class AiChatSheetContent extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                if (onToggleCouncil != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: useCouncil
+                          ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: useCouncil
+                            ? theme.colorScheme.primary.withValues(alpha: 0.4)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: SwitchListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      value: useCouncil,
+                      onChanged: onToggleCouncil,
+                      activeThumbColor: theme.colorScheme.primary,
+                      title: Row(
+                        children: [
+                          Icon(
+                            Icons.groups_rounded,
+                            size: 18,
+                            color: useCouncil ? theme.colorScheme.primary : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'مشاوره گروهی اساتید (Multi-Agent Council)',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: useCouncil ? FontWeight.bold : FontWeight.normal,
+                              color: useCouncil ? theme.colorScheme.primary : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 14),
                 ElevatedButton(
                   onPressed: isAsking ? null : onAsk,
                   child: isAsking
@@ -108,10 +153,12 @@ class AiChatSheetContent extends ConsumerWidget {
                           child: CircularProgressIndicator(color: Colors.white),
                         )
                       : Text(
-                          AppLocalizations.getString(
-                            'send_question',
-                            isPersian,
-                          ),
+                          useCouncil
+                              ? 'مشورت گروهی اساتید و دریافت پاسخ'
+                              : AppLocalizations.getString(
+                                  'send_question',
+                                  isPersian,
+                                ),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                 ),

@@ -39,4 +39,8 @@ abstract class AppConfig {
   /// WebSocket URL for the live AI Mentor voice session.
   /// Example: wss://<host>/ws
   static String get mentorSocketUrl => _require('MENTOR_SOCKET_URL');
+
+  /// Shared proxy secret key for internal service authentication.
+  static String get proxySecretKey =>
+      dotenv.env['YT_PROXY_SECRET_KEY'] ?? 'LingoSync_TopSecret_2026';
 }

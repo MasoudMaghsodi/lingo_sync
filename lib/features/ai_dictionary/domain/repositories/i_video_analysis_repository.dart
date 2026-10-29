@@ -15,7 +15,12 @@ abstract class IVideoAnalysisRepository {
   Future<Result<void>> saveUserNote(String videoId, String content);
 
   /// Asks a question to the AI mentor regarding the video transcript
-  Future<Result<String>> askVideoAi(String videoId, String question);
+  Future<Result<String>> askVideoAi(
+    String videoId,
+    String question, {
+    bool useCouncil = false,
+    String context = '',
+  });
 
   /// Automatically processes all pending videos in the background (Cron-like behavior)
   Future<Result<void>> processAllPendingVideos();

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lingo_sync/core/config/app_config.dart';
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'ai_server_client.g.dart';
 
@@ -37,6 +38,23 @@ class AiServerClient {
     return 'AI server returned an unreadable error response.';
   }
 
+  Map<String, String> _buildHeaders() {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+    try {
+      final token = Supabase.instance.client.auth.currentSession?.accessToken;
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (_) {}
+    final secret = AppConfig.proxySecretKey;
+    if (secret.isNotEmpty) {
+      headers['X-Secret-Key'] = secret;
+    }
+    return headers;
+  }
+
   /// POSTs [body] as JSON to `$baseUrl$endpoint`. Connectivity failures
   /// (timeouts, DNS, socket errors) throw a retryable [NetworkException] —
   /// this is what lets `ErrorHandlerService.executeWithRetry` decide
@@ -53,7 +71,7 @@ class AiServerClient {
       response = await http
           .post(
             Uri.parse('$_baseUrl$endpoint'),
-            headers: {'Content-Type': 'application/json'},
+            headers: _buildHeaders(),
             body: jsonEncode(body),
           )
           .timeout(timeout);

@@ -51,3 +51,4 @@ app.*.map.json
 # Android Keystore and Properties
 android/key.properties
 *.jks
+backup_supabase_*/
