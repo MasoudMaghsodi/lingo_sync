@@ -21,6 +21,33 @@ class VideoVocabularyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (vocabulary.isEmpty) {
+      final theme = Theme.of(context);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(UIConstants.largePadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.school_outlined,
+                size: 64,
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+              const SizedBox(height: UIConstants.standardPadding),
+              Text(
+                isPersian
+                    ? 'واژگان جدیدی برای این درس ثبت نشده است.'
+                    : 'No vocabulary items extracted for this lesson.',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(UIConstants.standardPadding),

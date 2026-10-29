@@ -38,7 +38,9 @@ class _VideoTranscriptTabState extends ConsumerState<VideoTranscriptTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currentText = _showEnglish
-        ? widget.englishTranscript
+        ? (widget.englishTranscript.trim().isNotEmpty
+            ? widget.englishTranscript
+            : 'English transcript is not available for this lesson.\nمتن اصلی انگلیسی برای این ویدیو ثبت نشده است.')
         : widget.persianTranscript;
     final textDirection = _showEnglish ? TextDirection.ltr : TextDirection.rtl;
 
