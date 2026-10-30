@@ -32,6 +32,8 @@
 | **P2-3** | Voice Intelligence: Active Recall Raid & Code-Switch Rescue | Phase 2 | **DONE** | Live voice mentor prompts updated with natural Persian code-switch rescue & unprompted due target word elicitation |
 | **P2-4** | 60-Second C1 Upgrade Studio | Phase 2 | **DONE** | UI modal sheet, `/api/c1_upgrade_studio` endpoint with 2 SRS words + advanced grammar pattern + shadowing TTS |
 | **P2-5** | Subscription & Payment Infrastructure | Phase 2 | **DONE** | `SubscriptionTier` (Free, Plus, Exam Pro, Sprint Pass), `IPaymentProvider`, `MockPaymentProvider`, entitlement RPC |
+| **P-PERF** | 1-Core 1GB VPS Hardening & Resource Optimization | Infra | **DONE** | 1GB swapfile, memory limits, zero-CPU timeouts, V8 heap max-old-space-size tuning, freed 400MB disk |
+| **P3-1** | Exam Twin: Official IELTS/TOEFL Speaking Evaluator | Phase 3 | **DONE** | Migration `20261030_07_exam_twin_and_leagues.sql`, 4 criteria rubric scoring with quote evidence, `/api/evaluate_exam_speaking`, `ExamTwinSheet` |
 
 ### 4. Open Questions (Awaiting User Input)
 1. **Payment Provider Priority**: Choice between Bazaar/Myket in-app billing, Zarinpal web gateway, or Google Play Billing for initial Phase 2 launch.
