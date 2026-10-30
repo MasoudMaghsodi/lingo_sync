@@ -12,6 +12,7 @@ import 'package:lingo_sync/core/services/error_handler_service.dart';
 
 import '../../../../core/layout/main_navigation.dart';
 import '../../../../core/providers/settings_provider.dart';
+import '../../../error_genome/presentation/widgets/active_error_genome_section.dart';
 import '../providers/daily_tasks_provider.dart';
 import '../providers/selected_day_provider.dart';
 import '../widgets/daily_sync_mission_card.dart';
@@ -277,8 +278,11 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
                     vertical: UIConstants.standardPadding,
                   ),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: tasks.length,
+                  itemCount: tasks.length + 1,
                   itemBuilder: (context, index) {
+                    if (index == tasks.length) {
+                      return ActiveErrorGenomeSection(isPersian: isPersian);
+                    }
                     final task = tasks[index];
                     return AnimatedContainer(
                       duration: UIConstants.animationDuration,

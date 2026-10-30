@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lingo_sync/core/widgets/three_dimensional_parallax_card.dart';
 import 'package:lingo_sync/features/ai_mentor/presentation/widgets/ai_mentor_sheet.dart';
 
 import '../../../../core/providers/settings_provider.dart';
@@ -25,156 +26,157 @@ class DailySyncMissionCard extends ConsumerWidget {
     final progressFraction = (completedMissionsCount / 3.0).clamp(0.0, 1.0);
     final isAllDone = completedMissionsCount >= 3;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E2230) : Colors.white,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ThreeDimensionalParallaxCard(
+        glowColor: isAllDone ? Colors.amber : theme.colorScheme.primary,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isAllDone
-              ? Colors.amber.withValues(alpha: 0.6)
-              : theme.colorScheme.primary.withValues(alpha: 0.15),
-          width: isAllDone ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isAllDone
-                ? Colors.amber.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E2230) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isAllDone
+                  ? Colors.amber.withValues(alpha: 0.6)
+                  : theme.colorScheme.primary.withValues(alpha: 0.15),
+              width: isAllDone ? 1.5 : 1,
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isAllDone
-                      ? Colors.amber.withValues(alpha: 0.2)
-                      : theme.colorScheme.primary.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isAllDone ? Icons.verified_rounded : Icons.timer_outlined,
-                  color: isAllDone ? Colors.amber : theme.colorScheme.primary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isPersian
-                          ? 'ماموریت روزانه ۱۰ دقیقه‌ای (Daily Sync)'
-                          : '10-Minute Daily Sync Mission',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isAllDone
-                          ? (isPersian
-                                ? 'آفرین! ۵۰ XP پاداش زنجیره دریافت شد'
-                                : 'Awesome! +50 XP bonus earned')
-                          : (isPersian
-                                ? '$completedMissionsCount از ۳ تسک کلیدی انجام شده'
-                                : '$completedMissionsCount of 3 core tasks done'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isAllDone ? Colors.amber : Colors.grey.shade500,
-                        fontWeight: isAllDone
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Circular progress
-              Stack(
-                alignment: Alignment.center,
+              // Header Row
+              Row(
                 children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      value: progressFraction,
-                      strokeWidth: 3.5,
-                      backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isAllDone
+                          ? Colors.amber.withValues(alpha: 0.2)
+                          : theme.colorScheme.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isAllDone ? Icons.verified_rounded : Icons.timer_outlined,
                       color: isAllDone
                           ? Colors.amber
                           : theme.colorScheme.primary,
+                      size: 22,
                     ),
                   ),
-                  Text(
-                    '$completedMissionsCount/3',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isPersian
+                              ? 'ماموریت روزانه ۱۰ دقیقه‌ای (Daily Sync)'
+                              : '10-Minute Daily Sync Mission',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isAllDone
+                              ? (isPersian
+                                    ? 'آفرین! ۵۰ XP پاداش زنجیره دریافت شد'
+                                    : 'Awesome! +50 XP bonus earned')
+                              : (isPersian
+                                    ? '$completedMissionsCount از ۳ تسک کلیدی انجام شده'
+                                    : '$completedMissionsCount of 3 core tasks done'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isAllDone
+                                ? Colors.amber
+                                : Colors.grey.shade500,
+                            fontWeight: isAllDone
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Circular progress
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(
+                          value: progressFraction,
+                          strokeWidth: 3.5,
+                          backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                          color: isAllDone
+                              ? Colors.amber
+                              : theme.colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        '$completedMissionsCount/3',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // 3 Mission Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: _MissionPill(
+                      icon: Icons.play_circle_fill_rounded,
+                      label: isPersian
+                          ? 'درس ویدیو\n(۵ دقیقه)'
+                          : 'Video Lesson\n(5 min)',
+                      color: Colors.blueAccent,
+                      onTap: onOpenVideo,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MissionPill(
+                      icon: Icons.style_rounded,
+                      label: isPersian
+                          ? 'مرور لایتنر\n(۳ دقیقه)'
+                          : 'Flashcards\n(3 min)',
+                      color: Colors.purpleAccent,
+                      onTap: onOpenFlashcards,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MissionPill(
+                      icon: Icons.mic_rounded,
+                      label: isPersian
+                          ? 'مکالمه مربی\n(۲ دقیقه)'
+                          : 'Voice Mentor\n(2 min)',
+                      color: Colors.tealAccent,
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const AiMentorSheet(),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 14),
-
-          // 3 Mission Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: _MissionPill(
-                  icon: Icons.play_circle_fill_rounded,
-                  label: isPersian
-                      ? 'درس ویدیو\n(۵ دقیقه)'
-                      : 'Video Lesson\n(5 min)',
-                  color: Colors.blueAccent,
-                  onTap: onOpenVideo,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MissionPill(
-                  icon: Icons.style_rounded,
-                  label: isPersian
-                      ? 'مرور لایتنر\n(۳ دقیقه)'
-                      : 'Flashcards\n(3 min)',
-                  color: Colors.purpleAccent,
-                  onTap: onOpenFlashcards,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MissionPill(
-                  icon: Icons.mic_rounded,
-                  label: isPersian
-                      ? 'مکالمه مربی\n(۲ دقیقه)'
-                      : 'Voice Mentor\n(2 min)',
-                  color: Colors.tealAccent,
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const AiMentorSheet(),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

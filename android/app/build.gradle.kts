@@ -56,6 +56,10 @@ android {
                 // در محیط CI یا سیستم‌های فاقد key.properties از کلید دیباگ استفاده می‌شود
                 signingConfig = signingConfigs.getByName("debug")
             }
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

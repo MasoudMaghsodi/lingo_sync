@@ -36,6 +36,25 @@ app.get('/health', (req, res) => {
     });
 });
 
+// C20: Iranian SMS Send-Hook for Supabase Auth
+const { getSmsProvider } = require('./sms-service');
+app.post('/api/auth/sms-hook', express.json(), async (req, res) => {
+    try {
+        const { user, sms } = req.body || {};
+        const phone = user?.phone;
+        const otp = sms?.otp;
+        if (!phone || !otp) {
+            return res.status(400).json({ error: 'Missing phone or otp' });
+        }
+        const smsProvider = getSmsProvider();
+        const result = await smsProvider.sendOtp({ phoneNumber: phone, code: otp });
+        res.json({ success: true, result });
+    } catch (err) {
+        console.error('SMS hook error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/transcript', async (req, res) => {
     const videoId = req.query.videoId;
     const key = req.query.key;

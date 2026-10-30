@@ -1,5 +1,5 @@
 // backend/telemetry-service.js
-// Centralized Telemetry, Dynamic Pricing & Spend Circuit Breaker for LingoSync AI services
+// Centralized Telemetry, Dynamic Pricing & Spend Circuit Breaker for LingoSync AI services (C09, C10, C11)
 
 const DEFAULT_PRICING = {
     'gemini-3.8-flash': { text_in: 0.15, text_out: 0.60 },
@@ -10,9 +10,15 @@ const DEFAULT_PRICING = {
     'default': { text_in: 0.15, text_out: 0.60 }
 };
 
-// In-memory sliding buffer for telemetry & local circuit breaker fallback (optimized for 1GB VPS)
+const TIER_DAILY_SPEND_LIMITS = {
+    free: 0.08,
+    pro: 0.25,
+    elite: 0.45,
+    unlimited: 100.00
+};
+
 const localTelemetryBuffer = [];
-const MAX_LOCAL_BUFFER_SIZE = 100;
+const MAX_LOCAL_BUFFER_SIZE = 200;
 
 let cachedPricing = null;
 let lastPricingFetch = 0;
@@ -47,7 +53,7 @@ async function getPricing(supabase) {
             }
         }
     } catch (err) {
-        // Fallback gracefully to DEFAULT_PRICING
+        // Fallback to DEFAULT_PRICING
     }
 
     return DEFAULT_PRICING;
@@ -68,18 +74,17 @@ function calculateCost(model, pricing, { tokensIn = 0, tokensOut = 0, audioSecon
     cost += (tokensIn / 1_000_000) * textInRate;
     cost += (tokensOut / 1_000_000) * textOutRate;
 
-    // Convert audio seconds to approx token equivalent if needed, or per-second rate
-    // Gemini live audio is approx 25 tokens/second (16kHz PCM)
+    // Gemini live audio ~ 25 tokens/second (16kHz PCM)
     const audioInTokens = audioSecondsIn * 25;
     const audioOutTokens = audioSecondsOut * 25;
     cost += (audioInTokens / 1_000_000) * audioInRate;
     cost += (audioOutTokens / 1_000_000) * audioOutRate;
 
-    return Math.round(cost * 1_000_000) / 1_000_000; // 6 decimal places
+    return Math.round(cost * 1_000_000) / 1_000_000;
 }
 
 /**
- * Records AI telemetry both to Supabase and in-memory buffer
+ * Records AI telemetry both to Supabase and in-memory buffer, computing AI talk ratio
  */
 async function recordAiTelemetry({
     supabase,
@@ -96,6 +101,14 @@ async function recordAiTelemetry({
     const pricing = await getPricing(supabase);
     const costEstimateUsd = calculateCost(model, pricing, { tokensIn, tokensOut, audioSecondsIn, audioSecondsOut });
 
+    // AI Talk Ratio (E1 Target: 0.30 - 0.35)
+    const totalAudioSeconds = audioSecondsIn + audioSecondsOut;
+    const aiTalkRatio = totalAudioSeconds > 0 ? Math.round((audioSecondsOut / totalAudioSeconds) * 100) / 100 : null;
+
+    if (aiTalkRatio !== null && aiTalkRatio > 0.40) {
+        console.warn(`⚠️ [AI Economy] AI Talk Ratio drift detected: ${(aiTalkRatio * 100).toFixed(1)}% (target <= 35%)`);
+    }
+
     const entry = {
         module,
         model,
@@ -106,78 +119,84 @@ async function recordAiTelemetry({
         audio_seconds_out: audioSecondsOut,
         latency_ms: latencyMs,
         cost_estimate_usd: costEstimateUsd,
+        ai_talk_ratio: aiTalkRatio,
         user_id: userId,
         created_at: new Date().toISOString()
     };
 
-    // 1. In-memory buffer
     localTelemetryBuffer.push(entry);
     if (localTelemetryBuffer.length > MAX_LOCAL_BUFFER_SIZE) {
         localTelemetryBuffer.shift();
     }
 
-    // 2. Persist to Supabase if client available
     if (supabase) {
         try {
             const { error } = await supabase.from('ai_telemetry_logs').insert([entry]);
-            if (error && error.code !== '42P01') { // Ignore relation doesn't exist error if pending migration
+            if (error && error.code !== '42P01') {
                 console.warn('⚠️ Telemetry insert notice:', error.message);
             }
-        } catch (e) {
-            // Non-blocking telemetry
-        }
+        } catch (_) {}
     }
 
     return entry;
 }
 
 /**
- * Checks if user has exceeded their daily AI budget ($1.50/day default circuit breaker)
+ * Checks per-user tiered daily spend breaker and global daily budget
  */
-async function checkDailySpendBreaker({ supabase, userId, dailyLimitUsd = 1.50 }) {
+async function checkDailySpendBreaker({ supabase, userId, tier = 'pro', globalLimitUsd = 25.00 }) {
+    const userDailyLimitUsd = TIER_DAILY_SPEND_LIMITS[tier] || TIER_DAILY_SPEND_LIMITS.pro;
+
     if (!userId) {
-        return { allowed: true, todaySpendUsd: 0, dailyLimitUsd, remainingUsd: dailyLimitUsd };
+        return { allowed: true, todaySpendUsd: 0, dailyLimitUsd: userDailyLimitUsd, remainingUsd: userDailyLimitUsd };
     }
 
-    // 1. Try Supabase RPC check_user_ai_spend
+    // 1. Try Supabase RPC check_spend_breakers
     if (supabase) {
         try {
-            const { data, error } = await supabase.rpc('check_user_ai_spend', {
+            const { data, error } = await supabase.rpc('check_spend_breakers', {
                 p_user_id: userId,
-                p_daily_limit_usd: dailyLimitUsd
+                p_user_tier: tier
             });
 
             if (!error && data) {
                 return {
-                    allowed: !data.quota_exceeded,
-                    todaySpendUsd: parseFloat(data.today_spend_usd || 0),
-                    dailyLimitUsd: parseFloat(data.daily_limit_usd || dailyLimitUsd),
-                    remainingUsd: parseFloat(data.remaining_usd || 0)
+                    allowed: data.allowed,
+                    todaySpendUsd: parseFloat(data.user_spend_usd || 0),
+                    dailyLimitUsd: parseFloat(data.user_limit_usd || userDailyLimitUsd),
+                    remainingUsd: Math.max(0, parseFloat((data.user_limit_usd || userDailyLimitUsd) - (data.user_spend_usd || 0))),
+                    globalSpendUsd: parseFloat(data.global_spend_usd || 0),
+                    globalKillSwitch: !!data.global_kill_switch
                 };
             }
-        } catch (_) {
-            // Fallback to local buffer
-        }
+        } catch (_) {}
     }
 
-    // 2. Fallback to local memory buffer
+    // 2. In-memory buffer calculation
     const today = new Date().toISOString().slice(0, 10);
     const todayUserEntries = localTelemetryBuffer.filter(
         e => e.user_id === userId && e.created_at && e.created_at.startsWith(today)
     );
-    const localSpend = todayUserEntries.reduce((sum, e) => sum + (e.cost_estimate_usd || 0), 0);
-    const allowed = localSpend < dailyLimitUsd;
+    const localUserSpend = todayUserEntries.reduce((sum, e) => sum + (e.cost_estimate_usd || 0), 0);
+    const totalDailySpend = localTelemetryBuffer
+        .filter(e => e.created_at && e.created_at.startsWith(today))
+        .reduce((sum, e) => sum + (e.cost_estimate_usd || 0), 0);
+
+    const allowed = (localUserSpend < userDailyLimitUsd) && (totalDailySpend < globalLimitUsd);
 
     return {
         allowed,
-        todaySpendUsd: Math.round(localSpend * 1000) / 1000,
-        dailyLimitUsd,
-        remainingUsd: Math.max(0, Math.round((dailyLimitUsd - localSpend) * 1000) / 1000)
+        todaySpendUsd: Math.round(localUserSpend * 1000) / 1000,
+        dailyLimitUsd: userDailyLimitUsd,
+        remainingUsd: Math.max(0, Math.round((userDailyLimitUsd - localUserSpend) * 1000) / 1000),
+        globalSpendUsd: Math.round(totalDailySpend * 1000) / 1000,
+        globalKillSwitch: false
     };
 }
 
 module.exports = {
     DEFAULT_PRICING,
+    TIER_DAILY_SPEND_LIMITS,
     getPricing,
     calculateCost,
     recordAiTelemetry,

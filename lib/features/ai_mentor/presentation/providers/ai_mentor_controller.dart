@@ -211,6 +211,20 @@ class AiMentorController extends _$AiMentorController {
         await HapticFeedback.mediumImpact();
         break;
 
+      case 'admission_redirect':
+        state = state.copyWith(
+          phase: MentorPhase.aiDisconnected,
+          isMicMuted: true,
+          statusMessage:
+              data['message'] as String? ??
+              'ظرفیت خطوط صوتی زنده تکمیل است؛ انتقال موقت به حالت صوتی نوبتی',
+        );
+        await HapticFeedback.heavyImpact();
+        break;
+
+      case 'handshake_ack':
+        break;
+
       case 'session_ended':
         state = state.copyWith(
           phase: MentorPhase.aiDisconnected,

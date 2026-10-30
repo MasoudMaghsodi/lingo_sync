@@ -140,10 +140,26 @@ const SESSION_HARD_CAP_SEC = 900;       // 15 minutes hard cap
 const SESSION_WARNING_SEC = 840;        // 14 minutes warning
 const VAD_SILENCE_PAUSE_SEC = 10;       // 10s silence pause
 const VAD_SILENCE_DISCONNECT_SEC = 30;  // 30s silence disconnect
+const MAX_CONCURRENT_LIVE_SESSIONS = parseInt(process.env.MAX_CONCURRENT_LIVE_SESSIONS || '35', 10);
+let activeLiveSessions = 0;
 
 wss.on('connection', (ws) => {
     const sessionId = generateSessionId();
-    console.log(`\n🟢 [Session: ${sessionId}] CLIENT_CONNECTED`);
+    console.log(`\n🟢 [Session: ${sessionId}] CLIENT_CONNECTED (Active sessions: ${activeLiveSessions + 1}/${MAX_CONCURRENT_LIVE_SESSIONS})`);
+
+    // C03: Admission Control
+    if (activeLiveSessions >= MAX_CONCURRENT_LIVE_SESSIONS) {
+        console.warn(`⚠️ [Session: ${sessionId}] Admission control triggered: capacity full`);
+        ws.send(JSON.stringify({
+            type: 'admission_redirect',
+            mode: 'turn_based',
+            message: 'ظرفیت خطوط صوتی زنده تکمیل است؛ انتقال موقت به حالت صوتی نوبتی'
+        }));
+        setTimeout(() => ws.close(1008, 'Capacity full'), 500);
+        return;
+    }
+
+    activeLiveSessions++;
 
     let geminiWs = null;
     let isSetupComplete = false;
@@ -153,6 +169,8 @@ wss.on('connection', (ws) => {
     let sessionStartTime = null;
     let audioInChunks = 0;
     let audioOutChunks = 0;
+    let negotiatedCodec = 'pcm16';
+    let protocolVersion = 1;
     let capWarningSent = false;
     let sessionCapTimer = null;
     let sessionWarningTimer = null;
@@ -223,6 +241,19 @@ wss.on('connection', (ws) => {
 
         if (payload.type === 'ping') {
             ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+        }
+
+        if (payload.type === 'handshake') {
+            protocolVersion = payload.protocol_version || 1;
+            negotiatedCodec = (payload.codec === 'opus') ? 'opus' : 'pcm16';
+            console.log(`🤝 [Session: ${sessionId}] Handshake: protocol v${protocolVersion}, codec: ${negotiatedCodec}`);
+            ws.send(JSON.stringify({
+                type: 'handshake_ack',
+                protocol_version: protocolVersion,
+                codec: negotiatedCodec,
+                features: ['resumption', 'vad', 'delayed_correction', 'two_bucket_quotas']
+            }));
             return;
         }
 
@@ -390,8 +421,9 @@ wss.on('connection', (ws) => {
     }
 
     ws.on('close', () => {
+        activeLiveSessions = Math.max(0, activeLiveSessions - 1);
         clearAllTimers();
-        console.log(`🔌 [Session: ${sessionId}] CLIENT_PHYSICALLY_DISCONNECTED`);
+        console.log(`🔌 [Session: ${sessionId}] CLIENT_PHYSICALLY_DISCONNECTED (Remaining active: ${activeLiveSessions})`);
         recordSessionTelemetry();
         if (geminiWs && geminiWs.readyState === WebSocket.OPEN) geminiWs.close();
     });

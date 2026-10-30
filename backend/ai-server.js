@@ -153,13 +153,32 @@ async function generateContentWithFallback(prompt, generationConfig = {}, timeou
     let fallbackTriggered = false;
     const startTime = Date.now();
 
-    for (let i = 0; i < CANDIDATE_MODELS.length; i++) {
-        const modelName = CANDIDATE_MODELS[i];
+    // High-stakes pedagogy tasks NEVER downgrade to Flash-Lite
+    const candidateModels = options.highStakes
+        ? ['gemini-3.8-flash', 'gemini-3.6-flash']
+        : CANDIDATE_MODELS;
+
+    for (let i = 0; i < candidateModels.length; i++) {
+        const modelName = candidateModels[i];
         if (i > 0) fallbackTriggered = true;
         try {
+            // Sanitize config for Gemini 3.x: strip sampling params and enforce thinkingLevel
+            const sanitizedConfig = { ...generationConfig };
+            delete sanitizedConfig.temperature;
+            delete sanitizedConfig.topP;
+            delete sanitizedConfig.top_p;
+            delete sanitizedConfig.topK;
+            delete sanitizedConfig.top_k;
+            delete sanitizedConfig.candidateCount;
+
+            const thinkingLevel = options.thinkingLevel || (options.highStakes ? 'HIGH' : (modelName.includes('lite') ? 'LOW' : 'MEDIUM'));
+            if (modelName.startsWith('gemini-3')) {
+                sanitizedConfig.thinkingConfig = { thinkingLevel };
+            }
+
             const model = genAI.getGenerativeModel({
                 model: modelName,
-                generationConfig,
+                generationConfig: sanitizedConfig,
             });
             const result = await withTimeout(
                 model.generateContent(prompt),
@@ -567,9 +586,18 @@ Structure:
 4. یک توصیه کوتاه آموزشی برای به خاطر سپردن`;
 
         const finalConsensus = await generateContentWithFallback(synthesizerPrompt, { maxOutputTokens: 1400 }, 8000, {
-            module: 'multi_agent_consensus',
-            userId: currentUserId
+            module: 'council_chair',
+            userId: currentUserId,
+            highStakes: true,
+            thinkingLevel: 'HIGH'
         });
+
+        // Decrement 1 AI Action for on-demand Deep Analysis
+        if (currentUserId && supabase) {
+            try {
+                await supabase.rpc('decrement_ai_actions', { p_user_id: currentUserId, p_count: 1 });
+            } catch (_) {}
+        }
 
         res.json({
             consensus: finalConsensus,
@@ -740,7 +768,9 @@ Example format:
 
         const rawReply = await generateContentWithFallback(prompt, { maxOutputTokens: 3500 }, 15000, {
             module: 'analyze_learner_errors',
-            userId
+            userId,
+            highStakes: true,
+            thinkingLevel: 'HIGH'
         });
 
         console.log("🔍 [analyze_learner_errors] Raw reply length:", rawReply.length);
@@ -892,7 +922,9 @@ Output strictly valid JSON without markdown wrapping:
 
         const rawReply = await generateContentWithFallback(prompt, { maxOutputTokens: 3500 }, 15000, {
             module: 'c1_upgrade_studio',
-            userId
+            userId,
+            highStakes: true,
+            thinkingLevel: 'HIGH'
         });
 
         let parsed = null;
@@ -973,7 +1005,9 @@ Output strictly valid JSON with no markdown wrapping:
 
         const rawReply = await generateContentWithFallback(prompt, { maxOutputTokens: 3500 }, 15000, {
             module: 'exam_twin',
-            userId
+            userId,
+            highStakes: true,
+            thinkingLevel: 'HIGH'
         });
 
         let evalData = null;
@@ -1004,6 +1038,7 @@ Output strictly valid JSON with no markdown wrapping:
         }
 
         evalData.disclaimerFa = EXAM_DISCLAIMER_FA;
+        evalData.readinessIndex = Math.min(100, Math.max(0, Math.round((parseFloat(evalData.overallBand || 6.0) / 9.0) * 100)));
 
         // Persist attempt to Supabase if authenticated
         if (userId) {

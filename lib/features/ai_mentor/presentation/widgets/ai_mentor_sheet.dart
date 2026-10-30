@@ -7,6 +7,7 @@ import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/features/ai_mentor/data/models/mentor_state.dart';
 import 'package:lingo_sync/features/ai_mentor/presentation/providers/ai_mentor_controller.dart';
 import 'package:lingo_sync/features/ai_mentor/presentation/providers/mentor_chat_provider.dart';
+import 'package:lingo_sync/features/ai_mentor/presentation/widgets/three_dimensional_orb.dart';
 
 class AiMentorSheet extends ConsumerStatefulWidget {
   const AiMentorSheet({super.key});
@@ -15,12 +16,9 @@ class AiMentorSheet extends ConsumerStatefulWidget {
   ConsumerState<AiMentorSheet> createState() => _AiMentorSheetState();
 }
 
-class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
-    with SingleTickerProviderStateMixin {
+class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
   int _selectedTabIndex =
       0; // 0: Live Voice, 1: Mentor Chat, 2: Multi-Agent Council
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnimation;
 
   final TextEditingController _chatController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
@@ -34,20 +32,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
   void dispose() {
-    _pulseController.dispose();
     _chatController.dispose();
     _chatScrollController.dispose();
     _councilController.dispose();
@@ -291,16 +276,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
     final session = ref.watch(aiMentorControllerProvider);
     final controller = ref.read(aiMentorControllerProvider.notifier);
 
-    final speakingScale =
-        (session.phase == MentorPhase.ready ||
-            session.phase == MentorPhase.receivingAudio)
-        ? 1.0 + (session.amplitude * 0.4)
-        : _pulseAnimation.value;
-
     final orbColor = _orbColor(session.phase);
-    final isRetryPhase =
-        session.phase == MentorPhase.aiDisconnected ||
-        session.phase == MentorPhase.disconnected;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -323,44 +299,11 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
           ),
         ),
         const SizedBox(height: 36),
-        GestureDetector(
+        ThreeDimensionalOrb(
+          phase: session.phase,
+          amplitude: session.amplitude,
           onTap: controller.onOrbTap,
-          child: AnimatedScale(
-            scale: speakingScale,
-            duration: const Duration(milliseconds: 100),
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    orbColor.withValues(alpha: 0.55),
-                    orbColor.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: orbColor.withValues(alpha: 0.45),
-                    blurRadius: 40,
-                    spreadRadius: 6,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  isRetryPhase
-                      ? Icons.refresh_rounded
-                      : (session.phase == MentorPhase.receivingAudio
-                            ? Icons.volume_up_rounded
-                            : Icons.mic_rounded),
-                  color: Colors.white,
-                  size: 45,
-                ),
-              ),
-            ),
-          ),
+          size: 165,
         ),
         const SizedBox(height: 28),
         if (session.statusMessage != null) ...[

@@ -10,6 +10,7 @@ import 'package:lingo_sync/core/localization/app_localizations.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
 import 'package:lingo_sync/features/auth/application/auth_controller.dart';
+import 'package:lingo_sync/features/subscription/presentation/widgets/subscription_checkout_sheet.dart';
 
 import '../../data/profile_repository.dart';
 import '../providers/profile_provider.dart';
@@ -82,6 +83,38 @@ class AppSettingsDrawer extends ConsumerWidget {
                       ref.read(isPersianProvider.notifier).toggleLanguage(),
                   child: Text(isPersian ? 'EN' : 'فا'),
                 ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Colors.amber,
+                ),
+                title: Text(
+                  isPersian
+                      ? 'ارتقا به پلن ویژه (Pro / Elite)'
+                      : 'Upgrade to Pro / Elite',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber,
+                  ),
+                ),
+                subtitle: Text(
+                  isPersian
+                      ? 'مکالمه لایو، شورا و شبیه‌ساز آزمون'
+                      : 'Live Voice, Council & Exam Twin',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                trailing: Icon(
+                  isPersian
+                      ? Icons.chevron_left_rounded
+                      : Icons.chevron_right_rounded,
+                  color: Colors.amber,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  SubscriptionCheckoutSheet.show(context);
+                },
               ),
               const Divider(height: 1),
               ListTile(
