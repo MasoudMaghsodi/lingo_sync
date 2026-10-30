@@ -507,6 +507,7 @@ class HomePage extends ConsumerWidget {
     return ThreeDimensionalParallaxCard(
       borderRadius: BorderRadius.circular(24),
       glowColor: theme.colorScheme.primary.withValues(alpha: 0.25),
+      onTap: onStartMission,
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF151926) : Colors.white,

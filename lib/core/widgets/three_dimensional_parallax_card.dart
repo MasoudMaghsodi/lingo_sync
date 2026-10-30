@@ -61,9 +61,8 @@ class _ThreeDimensionalParallaxCardState
     super.dispose();
   }
 
-  void _onPanUpdate(DragUpdateDetails details, Size size) {
+  void _updateTilt(Offset local, Size size) {
     if (size.width == 0 || size.height == 0) return;
-    final local = details.localPosition;
     final normalizedX = (local.dx / size.width) * 2 - 1;
     final normalizedY = (local.dy / size.height) * 2 - 1;
 
@@ -77,7 +76,7 @@ class _ThreeDimensionalParallaxCardState
     });
   }
 
-  void _onPanEnd(DragEndDetails details) {
+  void _resetTilt() {
     _tiltAnimation = Tween<Offset>(begin: _tilt, end: Offset.zero).animate(
       CurvedAnimation(parent: _resetController, curve: Curves.easeOutBack),
     );
@@ -100,48 +99,58 @@ class _ThreeDimensionalParallaxCardState
           ..rotateY(_tilt.dx)
           ..rotateX(-_tilt.dy);
 
-        return GestureDetector(
-          onTap: widget.onTap,
-          onPanUpdate: (d) => _onPanUpdate(d, cardSize),
-          onPanEnd: _onPanEnd,
-          onPanCancel: () => _onPanEnd(DragEndDetails()),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            transform: transform,
-            transformAlignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              boxShadow: [
-                BoxShadow(
-                  color: glow.withValues(alpha: _isInteracting ? 0.35 : 0.15),
-                  blurRadius: _isInteracting ? 24 : 14,
-                  offset: Offset(_tilt.dx * 20, _tilt.dy * 20 + 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: radius,
-              child: Stack(
-                children: [
-                  widget.child,
+        Widget cardContent = AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          transform: transform,
+          transformAlignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(
+                color: glow.withValues(alpha: _isInteracting ? 0.35 : 0.15),
+                blurRadius: _isInteracting ? 24 : 14,
+                offset: Offset(_tilt.dx * 20, _tilt.dy * 20 + 6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              children: [
+                widget.child,
 
-                  // Dynamic 3D Glare sheen gliding over surface
-                  if (widget.enableGlare && _isInteracting)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _CardGlarePainter(
-                            touchPos: _touchPosition,
-                            cardSize: cardSize,
-                            radius: radius,
-                          ),
+                // Dynamic 3D Glare sheen gliding over surface
+                if (widget.enableGlare && _isInteracting)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _CardGlarePainter(
+                          touchPos: _touchPosition,
+                          cardSize: cardSize,
+                          radius: radius,
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
+        );
+
+        if (widget.onTap != null) {
+          cardContent = GestureDetector(
+            onTap: widget.onTap,
+            behavior: HitTestBehavior.opaque,
+            child: cardContent,
+          );
+        }
+
+        return Listener(
+          onPointerDown: (e) => _updateTilt(e.localPosition, cardSize),
+          onPointerMove: (e) => _updateTilt(e.localPosition, cardSize),
+          onPointerUp: (_) => _resetTilt(),
+          onPointerCancel: (_) => _resetTilt(),
+          child: cardContent,
         );
       },
     );
