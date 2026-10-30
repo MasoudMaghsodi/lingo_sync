@@ -694,6 +694,14 @@ app.post('/api/report_error', verifyAuthOrSecret, async (req, res) => {
 // 🧬 تحلیل خطاهای کاربر و استخراج Error Genome (P2-2)
 // ==========================================
 const inMemoryErrorGenome = [];
+const MAX_IN_MEMORY_GENOME = 50;
+
+function recordLocalErrorGenome(entry) {
+    inMemoryErrorGenome.push(entry);
+    if (inMemoryErrorGenome.length > MAX_IN_MEMORY_GENOME) {
+        inMemoryErrorGenome.shift();
+    }
+}
 
 app.post('/api/analyze_learner_errors', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
     try {
@@ -799,7 +807,7 @@ Example format:
                         last_seen_at: new Date().toISOString()
                     }, { onConflict: 'user_id, category, verbatim_quote' });
                 } catch (_) {
-                    inMemoryErrorGenome.push({ ...err, userId, timestamp: new Date().toISOString() });
+                    recordLocalErrorGenome({ ...err, userId, timestamp: new Date().toISOString() });
                 }
 
                 // Auto-create error card in flashcards
@@ -815,7 +823,7 @@ Example format:
                     createdCardsCount++;
                 } catch (_) {}
             } else {
-                inMemoryErrorGenome.push({ ...err, timestamp: new Date().toISOString() });
+                recordLocalErrorGenome({ ...err, timestamp: new Date().toISOString() });
             }
         }
 
@@ -913,7 +921,7 @@ Output strictly valid JSON without markdown wrapping:
 });
 
 // ==========================================
-// 🤖 ربات اتوماسیون پس‌زمینه (Cron Job)
+// 🤖 ربات اتوماسیون پس‌زمینه (Cron Job) - بهینه‌سازی شده برای VPS تک هسته‌ای
 // ==========================================
 setInterval(async () => {
     console.log('🤖 Auto-processing background check...');
@@ -922,7 +930,8 @@ setInterval(async () => {
             .from('daily_tasks')
             .select('*')
             .not('video_url', 'is', null)
-            .eq('is_ai_processed', false);
+            .eq('is_ai_processed', false)
+            .limit(2);
 
         if (!pendingTasks || pendingTasks.length === 0) {
             console.log('✅ No pending videos to process.');
@@ -942,16 +951,16 @@ setInterval(async () => {
             if (processRes.ok) {
                 await supabase.from('daily_tasks').update({ is_ai_processed: true }).eq('id', task.id);
                 console.log(`✅ Success: Video for Day ${task.day_number} processed and cached!`);
-                continue;
-            }
-
-            if (processRes.status === 429) {
+            } else if (processRes.status === 429) {
                 console.warn(`🛑 Gemini quota hit while processing Day ${task.day_number} — stopping this batch, will retry next run.`);
                 break;
+            } else {
+                const errBody = await processRes.json().catch(() => ({}));
+                console.error(`❌ Failed to process Day ${task.day_number}:`, errBody.error || processRes.statusText);
             }
 
-            const errBody = await processRes.json().catch(() => ({}));
-            console.error(`❌ Failed to process Day ${task.day_number}:`, errBody.error || processRes.statusText);
+            // Sleep 3 seconds between tasks to prevent 100% CPU lock on 1-core VPS
+            await new Promise((r) => setTimeout(r, 3000));
         }
     } catch (e) { console.error('Auto-process error:', e.message); }
 }, 1000 * 60 * 60);

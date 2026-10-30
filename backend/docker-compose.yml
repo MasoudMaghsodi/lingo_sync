@@ -6,20 +6,27 @@ services:
       - .:/app
       - yt_api_node_modules:/app/node_modules
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - .env
     environment:
-      - NODE_OPTIONS=--dns-result-order=ipv4first
+      - NODE_OPTIONS=--dns-result-order=ipv4first --max-old-space-size=80
       - PORT=3000
-    command: sh -c "npm install --omit=dev && node server.js"
+    command: sh -c "node server.js"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 80M
+        reservations:
+          memory: 20M
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 30s
+      interval: 45s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
   ai-mentor:
     image: node:22-alpine
@@ -28,13 +35,20 @@ services:
       - .:/app
       - ai_mentor_node_modules:/app/node_modules
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     env_file:
       - .env
     environment:
-      - NODE_OPTIONS=--dns-result-order=ipv4first
-    command: sh -c "npm install --omit=dev && node mentor-server.js"
+      - NODE_OPTIONS=--dns-result-order=ipv4first --max-old-space-size=96
+    command: sh -c "node mentor-server.js"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.40'
+          memory: 110M
+        reservations:
+          memory: 30M
 
   ai-express:
     image: node:22-alpine
@@ -43,23 +57,30 @@ services:
       - .:/app
       - ai_express_node_modules:/app/node_modules
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     env_file:
       - .env
     environment:
-      - NODE_OPTIONS=--dns-result-order=ipv4first
+      - NODE_OPTIONS=--dns-result-order=ipv4first --max-old-space-size=120
       - YT_PROXY_HOST=yt-api
-    command: sh -c "npm install --omit=dev && node ai-server.js"
+    command: sh -c "node ai-server.js"
     depends_on:
       yt-api:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.45'
+          memory: 140M
+        reservations:
+          memory: 40M
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
-      interval: 30s
+      interval: 45s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
 volumes:
   yt_api_node_modules:

@@ -155,12 +155,21 @@ wss.on('connection', (ws) => {
     let audioOutChunks = 0;
     let capWarningSent = false;
     let sessionCapTimer = null;
+    let sessionWarningTimer = null;
     let vadPauseTimer = null;
     let vadDisconnectTimer = null;
 
+    function clearAllTimers() {
+        if (sessionCapTimer) clearTimeout(sessionCapTimer);
+        if (sessionWarningTimer) clearTimeout(sessionWarningTimer);
+        if (vadPauseTimer) clearTimeout(vadPauseTimer);
+        if (vadDisconnectTimer) clearTimeout(vadDisconnectTimer);
+        if (silenceTimer) clearTimeout(silenceTimer);
+    }
+
     function resetVadTimers() {
-        clearTimeout(vadPauseTimer);
-        clearTimeout(vadDisconnectTimer);
+        if (vadPauseTimer) clearTimeout(vadPauseTimer);
+        if (vadDisconnectTimer) clearTimeout(vadDisconnectTimer);
 
         vadPauseTimer = setTimeout(() => {
             if (ws.readyState === WebSocket.OPEN && isSetupComplete) {
@@ -179,9 +188,7 @@ wss.on('connection', (ws) => {
     }
 
     function recordSessionTelemetry() {
-        if (sessionCapTimer) clearInterval(sessionCapTimer);
-        if (vadPauseTimer) clearTimeout(vadPauseTimer);
-        if (vadDisconnectTimer) clearTimeout(vadDisconnectTimer);
+        clearAllTimers();
 
         if (authenticatedUserId && sessionStartTime) {
             const durationSec = Math.max(1, Math.round((Date.now() - sessionStartTime) / 1000));
@@ -313,27 +320,29 @@ wss.on('connection', (ws) => {
                     isSetupComplete = true;
                     resetVadTimers();
 
-                    // Start session hard-cap monitor (15 minutes)
-                    if (sessionCapTimer) clearInterval(sessionCapTimer);
-                    sessionCapTimer = setInterval(() => {
-                        if (!sessionStartTime || !clientWs || clientWs.readyState !== WebSocket.OPEN) return;
-                        const elapsedSec = Math.round((Date.now() - sessionStartTime) / 1000);
-                        if (elapsedSec >= SESSION_WARNING_SEC && !capWarningSent) {
+                    // Start session hard-cap monitor (15 minutes) - zero-CPU timeouts (no 1-sec setInterval)
+                    if (sessionWarningTimer) clearTimeout(sessionWarningTimer);
+                    if (sessionCapTimer) clearTimeout(sessionCapTimer);
+
+                    sessionWarningTimer = setTimeout(() => {
+                        if (clientWs && clientWs.readyState === WebSocket.OPEN && !capWarningSent) {
                             capWarningSent = true;
                             console.log(`⚠️ [Session: ${sid}] 14-min session warning sent`);
                             clientWs.send(JSON.stringify({ type: 'session_warning', message: 'یک دقیقه از جلسه مکالمه شما باقی مانده است.' }));
                         }
-                        if (elapsedSec >= SESSION_HARD_CAP_SEC) {
+                    }, SESSION_WARNING_SEC * 1000);
+
+                    sessionCapTimer = setTimeout(() => {
+                        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
                             console.log(`⏱️ [Session: ${sid}] 15-min hard cap reached -> closing`);
                             clientWs.send(JSON.stringify({
                                 type: 'session_ended',
                                 reason: 'time_limit',
                                 message: 'جلسه ۱۵ دقیقه‌ای شما به پایان رسید. خسته نباشید!'
                             }));
-                            clearInterval(sessionCapTimer);
                             clientWs.close();
                         }
-                    }, 1000);
+                    }, SESSION_HARD_CAP_SEC * 1000);
 
                     if (clientWs.readyState === WebSocket.OPEN) clientWs.send(JSON.stringify({ type: 'ready' }));
                     return;
@@ -381,7 +390,7 @@ wss.on('connection', (ws) => {
     }
 
     ws.on('close', () => {
-        clearTimeout(silenceTimer);
+        clearAllTimers();
         console.log(`🔌 [Session: ${sessionId}] CLIENT_PHYSICALLY_DISCONNECTED`);
         recordSessionTelemetry();
         if (geminiWs && geminiWs.readyState === WebSocket.OPEN) geminiWs.close();

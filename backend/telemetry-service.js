@@ -10,9 +10,9 @@ const DEFAULT_PRICING = {
     'default': { text_in: 0.15, text_out: 0.60 }
 };
 
-// In-memory sliding buffer for telemetry & local circuit breaker fallback
+// In-memory sliding buffer for telemetry & local circuit breaker fallback (optimized for 1GB VPS)
 const localTelemetryBuffer = [];
-const MAX_LOCAL_BUFFER_SIZE = 1000;
+const MAX_LOCAL_BUFFER_SIZE = 100;
 
 let cachedPricing = null;
 let lastPricingFetch = 0;
