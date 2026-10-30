@@ -44,15 +44,15 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 /// سیستم طراحی مرکزی اپلیکیشن (Design System)
 class AppTheme {
   // پالت پرمیوم لایت‌مود
-  static const Color goldPrimary = Color(0xFFC5A059);
-  static const Color goldAccent = Color(0xFF9E7E38);
-  static const Color bgLight = Color(0xFFFDFBF7);
+  static const Color goldPrimary = Color(0xFFD97706);
+  static const Color goldAccent = Color(0xFFB45309);
+  static const Color bgLight = Color(0xFFF8FAFC);
   static const Color surfaceLight = Colors.white;
 
-  // پالت پرمیوم دارک‌مود
-  static const Color goldDark = Color(0xFFE5C158);
-  static const Color bgDark = Color(0xFF1E2525);
-  static const Color surfaceDark = Color(0xFF283232);
+  // پالت پرمیوم دارک‌مود مدرن و ترندی (Deep Obsidian & Frosted Slate)
+  static const Color goldDark = Color(0xFFFBBF24);
+  static const Color bgDark = Color(0xFF0B0E17);
+  static const Color surfaceDark = Color(0xFF151926);
 
   static ThemeData get lightTheme => _buildTheme(
     brightness: Brightness.light,

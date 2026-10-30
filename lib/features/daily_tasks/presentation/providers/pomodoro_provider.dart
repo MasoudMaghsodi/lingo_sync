@@ -188,6 +188,10 @@ class Pomodoro extends _$Pomodoro {
     }
   }
 
+  void toggleVisibility() {
+    setVisibility(!state.isGloballyVisible);
+  }
+
   void resetTimer() {
     _timer?.cancel();
     _endTime = null;

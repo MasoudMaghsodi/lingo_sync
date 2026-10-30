@@ -177,38 +177,49 @@ class _SubscriptionCheckoutSheetState extends State<SubscriptionCheckoutSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.workspace_premium_rounded,
-                          color: Colors.amber,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'پلن‌های اشتراک و شبیه‌ساز LingoSync',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
                           ),
-                          Text(
-                            'مکالمه زنده، شورای اساتید و آزمون آیلتس/تافل',
-                            style: TextStyle(fontSize: 11, color: Colors.grey),
+                          child: const Icon(
+                            Icons.workspace_premium_rounded,
+                            color: Colors.amber,
+                            size: 24,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'پلن‌های اشتراک LingoSync',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'مکالمه لایو، شورا و شبیه‌ساز آزمون',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -356,64 +367,66 @@ class _SubscriptionCheckoutSheetState extends State<SubscriptionCheckoutSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      tier.titleFa,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? accentColor : null,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        badge,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tier.titleFa,
                         style: TextStyle(
-                          fontSize: 10,
-                          color: accentColor,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          color: isSelected ? accentColor : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: accentColor,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   _formatPrice(tier.priceToman),
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
               children: [
                 _buildFeatureBullet(
-                  '🎙️ ${tier.voiceMinutesMonthly} دقیقه مکالمه لایو Gemini 3.8',
+                  '🎙️ ${tier.voiceMinutesMonthly} دقیقه مکالمه',
                 ),
-                const SizedBox(width: 14),
-                _buildFeatureBullet(
-                  '🧠 ${tier.councilDailyCalls} تحلیل روزانه شورا',
-                ),
+                _buildFeatureBullet('🧠 ${tier.councilDailyCalls} تحلیل شورا'),
+                if (tier.hasExamTwin)
+                  _buildFeatureBullet('🎯 شبیه‌ساز رسمی آیلتس'),
               ],
             ),
-            if (tier.hasExamTwin) ...[
-              const SizedBox(height: 6),
-              _buildFeatureBullet('🎯 شبیه‌ساز رسمی ۴ معیار آیلتس (Exam Twin)'),
-            ],
           ],
         ),
       ),

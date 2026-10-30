@@ -347,13 +347,25 @@ class _FlashcardFront extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withValues(alpha: 0.82),
+            const Color(0xFFB45309),
+          ],
+        ),
         borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: theme.colorScheme.primary.withValues(alpha: 0.4),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -414,13 +426,15 @@ class _FlashcardBack extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-          width: 2,
+          color: theme.colorScheme.primary.withValues(alpha: 0.35),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
+            color: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.4 : 0.08,
+            ),
+            blurRadius: 24,
             offset: const Offset(0, 10),
           ),
         ],
