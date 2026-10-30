@@ -27,6 +27,11 @@
 | **P1-4** | Onboarding Flow & Daily Sync 10-min Mission Screen | Phase 1 | **DONE** | Guest placement test sheet, Daily Sync 10-min mission card, tab routing |
 | **P1-5** | Resilient Streak, Backlog Vacation Mode, Competence XP | Phase 1 | **DONE** | SQL migration, pure StreakCalculator, freeze consumption, vacation mode, 9 unit tests |
 | **P1-6** | 3-Tier Mentor Context Injection | Phase 1 | **DONE** | Created `context-builder.js`, 500-800 token budget, integrated into live voice & mentor chat |
+| **P2-1** | Offline-First Sync Engine & Hive Outbox | Phase 2 | **DONE** | Migration `20261030_05_offline_sync.sql`, RFC4122 UUIDv4, idempotent batch RPC, `OutboxSyncService` |
+| **P2-2** | Error Genome & Error-Driven SRS | Phase 2 | **DONE** | Migration `20261030_06_error_genome_and_subscriptions.sql`, L1 error taxonomy, `/api/analyze_learner_errors`, auto-cards |
+| **P2-3** | Voice Intelligence: Active Recall Raid & Code-Switch Rescue | Phase 2 | **DONE** | Live voice mentor prompts updated with natural Persian code-switch rescue & unprompted due target word elicitation |
+| **P2-4** | 60-Second C1 Upgrade Studio | Phase 2 | **DONE** | UI modal sheet, `/api/c1_upgrade_studio` endpoint with 2 SRS words + advanced grammar pattern + shadowing TTS |
+| **P2-5** | Subscription & Payment Infrastructure | Phase 2 | **DONE** | `SubscriptionTier` (Free, Plus, Exam Pro, Sprint Pass), `IPaymentProvider`, `MockPaymentProvider`, entitlement RPC |
 
 ### 4. Open Questions (Awaiting User Input)
 1. **Payment Provider Priority**: Choice between Bazaar/Myket in-app billing, Zarinpal web gateway, or Google Play Billing for initial Phase 2 launch.
