@@ -1,0 +1,322 @@
+[
+  {
+    "word": "achieve",
+    "phonetic": "/əˈtʃiːv/",
+    "partOfSpeech": "verb",
+    "translation": "دستیابی، رسیدن به هدف",
+    "example": "She worked hard to achieve her ambitions.",
+    "level": "B1"
+  },
+  {
+    "word": "acquire",
+    "phonetic": "/əˈkwaɪər/",
+    "partOfSpeech": "verb",
+    "translation": "به‌دست آوردن، آموختن",
+    "example": "He acquired a good knowledge of English.",
+    "level": "B2"
+  },
+  {
+    "word": "adequate",
+    "phonetic": "/ˈæd.ə.kwət/",
+    "partOfSpeech": "adjective",
+    "translation": "کافی، مناسب",
+    "example": "Make sure you get adequate rest before the exam.",
+    "level": "B2"
+  },
+  {
+    "word": "affect",
+    "phonetic": "/əˈfekt/",
+    "partOfSpeech": "verb",
+    "translation": "اثر گذاشتن بر",
+    "example": "The climate change affects everyone.",
+    "level": "B1"
+  },
+  {
+    "word": "apparent",
+    "phonetic": "/əˈpær.ənt/",
+    "partOfSpeech": "adjective",
+    "translation": "آشکار، مشهود",
+    "example": "It was apparent that she was not happy.",
+    "level": "B2"
+  },
+  {
+    "word": "approach",
+    "phonetic": "/əˈproʊtʃ/",
+    "partOfSpeech": "noun/verb",
+    "translation": "رویکرد، نزدیک شدن",
+    "example": "We need a fresh approach to this problem.",
+    "level": "B1"
+  },
+  {
+    "word": "appropriate",
+    "phonetic": "/əˈproʊ.pri.ət/",
+    "partOfSpeech": "adjective",
+    "translation": "مناسب، درخور",
+    "example": "Wear appropriate clothes for the interview.",
+    "level": "B2"
+  },
+  {
+    "word": "aspect",
+    "phonetic": "/ˈæs.pekt/",
+    "partOfSpeech": "noun",
+    "translation": "جنبه، بعد",
+    "example": "We must consider every aspect of the proposal.",
+    "level": "B2"
+  },
+  {
+    "word": "assess",
+    "phonetic": "/əˈses/",
+    "partOfSpeech": "verb",
+    "translation": "ارزیابی کردن، سنجیدن",
+    "example": "They will assess the damage caused by the storm.",
+    "level": "B2"
+  },
+  {
+    "word": "assume",
+    "phonetic": "/əˈsuːm/",
+    "partOfSpeech": "verb",
+    "translation": "فرض کردن، پنداشتن",
+    "example": "Do not assume that everyone agrees with you.",
+    "level": "B2"
+  },
+  {
+    "word": "benefit",
+    "phonetic": "/ˈben.ə.fɪt/",
+    "partOfSpeech": "noun/verb",
+    "translation": "فایده، سود بردن",
+    "example": "The new system will benefit everyone.",
+    "level": "B1"
+  },
+  {
+    "word": "capacity",
+    "phonetic": "/kəˈpæs.ə.t̬i/",
+    "partOfSpeech": "noun",
+    "translation": "ظرفیت، گنجایش",
+    "example": "The stadium was filled to capacity.",
+    "level": "B2"
+  },
+  {
+    "word": "challenge",
+    "phonetic": "/ˈtʃæl.ɪndʒ/",
+    "partOfSpeech": "noun/verb",
+    "translation": "چالش، به چالش کشیدن",
+    "example": "This project was a great challenge for our team.",
+    "level": "B1"
+  },
+  {
+    "word": "circumstance",
+    "phonetic": "/ˈsɝː.kəm.stæns/",
+    "partOfSpeech": "noun",
+    "translation": "شرایط، موقعیت",
+    "example": "Under no circumstances should you open the door.",
+    "level": "B2"
+  },
+  {
+    "word": "clarify",
+    "phonetic": "/ˈklær.ə.faɪ/",
+    "partOfSpeech": "verb",
+    "translation": "شفاف‌سازی کردن، روشن کردن",
+    "example": "Could you please clarify your last statement?",
+    "level": "B2"
+  },
+  {
+    "word": "collapse",
+    "phonetic": "/kəˈlæps/",
+    "partOfSpeech": "verb/noun",
+    "translation": "فرو ریختن، سقوط",
+    "example": "The roof collapsed under the heavy snow.",
+    "level": "B2"
+  },
+  {
+    "word": "commit",
+    "phonetic": "/kəˈmɪt/",
+    "partOfSpeech": "verb",
+    "translation": "متعهد شدن، مرتکب شدن",
+    "example": "He is committed to improving his language skills.",
+    "level": "B2"
+  },
+  {
+    "word": "communicate",
+    "phonetic": "/kəˈmjuː.nə.keɪt/",
+    "partOfSpeech": "verb",
+    "translation": "ارتباط برقرار کردن",
+    "example": "Effective leaders communicate clearly.",
+    "level": "B1"
+  },
+  {
+    "word": "community",
+    "phonetic": "/kəˈmjuː.nə.t̬i/",
+    "partOfSpeech": "noun",
+    "translation": "جامعه، همبستگی",
+    "example": "They built a strong sense of community.",
+    "level": "B1"
+  },
+  {
+    "word": "complex",
+    "phonetic": "/kɑːmˈpleks/",
+    "partOfSpeech": "adjective",
+    "translation": "پیچیده",
+    "example": "The human brain is an incredibly complex organ.",
+    "level": "B2"
+  },
+  {
+    "word": "concept",
+    "phonetic": "/ˈkɑːn.sept/",
+    "partOfSpeech": "noun",
+    "translation": "مفهوم، ایده",
+    "example": "It is hard to grasp the concept of infinity.",
+    "level": "B2"
+  },
+  {
+    "word": "conclude",
+    "phonetic": "/kənˈkluːd/",
+    "partOfSpeech": "verb",
+    "translation": "نتیجه‌گیری کردن، پایان دادن",
+    "example": "The report concluded that more investment is needed.",
+    "level": "B2"
+  },
+  {
+    "word": "conduct",
+    "phonetic": "/kənˈdʌkt/",
+    "partOfSpeech": "verb",
+    "translation": "هدایت کردن، انجام دادن",
+    "example": "They plan to conduct an experimental study.",
+    "level": "B2"
+  },
+  {
+    "word": "consequence",
+    "phonetic": "/ˈkɑːn.sə.kwəns/",
+    "partOfSpeech": "noun",
+    "translation": "پیامد، عاقبت",
+    "example": "You must accept the consequences of your actions.",
+    "level": "B2"
+  },
+  {
+    "word": "consistent",
+    "phonetic": "/kənˈsɪs.tənt/",
+    "partOfSpeech": "adjective",
+    "translation": "پایدار، هماهنگ",
+    "example": "Consistent practice is key to fluency.",
+    "level": "B2"
+  },
+  {
+    "word": "constant",
+    "phonetic": "/ˈkɑːn.stənt/",
+    "partOfSpeech": "adjective",
+    "translation": "مداوم، ثابت",
+    "example": "There is a constant demand for skilled teachers.",
+    "level": "B2"
+  },
+  {
+    "word": "constitute",
+    "phonetic": "/ˈkɑːn.stə.tuːt/",
+    "partOfSpeech": "verb",
+    "translation": "تشکیل دادن",
+    "example": "Women constitute 50 percent of the student body.",
+    "level": "C1"
+  },
+  {
+    "word": "context",
+    "phonetic": "/ˈkɑːn.tekst/",
+    "partOfSpeech": "noun",
+    "translation": "بافتار، زمینه",
+    "example": "Always learn new vocabulary in context.",
+    "level": "B2"
+  },
+  {
+    "word": "contract",
+    "phonetic": "/ˈkɑːn.trækt/",
+    "partOfSpeech": "noun",
+    "translation": "قرارداد",
+    "example": "She signed a two-year employment contract.",
+    "level": "B1"
+  },
+  {
+    "word": "contribute",
+    "phonetic": "/kənˈtrɪb.juːt/",
+    "partOfSpeech": "verb",
+    "translation": "مشارکت کردن، سهیم بودن",
+    "example": "Exercise contributes to good mental health.",
+    "level": "B2"
+  },
+  {
+    "word": "create",
+    "phonetic": "/kriˈeɪt/",
+    "partOfSpeech": "verb",
+    "translation": "خلق کردن، ایجاد کردن",
+    "example": "AI tools help create better learning habits.",
+    "level": "B1"
+  },
+  {
+    "word": "crucial",
+    "phonetic": "/ˈkruː.ʃəl/",
+    "partOfSpeech": "adjective",
+    "translation": "حیاتی، تعیین‌کننده",
+    "example": "Daily speaking practice is crucial for IELTS.",
+    "level": "B2"
+  },
+  {
+    "word": "culture",
+    "phonetic": "/ˈkʌl.tʃɚ/",
+    "partOfSpeech": "noun",
+    "translation": "فرهنگ",
+    "example": "Learning a language opens doors to another culture.",
+    "level": "B1"
+  },
+  {
+    "word": "data",
+    "phonetic": "/ˈdeɪ.t̬ə/",
+    "partOfSpeech": "noun",
+    "translation": "داده‌ها، اطلاعات",
+    "example": "We analyzed the collected data thoroughly.",
+    "level": "B1"
+  },
+  {
+    "word": "define",
+    "phonetic": "/dɪˈfaɪn/",
+    "partOfSpeech": "verb",
+    "translation": "تعریف کردن، مشخص کردن",
+    "example": "How would you define success?",
+    "level": "B1"
+  },
+  {
+    "word": "demonstrate",
+    "phonetic": "/ˈdem.ən.streɪt/",
+    "partOfSpeech": "verb",
+    "translation": "نشان دادن، اثبات کردن",
+    "example": "The experiments demonstrate the law of gravity.",
+    "level": "B2"
+  },
+  {
+    "word": "derive",
+    "phonetic": "/dɪˈraɪv/",
+    "partOfSpeech": "verb",
+    "translation": "مشتق شدن، ناشی شدن",
+    "example": "Many English words derive from Latin.",
+    "level": "B2"
+  },
+  {
+    "word": "design",
+    "phonetic": "/dɪˈzaɪn/",
+    "partOfSpeech": "noun/verb",
+    "translation": "طراحی کردن، طرح",
+    "example": "The application has a clean, minimalist design.",
+    "level": "B1"
+  },
+  {
+    "word": "distinct",
+    "phonetic": "/dɪˈstɪŋkt/",
+    "partOfSpeech": "adjective",
+    "translation": "متمایز، مجزا",
+    "example": "There are three distinct stages in this process.",
+    "level": "B2"
+  },
+  {
+    "word": "distribute",
+    "phonetic": "/dɪˈstrɪb.juːt/",
+    "partOfSpeech": "verb",
+    "translation": "توزیع کردن، پخش کردن",
+    "example": "The leaflets were distributed across the city.",
+    "level": "B2"
+  }
+]

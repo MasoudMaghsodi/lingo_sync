@@ -1,6 +1,7 @@
 import 'package:lingo_sync/core/exceptions/app_exceptions.dart';
 import 'package:lingo_sync/core/result/result.dart';
 import 'package:lingo_sync/core/services/error_handler_service.dart';
+import 'package:lingo_sync/core/utils/streak_calculator.dart';
 import 'package:lingo_sync/features/daily_tasks/data/models/leaderboard_entry.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
@@ -50,8 +51,9 @@ class DailyTaskRepository {
 
   Future<Result<void>> toggleTaskCompletion(
     int taskId,
-    bool isCompleted,
-  ) async {
+    bool isCompleted, {
+    int? dayNumber,
+  }) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) {
       return Result<void>.failure(
@@ -72,31 +74,59 @@ class DailyTaskRepository {
         });
       }
 
-      // 🚀 انتقال منطق آپدیت امتیاز با پشتیبانی از فال‌بک ایمن
+      // 🚀 همگام‌سازی امتیاز، استریک روزانه و روز جاری در دیتابیس
       final points = isCompleted ? 10 : -10;
       try {
-        await _supabase.rpc('increment_task_score', params: {'points': points});
-      } catch (rpcErr) {
-        // فال‌بک مستقیم به جدول user_stats در صورت بروز اختلال در RPC
-        try {
-          final stats = await _supabase
-              .from('user_stats')
-              .select('score')
-              .eq('id', userId)
-              .maybeSingle();
-          final currentScore = (stats?['score'] as num?)?.toInt() ?? 0;
-          final newScore = (currentScore + points).clamp(0, 999999);
-          await _supabase
-              .from('user_stats')
-              .update({
-                'score': newScore,
-                'last_active': DateTime.now().toIso8601String(),
-                'updated_at': DateTime.now().toIso8601String(),
-              })
-              .eq('id', userId);
-        } catch (_) {
-          // ذخیره تسک قبلاً انجام شده؛ خطا در امتیاز مانع تیک خوردن تسک کاربر نمی‌شود
+        final stats = await _supabase
+            .from('user_stats')
+            .select()
+            .eq('id', userId)
+            .maybeSingle();
+
+        final currentScore = (stats?['score'] as num?)?.toInt() ?? 0;
+        final newScore = (currentScore + points).clamp(0, 999999);
+        final currentDayInDb = (stats?['current_day'] as num?)?.toInt() ?? 1;
+        final newDay = dayNumber != null && dayNumber > currentDayInDb
+            ? dayNumber
+            : currentDayInDb;
+
+        DateTime? lastActive;
+        if (stats?['last_active_date'] != null) {
+          lastActive = DateTime.tryParse(stats!['last_active_date'].toString());
         }
+
+        final streakRes = StreakCalculator.evaluate(
+          lastActiveDate: lastActive,
+          clientDate: DateTime.now(),
+          currentStreak: (stats?['streak_days'] as num?)?.toInt() ?? 0,
+          availableFreezes:
+              (stats?['streak_freeze_count'] as num?)?.toInt() ?? 1,
+        );
+
+        await _supabase
+            .from('user_stats')
+            .update({
+              'score': newScore,
+              'streak_days': isCompleted
+                  ? streakRes.newStreak
+                  : ((stats?['streak_days'] as num?)?.toInt() ?? 0),
+              'streak_freeze_count': streakRes.remainingFreezes,
+              'last_active_date': isCompleted
+                  ? streakRes.effectiveDate.toIso8601String()
+                  : stats?['last_active_date'],
+              'current_day': newDay,
+              'last_active': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', userId);
+      } catch (statsErr) {
+        // در صورت بروز هرگونه اختلال، از RPC فال‌بک استفاده می‌کنیم
+        try {
+          await _supabase.rpc(
+            'increment_task_score',
+            params: {'points': points},
+          );
+        } catch (_) {}
       }
 
       return Result<void>.success(null);

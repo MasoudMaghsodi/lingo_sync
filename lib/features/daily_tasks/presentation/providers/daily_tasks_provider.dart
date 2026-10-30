@@ -40,7 +40,11 @@ class DailyTasks extends _$DailyTasks {
     // 🚀 واگذاری تمام عملیات (تیک زدن و آپدیت امتیاز) به گارسون
     final result = await ref
         .read(dailyTaskRepositoryProvider)
-        .toggleTaskCompletion(task.id, newCompletionStatus);
+        .toggleTaskCompletion(
+          task.id,
+          newCompletionStatus,
+          dayNumber: task.dayNumber,
+        );
 
     result.fold(
       onSuccess: (_) {

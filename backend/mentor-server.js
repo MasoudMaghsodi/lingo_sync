@@ -71,7 +71,20 @@ async function fetchOmniContext(userId) {
             supabase.from('flashcards').select('id').eq('user_id', userId).lte('next_review_date', new Date().toISOString()),
         ]);
 
-        const currentDay = statsRes.data?.current_day || 1;
+        let currentDay = statsRes.data?.current_day || 1;
+
+        // محاسبه داینامیک بالاترین روز بر اساس فعالیت واقعی در صورت تفاوت با دیتابیس
+        const { data: maxDayRow } = await supabase
+            .from('user_task_progress')
+            .select('daily_tasks(day_number)')
+            .eq('user_id', userId)
+            .order('daily_tasks(day_number)', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (maxDayRow?.daily_tasks?.day_number && maxDayRow.daily_tasks.day_number > currentDay) {
+            currentDay = maxDayRow.daily_tasks.day_number;
+        }
 
         const [todayTasksRes, doneTasksRes, learnedWordsRes, dueWordsRes, errorGenomeRes] = await Promise.all([
             supabase.from('daily_tasks').select('id, title, task_type, video_url').eq('day_number', currentDay),
@@ -299,6 +312,23 @@ wss.on('connection', (ws) => {
             console.log(`🔄 [Session: ${sessionId}] SETUP_RECEIVED for user ${authenticatedUserId}`);
             const omniContext = await fetchOmniContext(authenticatedUserId);
             initializeGemini(ws, omniContext, sessionId);
+            return;
+        }
+
+        if (payload.type === 'client_turn_complete') {
+            clearTimeout(silenceTimer);
+            if (geminiWs?.readyState === WebSocket.OPEN && !turnCompleteSent) {
+                turnCompleteSent = true;
+                console.log(`⚡ [Session: ${sessionId}] Push-to-Talk released -> sending instant turnComplete!`);
+                geminiWs.send(JSON.stringify({ clientContent: { turnComplete: true } }));
+            }
+            return;
+        }
+
+        if (payload.type === 'client_interrupt') {
+            clearTimeout(silenceTimer);
+            turnCompleteSent = false;
+            console.log(`🛑 [Session: ${sessionId}] Client interrupted mentor speech`);
             return;
         }
 

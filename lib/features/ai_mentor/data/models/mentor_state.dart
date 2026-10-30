@@ -16,12 +16,14 @@ class AiMentorSessionState {
   final MentorPhase phase;
   final double amplitude;
   final bool isMicMuted;
+  final bool isUserTalking;
   final String? statusMessage;
 
   const AiMentorSessionState({
     required this.phase,
     required this.amplitude,
     required this.isMicMuted,
+    this.isUserTalking = false,
     this.statusMessage,
   });
 
@@ -29,12 +31,14 @@ class AiMentorSessionState {
     : phase = MentorPhase.connecting,
       amplitude = 0,
       isMicMuted = true,
+      isUserTalking = false,
       statusMessage = null;
 
   AiMentorSessionState copyWith({
     MentorPhase? phase,
     double? amplitude,
     bool? isMicMuted,
+    bool? isUserTalking,
     String? statusMessage,
     bool clearStatusMessage = false,
   }) {
@@ -42,6 +46,7 @@ class AiMentorSessionState {
       phase: phase ?? this.phase,
       amplitude: amplitude ?? this.amplitude,
       isMicMuted: isMicMuted ?? this.isMicMuted,
+      isUserTalking: isUserTalking ?? this.isUserTalking,
       statusMessage: clearStatusMessage
           ? null
           : (statusMessage ?? this.statusMessage),

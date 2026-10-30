@@ -116,8 +116,49 @@ class AiMentorController extends _$AiMentorController {
         HapticFeedback.heavyImpact();
         _interruptMentor();
         break;
+      case MentorPhase.ready:
+        HapticFeedback.selectionClick();
+        state = state.copyWith(
+          statusMessage: '💡 دکمه را فشار دهید و نگه دارید تا صحبت کنید',
+        );
+        break;
       default:
         break;
+    }
+  }
+
+  Future<void> startTalking() async {
+    if (_isDisposed || !ref.mounted) return;
+    if (state.phase == MentorPhase.receivingAudio) {
+      await _interruptMentor();
+    }
+    if (state.phase != MentorPhase.ready &&
+        state.phase != MentorPhase.receivingAudio)
+      return;
+
+    await HapticFeedback.mediumImpact();
+    state = state.copyWith(
+      isUserTalking: true,
+      isMicMuted: false,
+      phase: MentorPhase.ready,
+      statusMessage: '🎙️ در حال ضبط... رها کنید تا ارسال شود',
+    );
+  }
+
+  Future<void> stopTalking() async {
+    if (_isDisposed || !ref.mounted) return;
+    if (!state.isUserTalking) return;
+
+    await HapticFeedback.lightImpact();
+    state = state.copyWith(
+      isUserTalking: false,
+      isMicMuted: true,
+      amplitude: 0,
+      statusMessage: '⚡ در حال دریافت پاسخ منتور...',
+    );
+
+    if (_socket.isOpen) {
+      _socket.send({'type': 'client_turn_complete'});
     }
   }
 
@@ -299,13 +340,19 @@ class AiMentorController extends _$AiMentorController {
 
   void _onAmplitude(double amplitude) {
     if (_isDisposed || !ref.mounted) return;
-    if (state.isMicMuted || state.phase != MentorPhase.ready) return;
+    if (state.isMicMuted ||
+        !state.isUserTalking ||
+        state.phase != MentorPhase.ready)
+      return;
     state = state.copyWith(amplitude: amplitude);
   }
 
   void _onPcmChunk(List<int> chunk) {
     if (_isDisposed || !ref.mounted) return;
-    if (state.isMicMuted || state.phase != MentorPhase.ready) return;
+    if (state.isMicMuted ||
+        !state.isUserTalking ||
+        state.phase != MentorPhase.ready)
+      return;
     _socket.sendAudioChunk(base64Encode(chunk));
   }
 }

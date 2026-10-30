@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lingo_sync/core/layout/main_navigation.dart';
+import 'package:lingo_sync/core/providers/app_mode_provider.dart';
 import 'package:lingo_sync/core/providers/app_shell_provider.dart';
 import 'package:lingo_sync/core/providers/settings_provider.dart';
 import 'package:lingo_sync/core/widgets/three_dimensional_parallax_card.dart';
@@ -12,6 +13,7 @@ import 'package:lingo_sync/features/daily_tasks/presentation/providers/pomodoro_
 import 'package:lingo_sync/features/daily_tasks/presentation/providers/selected_day_provider.dart';
 import 'package:lingo_sync/features/error_genome/presentation/widgets/active_error_genome_section.dart';
 import 'package:lingo_sync/features/exam_twin/presentation/widgets/exam_twin_sheet.dart';
+import 'package:lingo_sync/features/home/presentation/pages/general_hub_page.dart';
 import 'package:lingo_sync/features/practice/presentation/widgets/c1_upgrade_studio_sheet.dart';
 import 'package:lingo_sync/features/settings/presentation/providers/profile_provider.dart';
 import 'package:lingo_sync/features/subscription/presentation/widgets/subscription_checkout_sheet.dart';
@@ -176,187 +178,334 @@ class HomePage extends ConsumerWidget {
           ref.invalidate(dailyTasksProvider(currentDay));
           ref.invalidate(flashcardsProvider);
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            // 0. Dual-Mode Segmented Switcher (عمومی vs پرو VIP)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildModeSwitcher(
+                currentMode: ref.watch(appHubModeProvider),
+                isPersian: isPersian,
+                isDark: isDark,
+                theme: theme,
+                onModeSelected: (mode) {
+                  HapticFeedback.selectionClick();
+                  ref.read(appHubModeProvider.notifier).setMode(mode);
+                },
+              ),
+            ),
+
+            // Mode Content
+            Expanded(
+              child: ref.watch(appHubModeProvider) == AppHubMode.general
+                  ? const GeneralHubPage()
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        top: 4,
+                        bottom: 100, // Space for floating dock
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. User Header & Stats Bar
+                          _buildHeaderSection(
+                            name: name,
+                            greeting: _getGreeting(isPersian),
+                            streak: streak,
+                            score: score,
+                            level: level,
+                            theme: theme,
+                            isDark: isDark,
+                            isPersian: isPersian,
+                            onLeaderboardTap: () {
+                              HapticFeedback.lightImpact();
+                              // Switch to Leaderboard or open Leaderboard
+                              ref
+                                  .read(mainNavigationTabProvider.notifier)
+                                  .setTab(4);
+                            },
+                          ),
+
+                          const SizedBox(height: 18),
+
+                          // 2. Hero Spotlight 3D Card: "Daily Sync Mission"
+                          _buildDailyMissionHeroCard(
+                            day: currentDay,
+                            completedCount: completedCount,
+                            totalCount: totalCount,
+                            progress: progress,
+                            theme: theme,
+                            isDark: isDark,
+                            isPersian: isPersian,
+                            onStartMission: () {
+                              HapticFeedback.mediumImpact();
+                              // Jump to Tab 1 (Planner)
+                              ref
+                                  .read(mainNavigationTabProvider.notifier)
+                                  .setTab(1);
+                            },
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // 3. Section Title: دسترسی سریع ۳ بعدی
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isPersian
+                                    ? 'مراکز تمرین و ابزارها'
+                                    : 'Practice Hubs',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                isPersian ? 'هوش مصنوعی زنده' : 'AI Powered',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // 4. Quick Action 3D Cards Grid
+                          _buildLiveVoiceMentorCard(
+                            theme: theme,
+                            isDark: isDark,
+                            isPersian: isPersian,
+                            onTap: () {
+                              HapticFeedback.heavyImpact();
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const AiMentorSheet(),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Row(
+                            children: [
+                              // Flashcards Due Card
+                              Expanded(
+                                child: _buildSmallHubCard(
+                                  title: isPersian
+                                      ? 'جعبه لایتنر'
+                                      : 'Leitner Deck',
+                                  subtitle: isPersian
+                                      ? '$dueCount کارت آماده'
+                                      : '$dueCount Due Cards',
+                                  badge: 'SRS',
+                                  icon: Icons.style_rounded,
+                                  accentColor: Colors.deepPurpleAccent,
+                                  theme: theme,
+                                  isDark: isDark,
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    ref
+                                        .read(
+                                          mainNavigationTabProvider.notifier,
+                                        )
+                                        .setTab(3);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Exam Twin Speaking Simulator
+                              Expanded(
+                                child: _buildSmallHubCard(
+                                  title: isPersian
+                                      ? 'شبیه‌ساز آیلتس'
+                                      : 'Exam Twin',
+                                  subtitle: isPersian
+                                      ? 'ارزیابی رسمی ۴ معیار'
+                                      : '4 IELTS Bands',
+                                  badge: 'IELTS',
+                                  icon: Icons.record_voice_over_rounded,
+                                  accentColor: Colors.tealAccent.shade700,
+                                  theme: theme,
+                                  isDark: isDark,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    ExamTwinSheet.show(context);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Row(
+                            children: [
+                              // C1 Native Upgrade Studio
+                              Expanded(
+                                child: _buildSmallHubCard(
+                                  title: isPersian
+                                      ? 'ارتقای اصطلاحات'
+                                      : 'C1 Studio',
+                                  subtitle: isPersian
+                                      ? 'تبدیل متن به نیتیو'
+                                      : 'Native Recast',
+                                  badge: 'C1',
+                                  icon: Icons.auto_awesome_rounded,
+                                  accentColor: Colors.indigoAccent,
+                                  theme: theme,
+                                  isDark: isDark,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    C1UpgradeStudioSheet.show(context);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // 49-Day Roadmap Planner Button
+                              Expanded(
+                                child: _buildSmallHubCard(
+                                  title: isPersian ? 'نقشه ۴۹ روزه' : 'Roadmap',
+                                  subtitle: isPersian
+                                      ? 'تسک‌های گام‌به‌گام'
+                                      : 'Curriculum',
+                                  badge: 'Day $currentDay',
+                                  icon: Icons.calendar_month_rounded,
+                                  accentColor: Colors.amber.shade700,
+                                  theme: theme,
+                                  isDark: isDark,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    ref
+                                        .read(
+                                          mainNavigationTabProvider.notifier,
+                                        )
+                                        .setTab(1);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // 5. Active Error Genome Section
+                          ActiveErrorGenomeSection(isPersian: isPersian),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeSwitcher({
+    required AppHubMode currentMode,
+    required bool isPersian,
+    required bool isDark,
+    required ThemeData theme,
+    required void Function(AppHubMode) onModeSelected,
+  }) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF151926) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildModePill(
+              title: isPersian ? 'زبان عمومی (لغات و متون)' : 'General Hub',
+              icon: Icons.auto_stories_rounded,
+              isSelected: currentMode == AppHubMode.general,
+              activeColor: theme.colorScheme.primary,
+              theme: theme,
+              onTap: () => onModeSelected(AppHubMode.general),
+            ),
           ),
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: 100, // Space for floating dock
+          const SizedBox(width: 6),
+          Expanded(
+            child: _buildModePill(
+              title: isPersian ? 'پلن اختصاصی VIP' : 'VIP Studio',
+              icon: Icons.workspace_premium_rounded,
+              isSelected: currentMode == AppHubMode.pro,
+              activeColor: Colors.amber.shade700,
+              theme: theme,
+              onTap: () => onModeSelected(AppHubMode.pro),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModePill({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required Color activeColor,
+    required ThemeData theme,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. User Header & Stats Bar
-              _buildHeaderSection(
-                name: name,
-                greeting: _getGreeting(isPersian),
-                streak: streak,
-                score: score,
-                level: level,
-                theme: theme,
-                isDark: isDark,
-                isPersian: isPersian,
-                onLeaderboardTap: () {
-                  HapticFeedback.lightImpact();
-                  // Switch to Leaderboard or open Leaderboard
-                  ref.read(mainNavigationTabProvider.notifier).setTab(4);
-                },
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
-
-              const SizedBox(height: 18),
-
-              // 2. Hero Spotlight 3D Card: "Daily Sync Mission"
-              _buildDailyMissionHeroCard(
-                day: currentDay,
-                completedCount: completedCount,
-                totalCount: totalCount,
-                progress: progress,
-                theme: theme,
-                isDark: isDark,
-                isPersian: isPersian,
-                onStartMission: () {
-                  HapticFeedback.mediumImpact();
-                  // Jump to Tab 1 (Planner)
-                  ref.read(mainNavigationTabProvider.notifier).setTab(1);
-                },
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
               ),
-
-              const SizedBox(height: 20),
-
-              // 3. Section Title: دسترسی سریع ۳ بعدی
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isPersian ? 'مراکز تمرین و ابزارها' : 'Practice Hubs',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    isPersian ? 'هوش مصنوعی زنده' : 'AI Powered',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // 4. Quick Action 3D Cards Grid
-              _buildLiveVoiceMentorCard(
-                theme: theme,
-                isDark: isDark,
-                isPersian: isPersian,
-                onTap: () {
-                  HapticFeedback.heavyImpact();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => const AiMentorSheet(),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  // Flashcards Due Card
-                  Expanded(
-                    child: _buildSmallHubCard(
-                      title: isPersian ? 'جعبه لایتنر' : 'Leitner Deck',
-                      subtitle: isPersian
-                          ? '$dueCount کارت آماده'
-                          : '$dueCount Due Cards',
-                      badge: 'SRS',
-                      icon: Icons.style_rounded,
-                      accentColor: Colors.deepPurpleAccent,
-                      theme: theme,
-                      isDark: isDark,
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        ref.read(mainNavigationTabProvider.notifier).setTab(3);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Exam Twin Speaking Simulator
-                  Expanded(
-                    child: _buildSmallHubCard(
-                      title: isPersian ? 'شبیه‌ساز آیلتس' : 'Exam Twin',
-                      subtitle: isPersian
-                          ? 'ارزیابی رسمی ۴ معیار'
-                          : '4 IELTS Bands',
-                      badge: 'IELTS',
-                      icon: Icons.record_voice_over_rounded,
-                      accentColor: Colors.tealAccent.shade700,
-                      theme: theme,
-                      isDark: isDark,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ExamTwinSheet.show(context);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  // C1 Native Upgrade Studio
-                  Expanded(
-                    child: _buildSmallHubCard(
-                      title: isPersian ? 'ارتقای اصطلاحات' : 'C1 Studio',
-                      subtitle: isPersian
-                          ? 'تبدیل متن به نیتیو'
-                          : 'Native Recast',
-                      badge: 'C1',
-                      icon: Icons.auto_awesome_rounded,
-                      accentColor: Colors.indigoAccent,
-                      theme: theme,
-                      isDark: isDark,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        C1UpgradeStudioSheet.show(context);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // 49-Day Roadmap Planner Button
-                  Expanded(
-                    child: _buildSmallHubCard(
-                      title: isPersian ? 'نقشه ۴۹ روزه' : 'Roadmap',
-                      subtitle: isPersian ? 'تسک‌های گام‌به‌گام' : 'Curriculum',
-                      badge: 'Day $currentDay',
-                      icon: Icons.calendar_month_rounded,
-                      accentColor: Colors.amber.shade700,
-                      theme: theme,
-                      isDark: isDark,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ref.read(mainNavigationTabProvider.notifier).setTab(1);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // 5. Active Error Genome Section
-              ActiveErrorGenomeSection(isPersian: isPersian),
             ],
           ),
         ),

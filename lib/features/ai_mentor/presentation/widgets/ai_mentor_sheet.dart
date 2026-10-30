@@ -280,6 +280,21 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
       alpha: 0.65,
     );
 
+    String statusText;
+    if (session.isUserTalking) {
+      statusText = isPersian
+          ? '🎙️ در حال گوش دادن به شما...'
+          : '🎙️ Listening to you...';
+    } else if (session.phase == MentorPhase.receivingAudio) {
+      statusText = isPersian
+          ? '🔊 مربی در حال صحبت است...'
+          : '🔊 Mentor is speaking...';
+    } else if (session.phase == MentorPhase.ready) {
+      statusText = isPersian ? 'آماده مکالمه صوتی' : 'Ready to Talk';
+    } else {
+      statusText = _statusText(session.phase, isPersian);
+    }
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       child: Padding(
@@ -288,11 +303,13 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _statusText(session.phase, isPersian),
+              statusText,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: orbColor,
+                color: session.isUserTalking
+                    ? Colors.tealAccent.shade400
+                    : orbColor,
               ),
             ),
             const SizedBox(height: 6),
@@ -304,12 +321,17 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 24),
-            ThreeDimensionalOrb(
-              phase: session.phase,
-              amplitude: session.amplitude,
-              onTap: controller.onOrbTap,
-              size: 155,
+            const SizedBox(height: 20),
+            GestureDetector(
+              onLongPressStart: (_) => controller.startTalking(),
+              onLongPressEnd: (_) => controller.stopTalking(),
+              onLongPressCancel: () => controller.stopTalking(),
+              child: ThreeDimensionalOrb(
+                phase: session.phase,
+                amplitude: session.amplitude,
+                onTap: controller.onOrbTap,
+                size: 155,
+              ),
             ),
             const SizedBox(height: 20),
             if (session.statusMessage != null) ...[
@@ -337,9 +359,96 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
                 ),
               ),
             ],
+            // 🚀 دکمه اختصاصی Push-to-Talk (نگه‌داشتن برای صحبت)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: GestureDetector(
+                onTapDown: (_) {
+                  if (session.phase == MentorPhase.receivingAudio) {
+                    controller.onOrbTap();
+                  } else {
+                    controller.startTalking();
+                  }
+                },
+                onTapUp: (_) => controller.stopTalking(),
+                onTapCancel: () => controller.stopTalking(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: session.isUserTalking
+                          ? [Colors.teal.shade500, Colors.tealAccent.shade700]
+                          : (session.phase == MentorPhase.receivingAudio
+                                ? [
+                                    Colors.deepOrange.shade600,
+                                    Colors.redAccent.shade700,
+                                  ]
+                                : [
+                                    theme.colorScheme.primary,
+                                    theme.colorScheme.secondary,
+                                  ]),
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (session.isUserTalking
+                                    ? Colors.teal
+                                    : theme.colorScheme.primary)
+                                .withValues(
+                                  alpha: session.isUserTalking ? 0.5 : 0.25,
+                                ),
+                        blurRadius: session.isUserTalking ? 20 : 12,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          session.isUserTalking
+                              ? Icons.mic_rounded
+                              : (session.phase == MentorPhase.receivingAudio
+                                    ? Icons.stop_circle_rounded
+                                    : Icons.mic_none_rounded),
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          session.isUserTalking
+                              ? (isPersian
+                                    ? 'در حال ضبط... (رها کنید تا بفرستد)'
+                                    : 'Recording... Release to send')
+                              : (session.phase == MentorPhase.receivingAudio
+                                    ? (isPersian
+                                          ? 'ضربه بزنید برای قطع صحبت'
+                                          : 'Tap to Interrupt')
+                                    : (isPersian
+                                          ? 'دکمه را نگه‌دارید و صحبت کنید'
+                                          : 'Hold to Speak')),
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
-              'برای شروع یا توقف مکالمه ضربه بزنید',
-              style: TextStyle(fontSize: 13, color: secondaryTextColor),
+              isPersian
+                  ? 'حالت بی‌درنگ واکی‌تاکی: بدون نویز محیطی و تأخیر'
+                  : 'Low-latency Walkie-Talkie: Zero background noise',
+              style: TextStyle(fontSize: 11.5, color: secondaryTextColor),
             ),
           ],
         ),

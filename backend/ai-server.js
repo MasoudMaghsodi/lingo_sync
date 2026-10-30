@@ -623,27 +623,61 @@ app.post('/api/mentor_chat', verifyAuthOrSecret, circuitBreakerMiddleware, async
         let userContextStr = '';
         if (userId) {
             try {
-                const [profileRes, statsRes, dueCountRes, todayTasksRes] = await Promise.all([
+                const [profileRes, statsRes, dueCountRes] = await Promise.all([
                     supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
                     supabase.from('user_stats').select('*').eq('id', userId).maybeSingle(),
                     supabase.from('flashcards').select('id', { count: 'exact', head: true })
                         .eq('user_id', userId)
                         .lte('next_review_date', new Date().toISOString()),
-                    supabase.from('daily_tasks').select('id, title, task_type').limit(3)
+                ]);
+
+                let currentDay = statsRes.data?.current_day || 1;
+                const { data: maxDayRow } = await supabase
+                    .from('user_task_progress')
+                    .select('daily_tasks(day_number)')
+                    .eq('user_id', userId)
+                    .order('daily_tasks(day_number)', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (maxDayRow?.daily_tasks?.day_number && maxDayRow.daily_tasks.day_number > currentDay) {
+                    currentDay = maxDayRow.daily_tasks.day_number;
+                }
+
+                const [todayTasksRes, doneTasksRes, errorGenomeRes] = await Promise.all([
+                    supabase.from('daily_tasks').select('id, title, task_type').eq('day_number', currentDay),
+                    supabase.from('user_task_progress')
+                        .select('completed_at, daily_tasks(title, task_type, day_number)')
+                        .eq('user_id', userId)
+                        .order('completed_at', { ascending: false })
+                        .limit(5),
+                    supabase.from('user_error_genome')
+                        .select('category, verbatim_quote, corrected_version')
+                        .eq('user_id', userId)
+                        .order('last_seen_at', { ascending: false })
+                        .limit(3)
                 ]);
 
                 userContextStr = buildThreeTierContext({
                     profile: profileRes.data || {},
                     stats: statsRes.data || {},
+                    currentDay,
                     pendingVocabCount: dueCountRes.count ?? 0,
-                    todayTasks: todayTasksRes.data || []
+                    todayTasks: todayTasksRes.data || [],
+                    completedTasks: (doneTasksRes.data || []).map(r => r.daily_tasks).filter(Boolean),
+                    errorPatterns: (errorGenomeRes.data || []).map(e => `${e.category}: "${e.verbatim_quote}" -> "${e.corrected_version}"`)
                 });
             } catch (_) {}
         }
 
         const historyContext = (Array.isArray(history) ? history : [])
-            .slice(-6)
-            .map(h => `${h.sender === 'user' ? 'کاربر' : 'منتور'}: ${h.text}`)
+            .slice(-10)
+            .map(h => {
+                const role = (h.role === 'user' || h.isUser || h.sender === 'user') ? 'کاربر' : 'منتور';
+                const text = h.content || h.text || '';
+                return `${role}: ${text}`;
+            })
+            .filter(Boolean)
             .join('\n');
 
         const prompt = `You are "LingoSync AI Mentor", a warm, inspiring, expert TOEFL/IELTS English mentor and coach.

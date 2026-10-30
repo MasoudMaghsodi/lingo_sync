@@ -531,25 +531,31 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final streakText = profile.streakDays > 0
+        ? '${profile.streakDays} ${AppLocalizations.getString('days_suffix', isPersian)}'
+        : (isPersian ? 'آماده ثبت' : 'Start');
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           _StatChip(
-            icon: Icons.workspace_premium_rounded,
+            icon: Icons.stars_rounded,
+            iconColor: Colors.amber,
             label: '${profile.score} XP',
             theme: theme,
           ),
           const SizedBox(width: 8),
           _StatChip(
             icon: Icons.local_fire_department_rounded,
-            label:
-                '${profile.streakDays} ${AppLocalizations.getString('days_suffix', isPersian)}',
+            iconColor: Colors.deepOrange,
+            label: streakText,
             theme: theme,
           ),
           const SizedBox(width: 8),
           _StatChip(
             icon: Icons.calendar_today_rounded,
+            iconColor: theme.colorScheme.primary,
             label:
                 '${AppLocalizations.getString('day', isPersian)} ${profile.currentDay}',
             theme: theme,
@@ -562,34 +568,39 @@ class _StatsRow extends StatelessWidget {
 
 class _StatChip extends StatelessWidget {
   final IconData icon;
+  final Color iconColor;
   final String label;
   final ThemeData theme;
 
   const _StatChip({
     required this.icon,
+    required this.iconColor,
     required this.label,
     required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = theme.brightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.15),
-          ),
+          color: isDark ? const Color(0xFF1E2333) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: iconColor.withValues(alpha: 0.25)),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 16, color: theme.colorScheme.primary),
-            const SizedBox(height: 4),
+            Icon(icon, size: 18, color: iconColor),
+            const SizedBox(height: 5),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: theme.colorScheme.onSurface,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
