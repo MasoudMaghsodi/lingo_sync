@@ -73,7 +73,7 @@ async function fetchOmniContext(userId) {
 
         const currentDay = statsRes.data?.current_day || 1;
 
-        const [todayTasksRes, doneTasksRes, learnedWordsRes] = await Promise.all([
+        const [todayTasksRes, doneTasksRes, learnedWordsRes, dueWordsRes, errorGenomeRes] = await Promise.all([
             supabase.from('daily_tasks').select('id, title, task_type, video_url').eq('day_number', currentDay),
             // آخرین ۱۵ تسکی که کاربر واقعاً انجام داده — نه فقط تسک‌های امروز
             supabase.from('user_task_progress')
@@ -87,6 +87,19 @@ async function fetchOmniContext(userId) {
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(20),
+            // ۳ لغت مرور روز برای Active Recall Raid
+            supabase.from('flashcards')
+                .select('global_dictionary(word)')
+                .eq('user_id', userId)
+                .lte('next_review_date', new Date().toISOString())
+                .limit(3),
+            // ۳ الگوی خطای اخیر برای Error Genome
+            supabase.from('user_error_genome')
+                .select('category, verbatim_quote, corrected_version')
+                .eq('user_id', userId)
+                .order('last_seen_at', { ascending: false })
+                .limit(3)
+                .catch(() => ({ data: [] }))
         ]);
 
         // از بین تسک‌های امروز، اونایی که ویدیویی‌ان رو با تحلیل ذخیره‌شده‌شون جفت کن
@@ -112,6 +125,8 @@ async function fetchOmniContext(userId) {
             completedTasks: (doneTasksRes.data || []).map((r) => r.daily_tasks).filter(Boolean),
             pendingVocabCount: dueFlashcardsRes.data?.length || 0,
             learnedWords: (learnedWordsRes.data || []).map((r) => r.global_dictionary?.word).filter(Boolean),
+            dueWords: (dueWordsRes?.data || []).map((r) => r.global_dictionary?.word).filter(Boolean),
+            errorPatterns: (errorGenomeRes?.data || []).map((e) => `${e.category}: "${e.verbatim_quote}" -> "${e.corrected_version}"`),
             watchedVideoSummaries,
         };
     } catch (err) {

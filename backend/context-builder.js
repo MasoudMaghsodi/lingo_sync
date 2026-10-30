@@ -28,14 +28,17 @@ function buildThreeTierContext(ctx) {
         .join('');
     const tier1 = `[TODAY'S MISSION - DAY ${currentDay}] Tasks: ${todayTasks || 'None'} | Due Flashcards: ${pendingDue} | Video: ${videoSummary || 'Standard'}`;
 
-    // TIER 2: Recent Performance (~250 tokens)
+    // TIER 2: Recent Performance & Active Recall Targets (~250 tokens)
     const streak = stats.streak_days ?? 0;
     const score = stats.score ?? 0;
     const recentTasks = (ctx?.completedTasks || []).slice(0, 3)
         .map(t => `Day ${t.day_number}: ${t.title}`)
         .join('; ');
     const recentWords = (ctx?.learnedWords || []).slice(0, 8).join(', ');
-    const tier2 = `[RECENT PERFORMANCE] Streak: ${streak} days | Score: ${score} XP | Recent Done: ${recentTasks || 'None'} | Known Words: ${recentWords || 'None'}`;
+    const recallRaidTargets = (ctx?.dueWords || []).slice(0, 3).join(', ');
+    const knownErrors = (ctx?.errorPatterns || []).slice(0, 3).join('; ');
+
+    const tier2 = `[RECENT PERFORMANCE] Streak: ${streak} days | Score: ${score} XP | Recent Done: ${recentTasks || 'None'} | Known Words: ${recentWords || 'None'}${recallRaidTargets ? ` | Active Recall Targets: ${recallRaidTargets}` : ''}${knownErrors ? ` | Weaknesses: ${knownErrors}` : ''}`;
 
     return `${tier3}\n${tier1}\n${tier2}`;
 }
@@ -50,7 +53,9 @@ ${contextBlock}
 CRITICAL RULES:
 - Reference the learner's current streak and today's day naturally.
 - Keep answers concise and natural — speak in 1 to 3 short sentences maximum.
-- Pause frequently and ask engaging follow-up questions to maintain an active ping-pong dialogue.`;
+- Pause frequently and ask engaging follow-up questions to maintain an active ping-pong dialogue.
+- CODE-SWITCH RESCUE: If the learner uses a Persian word inside an English sentence, immediately and naturally provide the natural English equivalent without interrupting their thought flow (e.g. "Ah, you mean [word]—go on!").
+- ACTIVE RECALL RAID: If Active Recall Targets are provided in the context, guide the conversation to give the student a natural chance to use one of those target words unprompted.`;
 }
 
 module.exports = {
