@@ -90,7 +90,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final totalHeight = MediaQuery.of(context).size.height;
     final sheetHeight = _selectedTabIndex == 0
-        ? totalHeight * 0.52
+        ? (totalHeight * 0.58).clamp(430.0, 600.0)
         : totalHeight * 0.88;
 
     return SizedBox.expand(
@@ -275,62 +275,75 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
   Widget _buildVoiceOrbTab(bool isPersian, ThemeData theme) {
     final session = ref.watch(aiMentorControllerProvider);
     final controller = ref.read(aiMentorControllerProvider.notifier);
-
     final orbColor = _orbColor(session.phase);
+    final secondaryTextColor = theme.colorScheme.onSurface.withValues(
+      alpha: 0.65,
+    );
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          _statusText(session.phase, isPersian),
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            color: orbColor,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Gemini 3.8 Live Voice',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade400,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 36),
-        ThreeDimensionalOrb(
-          phase: session.phase,
-          amplitude: session.amplitude,
-          onTap: controller.onOrbTap,
-          size: 165,
-        ),
-        const SizedBox(height: 28),
-        if (session.statusMessage != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade900.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
-            ),
-            child: Text(
-              session.statusMessage!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.amber,
-                fontWeight: FontWeight.w500,
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _statusText(session.phase, isPersian),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: orbColor,
               ),
-              textAlign: TextAlign.center,
             ),
-          ),
-        ],
-        Text(
-          'برای شروع یا توقف مکالمه ضربه بزنید',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+            const SizedBox(height: 6),
+            Text(
+              'Gemini 3.8 Live Voice',
+              style: TextStyle(
+                fontSize: 12,
+                color: secondaryTextColor,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ThreeDimensionalOrb(
+              phase: session.phase,
+              amplitude: session.amplitude,
+              onTap: controller.onOrbTap,
+              size: 155,
+            ),
+            const SizedBox(height: 20),
+            if (session.statusMessage != null) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade900.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.amber.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Text(
+                  session.statusMessage!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.amber,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+            Text(
+              'برای شروع یا توقف مکالمه ضربه بزنید',
+              style: TextStyle(fontSize: 13, color: secondaryTextColor),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -515,7 +528,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
           border: Border.all(
             color: isUser
                 ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                : Colors.white.withValues(alpha: 0.08),
+                : theme.dividerColor.withValues(alpha: 0.15),
           ),
         ),
         child: SelectableText(
@@ -523,7 +536,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet> {
           style: TextStyle(
             fontSize: 14,
             height: 1.5,
-            color: isUser ? theme.colorScheme.primary : Colors.white,
+            color: isUser
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
           ),
         ),
       ),

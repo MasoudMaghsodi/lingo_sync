@@ -29,10 +29,13 @@ class MentorSocketService {
   WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
   Timer? _pingTimer;
+  bool _isDisposed = false;
 
-  bool get isOpen => _channel != null && _channel!.closeCode == null;
+  bool get isOpen =>
+      !_isDisposed && _channel != null && _channel!.closeCode == null;
 
   Future<void> connect(Uri uri) async {
+    _isDisposed = false;
     _channel = IOWebSocketChannel.connect(uri);
     await _channel!.ready.timeout(const Duration(seconds: 10));
 
@@ -45,6 +48,7 @@ class MentorSocketService {
     await _wsSub?.cancel();
     _wsSub = _channel!.stream.listen(
       (raw) {
+        if (_isDisposed) return;
         try {
           final decoded = jsonDecode(raw.toString());
           if (decoded is! Map<String, dynamic>) return;
@@ -52,8 +56,12 @@ class MentorSocketService {
           onMessage(decoded);
         } catch (_) {}
       },
-      onDone: onDisconnected,
-      onError: (_) => onDisconnected(),
+      onDone: () {
+        if (!_isDisposed) onDisconnected();
+      },
+      onError: (_) {
+        if (!_isDisposed) onDisconnected();
+      },
     );
   }
 
@@ -76,8 +84,12 @@ class MentorSocketService {
   }
 
   Future<void> dispose() async {
+    _isDisposed = true;
     _pingTimer?.cancel();
+    _pingTimer = null;
     await _wsSub?.cancel();
+    _wsSub = null;
     await _channel?.sink.close();
+    _channel = null;
   }
 }

@@ -99,7 +99,6 @@ async function fetchOmniContext(userId) {
                 .eq('user_id', userId)
                 .order('last_seen_at', { ascending: false })
                 .limit(3)
-                .catch(() => ({ data: [] }))
         ]);
 
         // از بین تسک‌های امروز، اونایی که ویدیویی‌ان رو با تحلیل ذخیره‌شده‌شون جفت کن
@@ -314,10 +313,10 @@ wss.on('connection', (ws) => {
             clearTimeout(silenceTimer);
             silenceTimer = setTimeout(() => {
                 if (geminiWs?.readyState === WebSocket.OPEN && !turnCompleteSent) {
-                    console.log(`⏱️ [Session: ${sessionId}] User pause detected -> triggering turnComplete`);
+                    console.log(`⏱️ [Session: ${sessionId}] User pause detected (1400ms) -> triggering turnComplete`);
                     geminiWs.send(JSON.stringify({ clientContent: { turnComplete: true } }));
                 }
-            }, 800);
+            }, 1400);
         }
     });
 
@@ -376,6 +375,22 @@ wss.on('connection', (ws) => {
                     }, SESSION_HARD_CAP_SEC * 1000);
 
                     if (clientWs.readyState === WebSocket.OPEN) clientWs.send(JSON.stringify({ type: 'ready' }));
+
+                    // Trigger warm initial greeting from mentor coach
+                    setTimeout(() => {
+                        if (geminiWs?.readyState === WebSocket.OPEN) {
+                            console.log(`🎙️ [Session: ${sid}] Sending kickoff greeting...`);
+                            geminiWs.send(JSON.stringify({
+                                clientContent: {
+                                    turns: [{
+                                        role: 'user',
+                                        parts: [{ text: 'Hi coach! Please greet me in one cheerful sentence and ask how my English practice is going today.' }]
+                                    }],
+                                    turnComplete: true
+                                }
+                            }));
+                        }
+                    }, 500);
                     return;
                 }
 

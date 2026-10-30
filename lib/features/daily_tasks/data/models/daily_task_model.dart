@@ -4,6 +4,7 @@ class DailyTaskModel {
   final String taskType;
   final String title;
   final String description;
+  final String? videoUrl;
   final bool isCompleted;
 
   DailyTaskModel({
@@ -12,6 +13,7 @@ class DailyTaskModel {
     required this.taskType,
     required this.title,
     required this.description,
+    this.videoUrl,
     this.isCompleted = false,
   });
 
@@ -22,17 +24,19 @@ class DailyTaskModel {
       taskType: json['task_type'] as String,
       title: json['title'] as String,
       description: json['description'] ?? '',
+      videoUrl: json['video_url'] as String?,
       isCompleted: json['is_completed'] ?? false,
     );
   }
 
-  DailyTaskModel copyWith({bool? isCompleted}) {
+  DailyTaskModel copyWith({bool? isCompleted, String? videoUrl}) {
     return DailyTaskModel(
       id: id,
       dayNumber: dayNumber,
       taskType: taskType,
       title: title,
       description: description,
+      videoUrl: videoUrl ?? this.videoUrl,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }

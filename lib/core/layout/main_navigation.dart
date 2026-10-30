@@ -4,9 +4,9 @@ import 'package:lingo_sync/features/ai_dictionary/presentation/pages/dictionary_
 import 'package:lingo_sync/features/ai_dictionary/presentation/pages/flashcards_page.dart';
 import 'package:lingo_sync/features/ai_mentor/presentation/widgets/ai_mentor_sheet.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/pages/daily_tasks_page.dart';
-import 'package:lingo_sync/features/daily_tasks/presentation/pages/leaderboard_page.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/providers/pomodoro_provider.dart';
 import 'package:lingo_sync/features/daily_tasks/presentation/widgets/floating_pomodoro.dart';
+import 'package:lingo_sync/features/home/presentation/pages/home_page.dart';
 import 'package:lingo_sync/features/settings/presentation/widgets/app_drawer.dart';
 
 import '../../core/providers/app_shell_provider.dart';
@@ -34,11 +34,11 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   final Set<int> _builtIndices = {0};
 
   static final List<Widget Function()> _pageBuilders = [
+    () => const HomePage(),
     () => const DailyTasksPage(),
-    () => const DictionaryPage(),
     () => const SizedBox.shrink(), // فضای خالی وسط
     () => const FlashcardsPage(),
-    () => const LeaderboardPage(),
+    () => const DictionaryPage(),
   ];
 
   void _selectTab(int index) {
@@ -115,16 +115,16 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
           children: [
             _buildNavItem(
               0,
-              Icons.check_box_outlined,
-              Icons.check_box,
-              'nav_tasks',
+              Icons.home_outlined,
+              Icons.home_rounded,
+              'nav_home',
               isPersian,
             ),
             _buildNavItem(
               1,
-              Icons.search_outlined,
-              Icons.saved_search,
-              'nav_dictionary',
+              Icons.calendar_month_outlined,
+              Icons.calendar_month_rounded,
+              'nav_planner',
               isPersian,
             ),
 
@@ -134,15 +134,15 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             _buildNavItem(
               3,
               Icons.style_outlined,
-              Icons.style,
+              Icons.style_rounded,
               'nav_review',
               isPersian,
             ),
             _buildNavItem(
               4,
-              Icons.leaderboard_outlined,
-              Icons.leaderboard,
-              'nav_leaderboard',
+              Icons.search_outlined,
+              Icons.saved_search_rounded,
+              'nav_dictionary',
               isPersian,
             ),
           ],

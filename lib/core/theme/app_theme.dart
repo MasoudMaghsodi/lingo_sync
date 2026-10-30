@@ -61,10 +61,10 @@ class AppTheme {
     background: bgLight,
     surface: surfaceLight,
     error: const Color(0xFFBA1A1A),
-    onSurface: Colors.black87,
-    mutedBorder: Colors.grey.shade300,
-    aiHighlight: const Color(0xFFF0F4F8), // رنگ ملایم برای لایت‌مود
-    success: const Color(0xFF2E7D32),
+    onSurface: const Color(0xFF0F172A),
+    mutedBorder: const Color(0xFFE2E8F0),
+    aiHighlight: const Color(0xFFF1F5F9), // رنگ ملایم و خوانا برای لایت‌مود
+    success: const Color(0xFF16A34A),
   );
 
   static ThemeData get darkTheme => _buildTheme(

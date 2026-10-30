@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:lingo_sync/core/config/app_config.dart';
@@ -25,9 +24,11 @@ class AiMentorController extends _$AiMentorController {
 
   // 🚀 فلگ امنیتی برای جلوگیری از باز شدن زودهنگام میکروفون
   bool _isWaitingForTurnComplete = false;
+  bool _isDisposed = false;
 
   @override
   AiMentorSessionState build() {
+    _isDisposed = false;
     _socket = MentorSocketService(
       onMessage: _handleServerMessage,
       onDisconnected: _handleDisconnect,
@@ -36,6 +37,7 @@ class AiMentorController extends _$AiMentorController {
     _audio.onPlaybackCompleted(_onPlaybackCompleted);
 
     ref.onDispose(() {
+      _isDisposed = true;
       _autoReconnectTimer?.cancel();
       _autoRestartTimer?.cancel();
       _audio.dispose();
@@ -48,19 +50,24 @@ class AiMentorController extends _$AiMentorController {
   }
 
   Future<void> _initSession() async {
+    if (_isDisposed) return;
     await _audio.startMicStream(
       onAmplitude: _onAmplitude,
       onPcmChunk: _onPcmChunk,
     );
+    if (_isDisposed) return;
     await _connect();
   }
 
   Future<void> _connect() async {
+    if (_isDisposed || !ref.mounted) return;
     state = state.copyWith(phase: MentorPhase.connecting);
     try {
       await _socket.connect(Uri.parse(AppConfig.mentorSocketUrl));
+      if (_isDisposed || !ref.mounted) return;
       _sendSetup();
     } on Exception catch (e) {
+      if (_isDisposed || !ref.mounted) return;
       logger.warning(
         'Mentor socket connection failed',
         error: e,
@@ -68,12 +75,13 @@ class AiMentorController extends _$AiMentorController {
       );
       _handleDisconnect();
     } catch (_) {
+      if (_isDisposed || !ref.mounted) return;
       _handleDisconnect();
     }
   }
 
   void _sendSetup() {
-    // در آینده بهتر است این توکن از طریق authRepository تامین شود
+    if (_isDisposed || !ref.mounted) return;
     final token = Supabase.instance.client.auth.currentSession?.accessToken;
     if (token == null) {
       _handleDisconnect();
@@ -84,16 +92,19 @@ class AiMentorController extends _$AiMentorController {
   }
 
   void restartAiSession() {
+    if (_isDisposed || !ref.mounted) return;
     HapticFeedback.mediumImpact();
     _sendSetup();
   }
 
   void reconnect() {
+    if (_isDisposed || !ref.mounted) return;
     HapticFeedback.lightImpact();
     _connect();
   }
 
   void onOrbTap() {
+    if (_isDisposed || !ref.mounted) return;
     switch (state.phase) {
       case MentorPhase.aiDisconnected:
         restartAiSession();
@@ -102,7 +113,6 @@ class AiMentorController extends _$AiMentorController {
         reconnect();
         break;
       case MentorPhase.receivingAudio:
-        // 🚀 قابلیت قطع کردن حرف استاد با زدن روی گوی (Interrupt)
         HapticFeedback.heavyImpact();
         _interruptMentor();
         break;
@@ -112,10 +122,10 @@ class AiMentorController extends _$AiMentorController {
   }
 
   Future<void> _interruptMentor() async {
+    if (_isDisposed) return;
     _pcmBuffer.clear();
     _isWaitingForTurnComplete = false;
     await _audio.stopPlayback();
-    // ارسال سیگنال به سرور که کاربر حرفت را قطع کرد (باید در سرور هندل شود)
     if (_socket.isOpen) {
       _socket.send({'type': 'client_interrupt'});
     }
@@ -123,15 +133,18 @@ class AiMentorController extends _$AiMentorController {
   }
 
   void _handleDisconnect() {
+    if (_isDisposed || !ref.mounted) return;
     state = state.copyWith(phase: MentorPhase.disconnected, isMicMuted: true);
     _scheduleAutoReconnect();
   }
 
   void _scheduleAutoReconnect() {
+    if (_isDisposed || !ref.mounted) return;
     _autoReconnectTimer?.cancel();
     _autoReconnectAttempts++;
     final delay = Duration(seconds: _autoReconnectAttempts.clamp(1, 8));
     _autoReconnectTimer = Timer(delay, () {
+      if (_isDisposed || !ref.mounted) return;
       if (state.phase == MentorPhase.disconnected) {
         _connect();
       }
@@ -139,17 +152,20 @@ class AiMentorController extends _$AiMentorController {
   }
 
   void _scheduleAutoRestart() {
+    if (_isDisposed || !ref.mounted) return;
     _autoRestartTimer?.cancel();
     _autoRestartAttempts++;
     final delay = Duration(seconds: _autoRestartAttempts.clamp(1, 5));
     _autoRestartTimer = Timer(delay, () {
+      if (_isDisposed || !ref.mounted) return;
       if (state.phase == MentorPhase.aiDisconnected) {
         restartAiSession();
       }
     });
   }
 
-  void _handleServerMessage(Map<String, dynamic> data) async {
+  void _handleServerMessage(Map<String, dynamic> data) {
+    if (_isDisposed || !ref.mounted) return;
     switch (data['type']) {
       case 'ready':
         _enterReadyState();
@@ -172,10 +188,9 @@ class AiMentorController extends _$AiMentorController {
           );
         }
 
-        // 🚀 انتقال دیکد کردن به پس‌زمینه (Isolate) برای جلوگیری از لگ زدن UI و قطع سوکت
         final String base64Data = data['data'] as String;
         if (base64Data.isNotEmpty) {
-          final decodedBytes = await compute(base64Decode, base64Data);
+          final decodedBytes = base64Decode(base64Data);
           _pcmBuffer.addAll(decodedBytes);
         }
         break;
@@ -183,7 +198,7 @@ class AiMentorController extends _$AiMentorController {
       case 'interrupt':
         _pcmBuffer.clear();
         _isWaitingForTurnComplete = false;
-        await _audio.stopPlayback();
+        _audio.stopPlayback();
         _enterReadyState();
         break;
 
@@ -196,7 +211,7 @@ class AiMentorController extends _$AiMentorController {
           );
           final chunk = List<int>.from(_pcmBuffer);
           _pcmBuffer.clear();
-          await _audio.playPcm(chunk);
+          _audio.playPcm(chunk);
         } else {
           _enterReadyState();
         }
@@ -208,7 +223,7 @@ class AiMentorController extends _$AiMentorController {
               data['message'] as String? ??
               'یک دقیقه از جلسه مکالمه باقی مانده است.',
         );
-        await HapticFeedback.mediumImpact();
+        HapticFeedback.mediumImpact();
         break;
 
       case 'admission_redirect':
@@ -219,7 +234,7 @@ class AiMentorController extends _$AiMentorController {
               data['message'] as String? ??
               'ظرفیت خطوط صوتی زنده تکمیل است؛ انتقال موقت به حالت صوتی نوبتی',
         );
-        await HapticFeedback.heavyImpact();
+        HapticFeedback.heavyImpact();
         break;
 
       case 'handshake_ack':
@@ -232,7 +247,7 @@ class AiMentorController extends _$AiMentorController {
           statusMessage:
               data['message'] as String? ?? 'جلسه مکالمه به پایان رسید.',
         );
-        await HapticFeedback.heavyImpact();
+        HapticFeedback.heavyImpact();
         break;
 
       case 'vad_pause':
@@ -260,16 +275,18 @@ class AiMentorController extends _$AiMentorController {
   final List<int> _pcmBuffer = [];
 
   Future<void> _onPlaybackCompleted() async {
+    if (_isDisposed || !ref.mounted) return;
     if (state.phase != MentorPhase.receivingAudio) return;
 
-    // 🚀 اگر هنوز پیام turn_complete نیامده (مثلا وسط حرف مکث کرده)، میکروفون را باز نکن!
     if (_isWaitingForTurnComplete) return;
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (_isDisposed || !ref.mounted) return;
     _enterReadyState();
   }
 
   void _enterReadyState() {
+    if (_isDisposed || !ref.mounted) return;
     _autoReconnectAttempts = 0;
     _autoRestartAttempts = 0;
     state = state.copyWith(
@@ -281,16 +298,14 @@ class AiMentorController extends _$AiMentorController {
   }
 
   void _onAmplitude(double amplitude) {
+    if (_isDisposed || !ref.mounted) return;
     if (state.isMicMuted || state.phase != MentorPhase.ready) return;
     state = state.copyWith(amplitude: amplitude);
   }
 
   void _onPcmChunk(List<int> chunk) {
+    if (_isDisposed || !ref.mounted) return;
     if (state.isMicMuted || state.phase != MentorPhase.ready) return;
-
-    // 🚀 تبدیل اینکد به پس‌زمینه برای روان شدن UI هنگام حرف زدن کاربر
-    compute(base64Encode, chunk).then((encoded) {
-      _socket.sendAudioChunk(encoded);
-    });
+    _socket.sendAudioChunk(base64Encode(chunk));
   }
 }

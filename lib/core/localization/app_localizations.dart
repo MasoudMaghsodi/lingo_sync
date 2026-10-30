@@ -48,6 +48,8 @@ class AppLocalizations {
       'listening': 'Listening...',
 
       // ==== Bottom navigation ====
+      'nav_home': 'Home',
+      'nav_planner': 'Planner',
       'nav_tasks': 'Tasks',
       'nav_dictionary': 'Dictionary',
       'nav_review': 'Review',
@@ -225,6 +227,8 @@ class AppLocalizations {
       'listening': 'در حال شنیدن...',
 
       // ==== Bottom navigation ====
+      'nav_home': 'خانه',
+      'nav_planner': 'برنامه‌ریز',
       'nav_tasks': 'تسک‌ها',
       'nav_dictionary': 'دیکشنری',
       'nav_review': 'مرور',

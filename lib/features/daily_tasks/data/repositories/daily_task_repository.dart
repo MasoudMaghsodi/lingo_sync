@@ -72,9 +72,32 @@ class DailyTaskRepository {
         });
       }
 
-      // 🚀 انتقال منطق آپدیت امتیاز (RPC) به داخل ریپازیتوری
+      // 🚀 انتقال منطق آپدیت امتیاز با پشتیبانی از فال‌بک ایمن
       final points = isCompleted ? 10 : -10;
-      await _supabase.rpc('increment_task_score', params: {'points': points});
+      try {
+        await _supabase.rpc('increment_task_score', params: {'points': points});
+      } catch (rpcErr) {
+        // فال‌بک مستقیم به جدول user_stats در صورت بروز اختلال در RPC
+        try {
+          final stats = await _supabase
+              .from('user_stats')
+              .select('score')
+              .eq('id', userId)
+              .maybeSingle();
+          final currentScore = (stats?['score'] as num?)?.toInt() ?? 0;
+          final newScore = (currentScore + points).clamp(0, 999999);
+          await _supabase
+              .from('user_stats')
+              .update({
+                'score': newScore,
+                'last_active': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', userId);
+        } catch (_) {
+          // ذخیره تسک قبلاً انجام شده؛ خطا در امتیاز مانع تیک خوردن تسک کاربر نمی‌شود
+        }
+      }
 
       return Result<void>.success(null);
     } catch (e, st) {
