@@ -133,8 +133,9 @@ class AiMentorController extends _$AiMentorController {
       await _interruptMentor();
     }
     if (state.phase != MentorPhase.ready &&
-        state.phase != MentorPhase.receivingAudio)
+        state.phase != MentorPhase.receivingAudio) {
       return;
+    }
 
     await HapticFeedback.mediumImpact();
     state = state.copyWith(
@@ -342,8 +343,9 @@ class AiMentorController extends _$AiMentorController {
     if (_isDisposed || !ref.mounted) return;
     if (state.isMicMuted ||
         !state.isUserTalking ||
-        state.phase != MentorPhase.ready)
+        state.phase != MentorPhase.ready) {
       return;
+    }
     state = state.copyWith(amplitude: amplitude);
   }
 
@@ -351,8 +353,9 @@ class AiMentorController extends _$AiMentorController {
     if (_isDisposed || !ref.mounted) return;
     if (state.isMicMuted ||
         !state.isUserTalking ||
-        state.phase != MentorPhase.ready)
+        state.phase != MentorPhase.ready) {
       return;
+    }
     _socket.sendAudioChunk(base64Encode(chunk));
   }
 }
