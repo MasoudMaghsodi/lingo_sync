@@ -50,7 +50,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         continue-on-error: true
         with:
-          host: ${{ secrets.SERVER_HOST || '194.246.82.160' }}
+          host: ${{ secrets.SERVER_HOST || '146.103.124.117' }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
