@@ -105,11 +105,15 @@ class AiChatSheetContent extends ConsumerWidget {
                 const SizedBox(height: 12),
                 if (onToggleCouncil != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: useCouncil
                           ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                          : theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: useCouncil
@@ -128,15 +132,21 @@ class AiChatSheetContent extends ConsumerWidget {
                           Icon(
                             Icons.groups_rounded,
                             size: 18,
-                            color: useCouncil ? theme.colorScheme.primary : Colors.grey,
+                            color: useCouncil
+                                ? theme.colorScheme.primary
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             'مشاوره گروهی اساتید (Multi-Agent Council)',
                             style: TextStyle(
                               fontSize: 12.5,
-                              fontWeight: useCouncil ? FontWeight.bold : FontWeight.normal,
-                              color: useCouncil ? theme.colorScheme.primary : null,
+                              fontWeight: useCouncil
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: useCouncil
+                                  ? theme.colorScheme.primary
+                                  : null,
                             ),
                           ),
                         ],

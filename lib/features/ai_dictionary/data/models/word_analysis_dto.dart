@@ -27,9 +27,15 @@ class WordAnalysisDto {
       }
     });
 
-    final antonymsList = json['antonyms'] is List ? (json['antonyms'] as List) : [];
-    final collocationsList = json['collocations'] is List ? (json['collocations'] as List) : [];
-    final examplesList = json['examples'] is List ? (json['examples'] as List) : [];
+    final antonymsList = json['antonyms'] is List
+        ? (json['antonyms'] as List)
+        : [];
+    final collocationsList = json['collocations'] is List
+        ? (json['collocations'] as List)
+        : [];
+    final examplesList = json['examples'] is List
+        ? (json['examples'] as List)
+        : [];
 
     return WordAnalysis(
       word: json['word']?.toString() ?? '',

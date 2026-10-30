@@ -16,8 +16,8 @@ class FlashcardEntryDto {
     final resolvedWordText = word.word.isNotEmpty
         ? word.word
         : (globalDict['word']?.toString().isNotEmpty == true
-            ? globalDict['word'].toString()
-            : (row['word']?.toString() ?? 'Unknown'));
+              ? globalDict['word'].toString()
+              : (row['word']?.toString() ?? 'Unknown'));
 
     return FlashcardEntry(
       id: (row['id'] as num?)?.toInt() ?? 0,

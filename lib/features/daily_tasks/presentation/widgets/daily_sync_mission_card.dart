@@ -62,9 +62,7 @@ class DailySyncMissionCard extends ConsumerWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isAllDone
-                      ? Icons.verified_rounded
-                      : Icons.timer_outlined,
+                  isAllDone ? Icons.verified_rounded : Icons.timer_outlined,
                   color: isAllDone ? Colors.amber : theme.colorScheme.primary,
                   size: 22,
                 ),
@@ -86,12 +84,18 @@ class DailySyncMissionCard extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       isAllDone
-                          ? (isPersian ? 'آفرین! ۵۰ XP پاداش زنجیره دریافت شد' : 'Awesome! +50 XP bonus earned')
-                          : (isPersian ? '$completedMissionsCount از ۳ تسک کلیدی انجام شده' : '$completedMissionsCount of 3 core tasks done'),
+                          ? (isPersian
+                                ? 'آفرین! ۵۰ XP پاداش زنجیره دریافت شد'
+                                : 'Awesome! +50 XP bonus earned')
+                          : (isPersian
+                                ? '$completedMissionsCount از ۳ تسک کلیدی انجام شده'
+                                : '$completedMissionsCount of 3 core tasks done'),
                       style: TextStyle(
                         fontSize: 12,
                         color: isAllDone ? Colors.amber : Colors.grey.shade500,
-                        fontWeight: isAllDone ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isAllDone
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -108,12 +112,17 @@ class DailySyncMissionCard extends ConsumerWidget {
                       value: progressFraction,
                       strokeWidth: 3.5,
                       backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                      color: isAllDone ? Colors.amber : theme.colorScheme.primary,
+                      color: isAllDone
+                          ? Colors.amber
+                          : theme.colorScheme.primary,
                     ),
                   ),
                   Text(
                     '$completedMissionsCount/3',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -127,7 +136,9 @@ class DailySyncMissionCard extends ConsumerWidget {
               Expanded(
                 child: _MissionPill(
                   icon: Icons.play_circle_fill_rounded,
-                  label: isPersian ? 'درس ویدیو\n(۵ دقیقه)' : 'Video Lesson\n(5 min)',
+                  label: isPersian
+                      ? 'درس ویدیو\n(۵ دقیقه)'
+                      : 'Video Lesson\n(5 min)',
                   color: Colors.blueAccent,
                   onTap: onOpenVideo,
                 ),
@@ -136,7 +147,9 @@ class DailySyncMissionCard extends ConsumerWidget {
               Expanded(
                 child: _MissionPill(
                   icon: Icons.style_rounded,
-                  label: isPersian ? 'مرور لایتنر\n(۳ دقیقه)' : 'Flashcards\n(3 min)',
+                  label: isPersian
+                      ? 'مرور لایتنر\n(۳ دقیقه)'
+                      : 'Flashcards\n(3 min)',
                   color: Colors.purpleAccent,
                   onTap: onOpenFlashcards,
                 ),
@@ -145,7 +158,9 @@ class DailySyncMissionCard extends ConsumerWidget {
               Expanded(
                 child: _MissionPill(
                   icon: Icons.mic_rounded,
-                  label: isPersian ? 'مکالمه مربی\n(۲ دقیقه)' : 'Voice Mentor\n(2 min)',
+                  label: isPersian
+                      ? 'مکالمه مربی\n(۲ دقیقه)'
+                      : 'Voice Mentor\n(2 min)',
                   color: Colors.tealAccent,
                   onTap: () {
                     showModalBottomSheet(

@@ -203,7 +203,11 @@ class AiMentorController extends _$AiMentorController {
         break;
 
       case 'session_warning':
-        state = state.copyWith(statusMessage: data['message'] as String? ?? 'یک دقیقه از جلسه مکالمه باقی مانده است.');
+        state = state.copyWith(
+          statusMessage:
+              data['message'] as String? ??
+              'یک دقیقه از جلسه مکالمه باقی مانده است.',
+        );
         await HapticFeedback.mediumImpact();
         break;
 
@@ -211,14 +215,17 @@ class AiMentorController extends _$AiMentorController {
         state = state.copyWith(
           phase: MentorPhase.aiDisconnected,
           isMicMuted: true,
-          statusMessage: data['message'] as String? ?? 'جلسه مکالمه به پایان رسید.',
+          statusMessage:
+              data['message'] as String? ?? 'جلسه مکالمه به پایان رسید.',
         );
         await HapticFeedback.heavyImpact();
         break;
 
       case 'vad_pause':
         state = state.copyWith(
-          statusMessage: data['message'] as String? ?? 'مکالمه به دلیل سکوت موقتاً متوقف شد.',
+          statusMessage:
+              data['message'] as String? ??
+              'مکالمه به دلیل سکوت موقتاً متوقف شد.',
         );
         break;
 
@@ -226,7 +233,8 @@ class AiMentorController extends _$AiMentorController {
         state = state.copyWith(
           phase: MentorPhase.aiDisconnected,
           isMicMuted: true,
-          statusMessage: data['message'] as String? ?? 'اتصال به دلیل عدم فعالیت قطع شد.',
+          statusMessage:
+              data['message'] as String? ?? 'اتصال به دلیل عدم فعالیت قطع شد.',
         );
         break;
 

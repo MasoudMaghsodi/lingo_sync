@@ -39,9 +39,7 @@ class AiServerClient {
   }
 
   Map<String, String> _buildHeaders() {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     try {
       final token = Supabase.instance.client.auth.currentSession?.accessToken;
       if (token != null && token.isNotEmpty) {

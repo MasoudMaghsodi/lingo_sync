@@ -32,7 +32,7 @@ class FlashcardSyncRepositoryImpl implements IFlashcardSyncRepository {
   static const List<String> _protectedFolders = ['General', 'Grammar'];
 
   FlashcardSyncRepositoryImpl(this._supabase, [OutboxSyncService? outboxSync])
-      : _outboxSync = outboxSync ?? OutboxSyncService();
+    : _outboxSync = outboxSync ?? OutboxSyncService();
 
   String _cacheKey(String userId) => 'due_$userId';
 

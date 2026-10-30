@@ -41,10 +41,7 @@ void main() {
 
       final id = await syncService.enqueue(
         actionType: 'srs_review',
-        payload: {
-          'flashcard_id': 123,
-          'quality': 5,
-        },
+        payload: {'flashcard_id': 123, 'quality': 5},
       );
 
       expect(id.isNotEmpty, isTrue);

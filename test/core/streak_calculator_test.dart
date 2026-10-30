@@ -50,35 +50,41 @@ void main() {
       expect(res.isStreakBroken, false);
     });
 
-    test('vacation mode preserves and increments streak without using freeze', () {
-      final res = StreakCalculator.evaluate(
-        lastActiveDate: fourDaysAgo,
-        clientDate: today,
-        currentStreak: 10,
-        availableFreezes: 1,
-        isVacationMode: true,
-        vacationUntil: DateTime(2026, 11, 5),
-      );
+    test(
+      'vacation mode preserves and increments streak without using freeze',
+      () {
+        final res = StreakCalculator.evaluate(
+          lastActiveDate: fourDaysAgo,
+          clientDate: today,
+          currentStreak: 10,
+          availableFreezes: 1,
+          isVacationMode: true,
+          vacationUntil: DateTime(2026, 11, 5),
+        );
 
-      expect(res.newStreak, 11);
-      expect(res.remainingFreezes, 1);
-      expect(res.freezeUsed, false);
-      expect(res.isStreakBroken, false);
-    });
+        expect(res.newStreak, 11);
+        expect(res.remainingFreezes, 1);
+        expect(res.freezeUsed, false);
+        expect(res.isStreakBroken, false);
+      },
+    );
 
-    test('missed 1 day with available freeze consumes freeze and continues streak', () {
-      final res = StreakCalculator.evaluate(
-        lastActiveDate: twoDaysAgo,
-        clientDate: today,
-        currentStreak: 7,
-        availableFreezes: 2,
-      );
+    test(
+      'missed 1 day with available freeze consumes freeze and continues streak',
+      () {
+        final res = StreakCalculator.evaluate(
+          lastActiveDate: twoDaysAgo,
+          clientDate: today,
+          currentStreak: 7,
+          availableFreezes: 2,
+        );
 
-      expect(res.newStreak, 8);
-      expect(res.remainingFreezes, 1);
-      expect(res.freezeUsed, true);
-      expect(res.isStreakBroken, false);
-    });
+        expect(res.newStreak, 8);
+        expect(res.remainingFreezes, 1);
+        expect(res.freezeUsed, true);
+        expect(res.isStreakBroken, false);
+      },
+    );
 
     test('missed 1 day with 0 freezes breaks streak and resets to 1', () {
       final res = StreakCalculator.evaluate(
@@ -110,21 +116,24 @@ void main() {
   });
 
   group('StreakCalculator.calculateXp', () {
-    test('computes base tasks, flashcards, voice minutes, and bonus correctly', () {
-      final xp = StreakCalculator.calculateXp(
-        baseTasksCompleted: 3, // 3 * 20 = 60
-        flashcardsReviewed: 5,  // 5 * 10 = 50
-        voiceMinutesUsed: 4,    // 4 * 15 = 60
-        completedDailySync: true, // +50
-      );
+    test(
+      'computes base tasks, flashcards, voice minutes, and bonus correctly',
+      () {
+        final xp = StreakCalculator.calculateXp(
+          baseTasksCompleted: 3, // 3 * 20 = 60
+          flashcardsReviewed: 5, // 5 * 10 = 50
+          voiceMinutesUsed: 4, // 4 * 15 = 60
+          completedDailySync: true, // +50
+        );
 
-      expect(xp, 60 + 50 + 60 + 50); // 220 XP
-    });
+        expect(xp, 60 + 50 + 60 + 50); // 220 XP
+      },
+    );
 
     test('computes without bonus when daily sync not completed', () {
       final xp = StreakCalculator.calculateXp(
         baseTasksCompleted: 1, // 20
-        flashcardsReviewed: 2,  // 20
+        flashcardsReviewed: 2, // 20
       );
 
       expect(xp, 40);

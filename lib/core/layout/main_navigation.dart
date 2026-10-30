@@ -19,9 +19,10 @@ class MainNavigationTabNotifier extends Notifier<int> {
   void setTab(int index) => state = index;
 }
 
-final mainNavigationTabProvider = NotifierProvider<MainNavigationTabNotifier, int>(
-  MainNavigationTabNotifier.new,
-);
+final mainNavigationTabProvider =
+    NotifierProvider<MainNavigationTabNotifier, int>(
+      MainNavigationTabNotifier.new,
+    );
 
 class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});

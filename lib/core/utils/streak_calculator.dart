@@ -29,14 +29,14 @@ class StreakEvaluationResult {
 
   @override
   int get hashCode => Object.hash(
-        newStreak,
-        remainingFreezes,
-        freezeUsed,
-        isStreakBroken,
-        effectiveDate.year,
-        effectiveDate.month,
-        effectiveDate.day,
-      );
+    newStreak,
+    remainingFreezes,
+    freezeUsed,
+    isStreakBroken,
+    effectiveDate.year,
+    effectiveDate.month,
+    effectiveDate.day,
+  );
 }
 
 /// Pure functions for streak calculation, grace freezes, and competence XP
@@ -69,7 +69,9 @@ class StreakCalculator {
     }
 
     final normalizedLastDate = normalizeDate(lastActiveDate);
-    final daysDifference = normalizedClientDate.difference(normalizedLastDate).inDays;
+    final daysDifference = normalizedClientDate
+        .difference(normalizedLastDate)
+        .inDays;
 
     // 2. Already active on the same calendar day
     if (daysDifference <= 0) {
@@ -95,7 +97,8 @@ class StreakCalculator {
 
     // 4. Vacation mode active and within allowed period
     if (isVacationMode) {
-      final isWithinVacation = vacationUntil == null ||
+      final isWithinVacation =
+          vacationUntil == null ||
           !normalizedClientDate.isAfter(normalizeDate(vacationUntil));
       if (isWithinVacation) {
         return StreakEvaluationResult(

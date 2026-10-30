@@ -24,8 +24,9 @@ class ExamEvaluation {
 
     for (final entry in rawCrit.entries) {
       if (entry.value is Map) {
-        critMap[entry.key] =
-            CriterionScore.fromJson(entry.value as Map<String, dynamic>);
+        critMap[entry.key] = CriterionScore.fromJson(
+          entry.value as Map<String, dynamic>,
+        );
       }
     }
 
@@ -34,23 +35,25 @@ class ExamEvaluation {
       confidenceMargin: json['confidenceMargin']?.toString() ?? '±0.5',
       criteria: critMap,
       feedbackFa: json['feedbackFa']?.toString() ?? '',
-      strengthsFa: (json['strengthsFa'] as List?)?.map((e) => '$e').toList() ?? [],
+      strengthsFa:
+          (json['strengthsFa'] as List?)?.map((e) => '$e').toList() ?? [],
       weaknessesFa:
           (json['weaknessesFa'] as List?)?.map((e) => '$e').toList() ?? [],
-      disclaimerFa: json['disclaimerFa']?.toString() ??
+      disclaimerFa:
+          json['disclaimerFa']?.toString() ??
           'این نمره یک تخمین آموزشی داخلی بر پایه هوش مصنوعی است و جایگزین کارنامه رسمی آزمون نمی‌باشد.',
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'overallBand': overallBand,
-        'confidenceMargin': confidenceMargin,
-        'criteria': criteria.map((k, v) => MapEntry(k, v.toJson())),
-        'feedbackFa': feedbackFa,
-        'strengthsFa': strengthsFa,
-        'weaknessesFa': weaknessesFa,
-        'disclaimerFa': disclaimerFa,
-      };
+    'overallBand': overallBand,
+    'confidenceMargin': confidenceMargin,
+    'criteria': criteria.map((k, v) => MapEntry(k, v.toJson())),
+    'feedbackFa': feedbackFa,
+    'strengthsFa': strengthsFa,
+    'weaknessesFa': weaknessesFa,
+    'disclaimerFa': disclaimerFa,
+  };
 }
 
 class CriterionScore {
@@ -73,8 +76,8 @@ class CriterionScore {
   }
 
   Map<String, dynamic> toJson() => {
-        'band': band,
-        'quote': quote,
-        'commentFa': commentFa,
-      };
+    'band': band,
+    'quote': quote,
+    'commentFa': commentFa,
+  };
 }

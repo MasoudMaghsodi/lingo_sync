@@ -71,11 +71,11 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
     try {
       final supabase = Supabase.instance.client;
       final token = supabase.auth.currentSession?.accessToken;
-      final uri = Uri.parse('${AppConfig.aiServerBaseUrl}/api/c1_upgrade_studio');
+      final uri = Uri.parse(
+        '${AppConfig.aiServerBaseUrl}/api/c1_upgrade_studio',
+      );
 
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
+      final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       } else {
@@ -96,7 +96,9 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
         setState(() => _result = body);
       } else {
         final body = jsonDecode(response.body) as Map<String, dynamic>?;
-        setState(() => _error = body?['error']?.toString() ?? 'خطا در ارتقا به C1');
+        setState(
+          () => _error = body?['error']?.toString() ?? 'خطا در ارتقا به C1',
+        );
       }
     } catch (e) {
       setState(() => _error = 'خطای اتصال به سرور: $e');
@@ -137,7 +139,9 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -154,7 +158,11 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                       color: Colors.amber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.auto_awesome, color: Colors.amber, size: 22),
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.amber,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -193,7 +201,9 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                   // Text Input
                   Text(
                     'جمله یا پاسخ شما (انگلیسی):',
-                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Directionality(
@@ -202,11 +212,19 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                       controller: _inputController,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: 'e.g. I agree with this idea because it helps people learn faster...',
-                        hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        hintText:
+                            'e.g. I agree with this idea because it helps people learn faster...',
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        fillColor: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
                       ),
                     ),
                   ),
@@ -219,13 +237,22 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.transform),
-                    label: Text(_isLoading ? 'در حال بازنویسی با هوش مصنوعی...' : 'ارتقا به سطح C1 (IELTS 8+)'),
+                    label: Text(
+                      _isLoading
+                          ? 'در حال بازنویسی با هوش مصنوعی...'
+                          : 'ارتقا به سطح C1 (IELTS 8+)',
+                    ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
 
@@ -234,12 +261,17 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                        color: theme.colorScheme.errorContainer.withValues(
+                          alpha: 0.3,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         _error!,
-                        style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+                        style: TextStyle(
+                          color: theme.colorScheme.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -257,14 +289,20 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                        border: Border.all(
+                          color: Colors.amber.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.workspace_premium, color: Colors.amber, size: 20),
+                              const Icon(
+                                Icons.workspace_premium,
+                                color: Colors.amber,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'نسخه ارتقا یافته C1:',
@@ -276,12 +314,16 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                               const Spacer(),
                               IconButton(
                                 icon: Icon(
-                                  _isPlayingAudio ? Icons.stop_circle : Icons.volume_up,
+                                  _isPlayingAudio
+                                      ? Icons.stop_circle
+                                      : Icons.volume_up,
                                   color: Colors.amber.shade900,
                                 ),
                                 tooltip: 'پخش تلفظ و شدووینگ',
                                 onPressed: () {
-                                  final text = _result!['upgradedC1Text']?.toString() ?? '';
+                                  final text =
+                                      _result!['upgradedC1Text']?.toString() ??
+                                      '';
                                   _speakUpgraded(text);
                                 },
                               ),
@@ -289,10 +331,16 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                                 icon: const Icon(Icons.copy, size: 18),
                                 tooltip: 'کپی متن',
                                 onPressed: () {
-                                  final text = _result!['upgradedC1Text']?.toString() ?? '';
+                                  final text =
+                                      _result!['upgradedC1Text']?.toString() ??
+                                      '';
                                   Clipboard.setData(ClipboardData(text: text));
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('متن C1 در کلیپ‌بورد کپی شد')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'متن C1 در کلیپ‌بورد کپی شد',
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -319,16 +367,25 @@ class _C1UpgradeStudioSheetState extends State<C1UpgradeStudioSheet> {
                               Chip(
                                 avatar: const Icon(Icons.style, size: 16),
                                 label: Text(
-                                  _result!['grammarPatternUsed']?.toString() ?? 'Advanced Syntax',
+                                  _result!['grammarPatternUsed']?.toString() ??
+                                      'Advanced Syntax',
                                   style: const TextStyle(fontSize: 11),
                                 ),
                                 visualDensity: VisualDensity.compact,
                               ),
                               if (_result!['srsWordsUsed'] is List)
-                                for (final w in (_result!['srsWordsUsed'] as List))
+                                for (final w
+                                    in (_result!['srsWordsUsed'] as List))
                                   Chip(
-                                    avatar: const Icon(Icons.auto_stories, size: 16, color: Colors.teal),
-                                    label: Text('$w', style: const TextStyle(fontSize: 11)),
+                                    avatar: const Icon(
+                                      Icons.auto_stories,
+                                      size: 16,
+                                      color: Colors.teal,
+                                    ),
+                                    label: Text(
+                                      '$w',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                   ),
                             ],

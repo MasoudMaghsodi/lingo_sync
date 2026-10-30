@@ -66,7 +66,9 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
   Future<void> _submitEvaluation() async {
     final text = _inputController.text.trim();
     if (text.isEmpty) {
-      setState(() => _error = 'لطفاً متن پاسخ یا متن پیاده‌شده صحبت خود را وارد کنید.');
+      setState(
+        () => _error = 'لطفاً متن پاسخ یا متن پیاده‌شده صحبت خود را وارد کنید.',
+      );
       return;
     }
 
@@ -116,7 +118,9 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -133,7 +137,11 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                       color: Colors.deepPurple.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.school, color: Colors.deepPurple, size: 22),
+                    child: const Icon(
+                      Icons.school,
+                      color: Colors.deepPurple,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -150,9 +158,14 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: Colors.deepOrange.withValues(alpha: 0.15),
+                                color: Colors.deepOrange.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text(
@@ -197,7 +210,11 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                           label: const Center(child: Text('IELTS Speaking')),
                           selected: _selectedExamType == 'ielts_speaking',
                           onSelected: (val) {
-                            if (val) setState(() => _selectedExamType = 'ielts_speaking');
+                            if (val) {
+                              setState(
+                                () => _selectedExamType = 'ielts_speaking',
+                              );
+                            }
                           },
                         ),
                       ),
@@ -207,7 +224,11 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                           label: const Center(child: Text('TOEFL Speaking')),
                           selected: _selectedExamType == 'toefl_speaking',
                           onSelected: (val) {
-                            if (val) setState(() => _selectedExamType = 'toefl_speaking');
+                            if (val) {
+                              setState(
+                                () => _selectedExamType = 'toefl_speaking',
+                              );
+                            }
                           },
                         ),
                       ),
@@ -219,10 +240,13 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -230,7 +254,11 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.psychology, size: 18, color: Colors.deepPurple),
+                            const Icon(
+                              Icons.psychology,
+                              size: 18,
+                              color: Colors.deepPurple,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'موضوع و سوال آزمون:',
@@ -259,7 +287,9 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                   // Candidate Input
                   Text(
                     'پاسخ ثبت‌شده شما:',
-                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Directionality(
@@ -271,11 +301,16 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                         hintText:
                             'Enter candidate spoken transcript or sample response here...',
                         hintStyle: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                        fillColor: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.2),
                       ),
                     ),
                   ),
@@ -288,15 +323,22 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.analytics),
                     label: Text(
-                      _isLoading ? 'در حال تحلیل استاندارد اگزمینر...' : 'ارزیابی نمره آزمون',
+                      _isLoading
+                          ? 'در حال تحلیل استاندارد اگزمینر...'
+                          : 'ارزیابی نمره آزمون',
                     ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
 
@@ -305,12 +347,17 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+                        color: theme.colorScheme.errorContainer.withValues(
+                          alpha: 0.3,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         _error!,
-                        style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
+                        style: TextStyle(
+                          color: theme.colorScheme.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -346,7 +393,10 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Colors.deepPurple, Colors.indigo],
@@ -396,7 +446,9 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
                 ),
               ),
               child: Column(
@@ -406,7 +458,10 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
                     children: [
                       Text(
                         _criterionTitle(entry.key),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                       const Spacer(),
                       Text(
@@ -452,7 +507,9 @@ class _ExamTwinSheetState extends State<ExamTwinSheet> {
             const SizedBox(height: 10),
             Text(
               'جمع‌بندی اگزمینر:',
-              style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

@@ -14,10 +14,15 @@ class VideoAnalysisDto {
 
   static VideoAnalysis fromJson(dynamic rawJson) {
     final json = safeMap(rawJson);
-    final grammarList = json['grammar_points'] is List ? (json['grammar_points'] as List) : [];
-    final vocabList = json['vocabulary'] is List ? (json['vocabulary'] as List) : [];
+    final grammarList = json['grammar_points'] is List
+        ? (json['grammar_points'] as List)
+        : [];
+    final vocabList = json['vocabulary'] is List
+        ? (json['vocabulary'] as List)
+        : [];
 
-    final englishTranscript = json['full_transcript']?.toString() ??
+    final englishTranscript =
+        json['full_transcript']?.toString() ??
         json['english_transcript']?.toString() ??
         json['raw_transcript']?.toString() ??
         '';
@@ -25,12 +30,10 @@ class VideoAnalysisDto {
     return VideoAnalysis(
       videoId: json['video_id']?.toString() ?? '',
       summary: json['summary']?.toString() ?? '',
-      fullTranscriptTranslation: json['full_transcript_translation']?.toString() ?? '',
+      fullTranscriptTranslation:
+          json['full_transcript_translation']?.toString() ?? '',
       englishTranscript: englishTranscript,
-      grammarPoints: grammarList
-          .whereType<Map>()
-          .map(grammarFromJson)
-          .toList(),
+      grammarPoints: grammarList.whereType<Map>().map(grammarFromJson).toList(),
       vocabulary: vocabList
           .whereType<Map>()
           .map(WordAnalysisDto.fromJson)

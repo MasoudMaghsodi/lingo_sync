@@ -42,15 +42,15 @@ class LearnerErrorEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'category': category,
-        'verbatim_quote': verbatimQuote,
-        'corrected_version': correctedVersion,
-        'explanation_fa': explanationFa,
-        'confidence': confidence,
-        'l1_interference_flag': l1InterferenceFlag,
-        'remediation_stage': remediationStage,
-        'occurrence_count': occurrenceCount,
-        'last_seen_at': lastSeenAt?.toIso8601String(),
-      };
+    'id': id,
+    'category': category,
+    'verbatim_quote': verbatimQuote,
+    'corrected_version': correctedVersion,
+    'explanation_fa': explanationFa,
+    'confidence': confidence,
+    'l1_interference_flag': l1InterferenceFlag,
+    'remediation_stage': remediationStage,
+    'occurrence_count': occurrenceCount,
+    'last_seen_at': lastSeenAt?.toIso8601String(),
+  };
 }

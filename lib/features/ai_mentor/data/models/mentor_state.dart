@@ -42,7 +42,9 @@ class AiMentorSessionState {
       phase: phase ?? this.phase,
       amplitude: amplitude ?? this.amplitude,
       isMicMuted: isMicMuted ?? this.isMicMuted,
-      statusMessage: clearStatusMessage ? null : (statusMessage ?? this.statusMessage),
+      statusMessage: clearStatusMessage
+          ? null
+          : (statusMessage ?? this.statusMessage),
     );
   }
 }

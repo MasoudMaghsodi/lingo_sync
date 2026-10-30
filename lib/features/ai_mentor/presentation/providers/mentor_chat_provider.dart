@@ -101,11 +101,9 @@ class MentorChatNotifier extends Notifier<MentorChatState> {
       timestamp: DateTime.now(),
     );
 
-    final currentMessages = List<MentorChatMessage>.from(state.messages)..add(userMsg);
-    state = state.copyWith(
-      messages: currentMessages,
-      isLoading: true,
-    );
+    final currentMessages = List<MentorChatMessage>.from(state.messages)
+      ..add(userMsg);
+    state = state.copyWith(messages: currentMessages, isLoading: true);
 
     try {
       final currentUserId = Supabase.instance.client.auth.currentUser?.id;
@@ -114,15 +112,11 @@ class MentorChatNotifier extends Notifier<MentorChatState> {
           .take(10)
           .toList();
 
-      final response = await _aiClient.postJson(
-        '/mentor_chat',
-        {
-          'message': query,
-          'history': history,
-          'userId': currentUserId,
-        },
-        timeout: const Duration(seconds: 35),
-      );
+      final response = await _aiClient.postJson('/mentor_chat', {
+        'message': query,
+        'history': history,
+        'userId': currentUserId,
+      }, timeout: const Duration(seconds: 35));
 
       final data = jsonDecode(response.body);
       final replyText = data['reply'] as String? ?? 'پاسخی از مربی دریافت نشد.';
@@ -150,19 +144,13 @@ class MentorChatNotifier extends Notifier<MentorChatState> {
     final query = question.trim();
     if (query.isEmpty) return;
 
-    state = state.copyWith(
-      isLoadingCouncil: true,
-    );
+    state = state.copyWith(isLoadingCouncil: true);
 
     try {
-      final response = await _aiClient.postJson(
-        '/multi_agent_consensus',
-        {
-          'question': query,
-          'context': context,
-        },
-        timeout: const Duration(seconds: 60),
-      );
+      final response = await _aiClient.postJson('/multi_agent_consensus', {
+        'question': query,
+        'context': context,
+      }, timeout: const Duration(seconds: 60));
 
       final data = jsonDecode(response.body);
       final consensus = data['consensus'] as String? ?? '';
@@ -192,4 +180,6 @@ class MentorChatNotifier extends Notifier<MentorChatState> {
 }
 
 final mentorChatProvider =
-    NotifierProvider<MentorChatNotifier, MentorChatState>(MentorChatNotifier.new);
+    NotifierProvider<MentorChatNotifier, MentorChatState>(
+      MentorChatNotifier.new,
+    );

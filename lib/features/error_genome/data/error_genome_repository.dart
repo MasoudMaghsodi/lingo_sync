@@ -19,11 +19,9 @@ class ErrorGenomeRepository implements IErrorGenomeRepository {
   final SupabaseClient _supabase;
   final http.Client _httpClient;
 
-  ErrorGenomeRepository({
-    SupabaseClient? supabase,
-    http.Client? httpClient,
-  })  : _supabase = supabase ?? Supabase.instance.client,
-        _httpClient = httpClient ?? http.Client();
+  ErrorGenomeRepository({SupabaseClient? supabase, http.Client? httpClient})
+    : _supabase = supabase ?? Supabase.instance.client,
+      _httpClient = httpClient ?? http.Client();
 
   @override
   Future<List<LearnerErrorEntry>> fetchUserErrors(String userId) async {
@@ -57,11 +55,11 @@ class ErrorGenomeRepository implements IErrorGenomeRepository {
 
     try {
       final token = _supabase.auth.currentSession?.accessToken;
-      final uri = Uri.parse('${AppConfig.aiServerBaseUrl}/api/analyze_learner_errors');
+      final uri = Uri.parse(
+        '${AppConfig.aiServerBaseUrl}/api/analyze_learner_errors',
+      );
 
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
+      final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       } else {

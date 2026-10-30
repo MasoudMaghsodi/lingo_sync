@@ -397,15 +397,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               side: BorderSide(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.35,
+                                ),
                               ),
                             ),
-                            icon: const Icon(Icons.psychology_alt_rounded, size: 20),
+                            icon: const Icon(
+                              Icons.psychology_alt_rounded,
+                              size: 20,
+                            ),
                             label: Text(
                               isPersian
                                   ? 'آزمون سریع تعیین سطح هوش مصنوعی'
                                   : 'Quick AI Placement Test (90s)',
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                             onPressed: () {
                               showModalBottomSheet(

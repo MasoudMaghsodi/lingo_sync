@@ -1,16 +1,20 @@
 <div align="center">
-  <img src="https://img.icons8.com/color/120/000000/language.png" alt="LingoSync Logo">
-  <h1>LingoSync</h1>
-  <p><b>Your Enterprise-Grade, AI-Powered Language Mentor</b></p>
+  <img src="https://img.icons8.com/color/140/000000/language.png" alt="LingoSync Logo" width="100">
+  <h1>LingoSync v2.0</h1>
+  <p><b>Enterprise-Grade, Offline-First AI English Coach & IELTS/TOEFL Exam Twin</b></p>
 
-  [![Flutter Version](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
-  [![Architecture](https://img.shields.io/badge/Architecture-Clean-success.svg)](ARCHITECTURE.md)
-  [![State Management](https://img.shields.io/badge/State-Riverpod-orange.svg)](https://riverpod.dev/)
-  [![Backend](https://img.shields.io/badge/Backend-Node.js-green.svg)](#)
-  [![Database](https://img.shields.io/badge/BaaS-Supabase-3ECF8E.svg)](https://supabase.com/)
-  [![AI Engine](https://img.shields.io/badge/AI-Google%20Gemini%20Live-purple.svg)](https://deepmind.google/technologies/gemini/)
-  [![CI](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue.svg)](.github/workflows/flutter_ci.yml)
+  [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev/)
+  [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev/)
+  [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20Offline--First-success.svg)](ARCHITECTURE.md)
+  [![State Management](https://img.shields.io/badge/State-Riverpod%203-blueviolet.svg)](https://riverpod.dev/)
+  [![Backend](https://img.shields.io/badge/Backend-Node.js%2022%20%7C%20Docker-339933?logo=node.js&logoColor=white)](#)
+  [![Database](https://img.shields.io/badge/BaaS-Supabase%20Postgres-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+  [![Live AI](https://img.shields.io/badge/Voice%20AI-Gemini%203.8%20Live-8E75C2?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+  [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)](.github/workflows/flutter_ci.yml)
+  [![Tests](https://img.shields.io/badge/Tests-93%20Passing-brightgreen.svg)](#)
 </div>
+
+<br>
 
 [🇺🇸 English](#english) | [🇮🇷 فارسی](#فارسی)
 
@@ -19,176 +23,185 @@
 <a name="english"></a>
 ## 🇺🇸 English
 
-**LingoSync** is a production-grade, offline-first language learning platform built around a real-time, voice-based AI mentor. A **Flutter** client following strict Clean Architecture communicates with a **Node.js** backend that proxies live audio sessions to the **Google Gemini Live API**, alongside a dedicated AI dictionary/analysis service.
+**LingoSync v2.0** is an intelligent, offline-first English learning platform specifically tailored for Persian-speaking learners preparing for **IELTS, TOEFL, and CEFR B1–C2 proficiency**. 
 
-### 🚀 Key Features
+The client is built with **Flutter** following strict Clean Architecture and reactive state management with **Riverpod 3**. It pairs with a high-performance, containerized **Node.js** backend running on a hardened cloud VPS that proxies bidirectional low-latency audio to **Google Gemini 3.8 Live**, while managing educational video processing, spaced-repetition synchronization, and pedagogical intelligence.
 
-- 🤖 **Live AI Mentor** — Real-time, bidirectional voice conversations over WebSockets, proxied through a dedicated `mentor-server.js`, with audio streams offloaded to background isolates to keep the UI at 60fps.
-- 📺 **Smart Video Analysis** — Paste any YouTube link to extract transcript translations, grammar breakdowns, and CEFR-leveled vocabulary via `ai-server.js`.
-- 🧠 **Spaced Repetition Flashcards** — Offline-first flashcard system that queues reviews locally and syncs to the backend once connectivity returns.
-- ⏱️ **Floating Pomodoro Timer** — A persistent, draggable focus timer available across every screen in the app.
-- 🏆 **Live Leaderboard & Streaks** — Gamified daily tasks with real-time leaderboard updates.
-- 🌓 **Full i18n & Theming** — Material 3 design with instant Light/Dark and English/Persian switching.
-- ✅ **Tested & Automated** — Unit/widget tests under `test/`, with continuous integration via GitHub Actions (`.github/workflows/flutter_ci.yml`).
+---
 
-### 🛠️ Tech Stack
+### 🌟 Key Capabilities & Architecture Highlights
 
-- **Frontend:** Flutter, Riverpod, Hive (offline caching)
-- **Database & BaaS:** Supabase (PostgreSQL, Auth, Realtime, RPCs, RLS)
-- **AI & Middleware Server:** Node.js, WebSockets, Docker
-- **LLM Engine:** Google Gemini Live API
+#### 🎙️ Real-Time Voice Intelligence & AI Mentor
+* **Gemini 3.8 Live Voice**: Low-latency bidirectional PCM voice conversations over authenticated WebSockets.
+* **3-Tier Context Injection**: Dynamically synthesizes (1) Today's mission, (2) Recent performance & due cards, and (3) Persistent learner identity within a strict 500–800 token budget.
+* **Active Recall Raid**: Unprompted elicitation of due SRS vocabulary during live conversations.
+* **Code-Switch Rescue**: Natural English substitution whenever Persian intrusions occur, without breaking conversational flow.
+* **VAD & Session Guard**: Silence detection (10s pause, 30s disconnect), 14-minute warning, and 15-minute hard session cap.
 
-### 📁 Repository Layout
+#### 🎓 Exam Twin (IELTS & TOEFL Speaking Simulator)
+* Real-time interview simulation evaluated strictly against the **4 official IELTS band criteria**:
+  1. *Fluency & Coherence (FC)*
+  2. *Lexical Resource (LR)*
+  3. *Grammatical Range & Accuracy (GRA)*
+  4. *Pronunciation Heuristic (P)*
+* Evidence-based scoring: every criterion is backed by **verbatim quotes** from the candidate's transcript with constructive Persian feedback and mandatory educational disclaimers.
 
-This is a monorepo containing the Flutter client, the Node.js backend, tests, and CI configuration side by side:
+#### 🧬 Personal Error Genome & Error-Driven SRS
+* Post-interaction linguistic analysis detecting Persian-English (L1) interferences (e.g., preposition misuse, copula redundancy, false friends).
+* Automatic generation of remedial flashcards (Front: learner's wrong sentence; Back: native correction + Persian explanation).
+
+#### 🎨 60-Second C1 Upgrade Studio
+* Rewrites user answers into sophisticated C1 CEFR structures by weaving in **active SRS flashcard words** and advanced syntax (Negative Inversion, Cleft sentences, Participle clauses) alongside instant TTS shadowing.
+
+#### 📦 Offline-First Outbox Synchronization
+* Client-side cryptographic UUIDv4 generation without external package overhead.
+* Append-only `srs_review_logs` with idempotent batch RPCs (`sync_srs_reviews`) ensuring zero data loss and clock-skew resistance.
+
+#### 🛡️ Telemetry, Cost Safety & Server Hardening
+* **Spend Circuit Breaker**: Hard \$1.50/day per-user AI cost limiter.
+* **1-Core 1GB VPS Hardening**: Configured 1GB swapfile (`swappiness=15`), strict Docker memory quotas (`ai-express`: 140MB, `ai-mentor`: 110MB, `yt-api`: 80MB), V8 garbage collection limits (`--max-old-space-size`), and zero-CPU event loop timers.
+
+---
+
+### 📂 Repository Structure
 
 ```text
 lingo_sync/
-├── lib/                    # Flutter client (see ARCHITECTURE.md)
-├── backend/                # Node.js servers
-│   ├── server.js           # Main API/auth server
-│   ├── ai-server.js        # Dictionary & video analysis AI service
-│   ├── mentor-server.js    # Real-time WebSocket proxy to Gemini Live
-│   ├── docker-compose.yml
-│   └── package.json
-├── test/                   # Unit & widget tests (mirrors lib/ structure)
-│   ├── core/
+├── lib/
+│   ├── core/                      # Global theme, config, sync outbox & UUID utils
+│   │   ├── config/                # Environment config & bootstrap
+│   │   ├── sync/                  # Offline-first OutboxSyncService
+│   │   └── utils/                 # Pure Dart StreakCalculator & UuidGenerator
 │   └── features/
-├── .github/workflows/      # CI/CD pipeline (flutter_ci.yml)
-├── pubspec.yaml
-└── ARCHITECTURE.md
+│       ├── ai_dictionary/         # YouTube video intelligence, dictionary & SRS
+│       ├── ai_mentor/             # Gemini 3.8 Live voice & AI mentor chat
+│       ├── auth/                  # Supabase Auth & 60s adaptive placement test
+│       ├── daily_tasks/           # 10-minute daily sync mission & Pomodoro timer
+│       ├── error_genome/          # L1 error taxonomy & remedial card repository
+│       ├── exam_twin/             # IELTS/TOEFL speaking evaluation & rubrics
+│       ├── practice/              # 60-Second C1 Upgrade Studio
+│       └── subscription/          # Subscription tiers & payment provider bridges
+├── backend/                       # Node.js microservices (Docker containerized)
+│   ├── ai-server.js               # REST API: C1 Studio, Error Genome, Exam Twin
+│   ├── mentor-server.js           # Low-latency WebSocket proxy to Gemini 3.8 Live
+│   ├── context-builder.js         # 3-Tier budgeted context assembler
+│   ├── telemetry-service.js       # Dynamic pricing, cost calculator & spend breaker
+│   ├── server.js                  # YouTube transcript extractor
+│   └── docker-compose.yml         # Resource-bounded container definitions
+├── supabase/
+│   └── migrations/                # Versioned SQL migrations & RLS policies
+├── test/                          # Comprehensive unit & widget test suite (93 tests)
+└── docs/lingosync_v2/             # SPEC.md & PROGRESS.md execution logs
 ```
 
-### ⚙️ Quick Start
+---
 
-**1. Clone the repository**
-```bash
-git clone https://github.com/MasoudMaghsodi/lingo_sync.git
-cd lingo_sync
-```
+### ⚙️ Quick Start Guide
 
-**2. Supabase setup**
-- Create a project at [supabase.com](https://supabase.com).
-- Apply your schema (tables, RLS policies, and RPC functions) to the project.
+#### 1. Prerequisites
+- **Flutter SDK** ^3.12.2 / Dart ^3.x
+- **Node.js** 22+ & Docker Compose
+- **Supabase** account & project
+- **Google Gemini API** key
 
-**3. Backend setup (Node.js)**
-
-Create `backend/.env`:
-```env
-GEMINI_API_KEY=your_gemini_api_key
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
-```
-
-Then deploy:
+#### 2. Backend Setup
 ```bash
 cd backend
-docker-compose up -d
+cp .env.example .env
+# Fill in GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY, YT_PROXY_SECRET_KEY
+docker compose up -d
 ```
 
-**4. Flutter client setup**
-
-Create a `.env` in the project root:
+#### 3. Client Setup
+Create `.env` in the root folder:
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-AI_SERVER_BASE_URL=http://localhost:3002/api
-MENTOR_SOCKET_URL=ws://localhost:3001
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+AI_SERVER_BASE_URL=https://your-domain.com/lingosync-api
+MENTOR_SOCKET_URL=wss://your-domain.com/ws
+YT_PROXY_SECRET_KEY=your-shared-secret-key
 ```
 
-Then run:
+Run dependencies & code generator:
 ```bash
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-**5. Run tests**
+#### 4. Verification & Testing
 ```bash
+# Verify code formatting and static analysis
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+
+# Run complete test suite (93 passing tests)
 flutter test
 ```
-
-> **Note:** the exact env var names, ports, and URLs above are placeholders matching this document's assumptions — swap in whatever your `app_config.dart` and backend actually read.
-
-*For the full engineering breakdown of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md).*
 
 ---
 
 <a name="فارسی"></a>
 ## 🇮🇷 فارسی
 
-**LingoSync** یک پلتفرم حرفه‌ای و آفلاین‌محور برای یادگیری زبان است که حول محور یک **استاد هوش مصنوعی صوتی و بلادرنگ** ساخته شده. کلاینت **Flutter** با پایبندی کامل به Clean Architecture، از طریق یک بک‌اند **Node.js** با API زنده **Gemini Live** گوگل و همچنین یک سرویس اختصاصی برای تحلیل واژگان و ویدیو، ارتباط برقرار می‌کند.
+**لینگو سینک (LingoSync v2.0)** یک پلتفرم جامع و مدرن برای یادگیری زبان انگلیسی است که به طور تخصصی برای زبان‌آموزان فارسی‌زبان با هدف موفقیت در **آزمون‌های بین‌المللی آیلتس (IELTS)، تافل (TOEFL) و سطوح پیشرفته CEFR (B1–C2)** بازطراحی و پیاده‌سازی شده است.
 
-### 🚀 ویژگی‌های کلیدی
+این پروژه بر اساس اصول معماری تمیز (Clean Architecture) در **Flutter** و مدیریت وضعیت ری‌اکتیو با **Riverpod 3** پیاده‌سازی شده و از طریق یک زیرساخت مقیاس‌پذیر و امن **Node.js/Docker** روی سرور ابری هلند، ارتباط صوتی بلادرنگ با **Google Gemini 3.8 Live** را فراهم می‌سازد.
 
-- 🤖 **استاد هوش مصنوعی زنده** — مکالمه صوتی دوطرفه در لحظه از طریق WebSocket، با پروکسی اختصاصی `mentor-server.js` و پردازش صدا در نخ‌های پس‌زمینه برای حفظ روانی کامل UI.
-- 📺 **تحلیل‌گر هوشمند ویدیو** — استخراج ترجمه زیرنویس، نکات گرامری و واژگان سطح‌بندی‌شده (CEFR) از هر لینک یوتیوب، از طریق `ai-server.js`.
-- 🧠 **فلش‌کارت با تکرار فاصله‌دار** — سیستم آفلاین‌اول که مرورها را محلی ذخیره و پس از اتصال مجدد همگام‌سازی می‌کند.
-- ⏱️ **تایمر پومودوروی شناور** — تایمر تمرکز شناور و قابل‌جابجایی در تمام صفحات اپ.
-- 🏆 **لیدربورد و استریک زنده** — گیمیفیکیشن تسک‌های روزانه با به‌روزرسانی زنده امتیازات.
-- 🌓 **پشتیبانی کامل دو زبانه و تم** — طراحی متریال ۳ با سوییچ آنی بین تاریک/روشن و فارسی/انگلیسی.
-- ✅ **تست‌شده و خودکار** — تست‌های واحد و ویجت در `test/`، همراه با CI/CD از طریق GitHub Actions.
+---
 
-### 🛠️ پشته فناوری (Tech Stack)
+### 🚀 قابلیت‌های کلیدی نسخه ۲.۰
 
-- **فرانت‌اند:** Flutter، Riverpod، Hive (کش آفلاین)
-- **دیتابیس و BaaS:** Supabase (PostgreSQL، Auth، Realtime، RPC، RLS)
-- **سرور هوش مصنوعی و میان‌افزار:** Node.js، WebSocket، Docker
-- **موتور LLM:** Google Gemini Live API
+#### 🎙️ استاد صوتی هوش مصنوعی زنده (Live Voice Mentor)
+* **مهاجرت به Gemini 3.8 Live**: مکالمه دوطرفه صوتی با کمترین تاخیر (Low Latency) بر بستر پروتکل ایمن WebSocket.
+* **تزریق ۳ لایه‌ای کانتکست (3-Tier Context)**: خلاصه هوشمند هدف امروز، کارت‌های نیازمند مرور و سوابق زبانی کاربر در قالبی فشرده (۵۰۰ تا ۸۰۰ توکن).
+* **عملیات بازیابی فعال (Active Recall Raid)**: پرسش و هدایت غیرمستقیم مکالمه برای به‌کارگیری واژگان هدف روز توسط زبان‌آموز در حین صحبت.
+* **نجات تغییر کد (Code-Switch Rescue)**: در صورت کاربرد کلمات فارسی در جمله، هوش مصنوعی بدون قطع کردن رشته کلام کاربر، معادل طبیعی انگلیسی آن را جایگزین می‌کند.
+* **مدیریت سکوت و نشست (VAD)**: توقف خودکار با ۱۰ ثانیه سکوت، قطع اتصال پس از ۳۰ ثانیه عدم فعالیت، هشدار دقیقه ۱۴ و سقف دقیق ۱۵ دقیقه برای هر نشست.
 
-### 📁 ساختار مخزن
+#### 🎓 شبیه‌ساز رسمی مصاحبه آزمون (Exam Twin)
+* شبیه‌سازی کامل مصاحبه آیلتس و تافل با نمره‌دهی دقیق در ۴ معیار رسمی:
+  1. *روانی و انسجام کلام (Fluency & Coherence)*
+  2. *دایره و تنوع واژگان (Lexical Resource)*
+  3. *دقت و تنوع ساختارهای گرامری (Grammatical Range & Accuracy)*
+  4. *وضوح و ادای تلفظ (Pronunciation Heuristic)*
+* **استناد به شواهد متنی**: استخراج و نمایش نقل‌قول مستقیم (`verbatim quote`) از صحبت‌های داوطلب برای هر نمره همراه با سلب مسئولیت استاندارد آموزشی (L12 Disclaimer).
 
-این پروژه یک Monorepo شامل کلاینت فلاتر، بک‌اند Node.js، تست‌ها و پیکربندی CI است (به بخش انگلیسی بالا برای درخت کامل پوشه‌ها مراجعه کنید).
+#### 🧬 ژنوم خطاهای زبان‌آموز (Personal Error Genome)
+* تحلیل هوشمند خطاهای ساختاری و تداخل زبان مادری (فارسی به انگلیسی) مانند حروف اضافه نادرست (*depends to*) یا افعال ربطی اضافی (*I am agree*).
+* صدور آنی فلش‌کارت‌های مرور اصلاحی در فولدر اختصاصی Error Genome.
 
-### ⚙️ راه‌اندازی سریع
+#### 🎨 استودیو ارتقای ۶۰ ثانیه‌ای C1 (C1 Upgrade Studio)
+* بازنویسی جملات ساده داوطلب به سطح آکادمیک C1 با حفظ ایده اصلی، بافتن لغات فلش‌کارت‌های فعال کاربر و ساختارهای گرامری پیشرفته (مانند وارونگی Inversion و جملات Cleft) به همراه تمرین شدووینگ صوتی (TTS).
 
-**۱. دریافت پروژه:**
+#### 📦 همگام‌سازی آفلاین‌اول (Offline-First Outbox)
+* ثبت مرور فلش‌کارت‌ها در حافظه محلی Hive با استفاده از شناسه‌های یکتای RFC 4122 v4 UUID.
+* ارسال دسته‌ای و ایمن به سرور (Idempotent RPC) پس از برقراری اینترنت بدون کوچک‌ترین خطر ثبت تکراری یا اتلاف پیشرفت.
+
+#### 🛡️ بهینه‌سازی منابع سخت‌افزاری و ایمنی هزینه
+* **سوئیچ قطع اضطراری هزینه (Spend Circuit Breaker)**: سقف مصرف ۱.۵ دلار در روز برای هر کاربر جهت جلوگیری از جهش هزینه‌های API.
+* **پایدارسازی سرور ۱ هسته و ۱ گیگ رم**: فعال‌سازی حافظه Swap، محدودسازی سقف مصرف رم داکر (کانتینرها زیر ۹۲ مگابایت)، بهینه‌سازی زباله‌روب V8 و تایمرهای Zero-CPU در سرور نود.
+
+---
+
+### 🧪 تست‌ها و اعتبارسنجی کیفیت
+
+تمام ماژول‌های پروژه تحت پوشش آزمون‌های واحد، مدل‌ها و ویجت‌ها قرار دارند:
+
 ```bash
-git clone https://github.com/MasoudMaghsodi/lingo_sync.git
-cd lingo_sync
-```
+# اعتبارسنجی فرمت فایل‌های دارت
+dart format --output=none --set-exit-if-changed .
 
-**۲. راه‌اندازی Supabase:**
-- یک پروژه در [supabase.com](https://supabase.com) بساز.
-- اسکیمای خودت (جداول، قوانین RLS و توابع RPC) را روی آن اعمال کن.
+# تحلیل استاتیک دارت بدون خطا و هشدار
+flutter analyze
 
-**۳. راه‌اندازی بک‌اند (Node.js):**
-
-فایل `backend/.env` را بساز:
-```env
-GEMINI_API_KEY=your_gemini_api_key
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_KEY=your_supabase_service_role_key
-```
-
-سپس اجرا کن:
-```bash
-cd backend
-docker-compose up -d
-```
-
-**۴. راه‌اندازی کلاینت فلاتر:**
-
-یک فایل `.env` در ریشه پروژه بساز:
-```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-AI_SERVER_BASE_URL=http://localhost:3002/api
-MENTOR_SOCKET_URL=ws://localhost:3001
-```
-
-سپس اجرا کن:
-```bash
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs
-flutter run
-```
-
-**۵. اجرای تست‌ها:**
-```bash
+# اجرای ۹۳ آزمون واحد با نتیجه ۱۰۰٪ قبولی
 flutter test
 ```
 
-> **نکته:** نام دقیق متغیرهای محیطی، پورت‌ها و URLها بالا فقط فرضی هستند تا با ساختار همین سند هماهنگ باشند — آن‌ها را با چیزی که واقعاً در `app_config.dart` و بک‌اندت خوانده می‌شود جایگزین کن.
+---
 
-*برای جزئیات کامل مهندسی و معماری پروژه، به فایل [ARCHITECTURE.md](ARCHITECTURE.md) مراجعه کنید.*
+### 📄 مجوز و مستندات
+* مستندات معماری تفصیلی سیستم: [ARCHITECTURE.md](ARCHITECTURE.md)
+* گزارش فازبندی و سوابق تصمیم‌گیری: [docs/lingosync_v2/PROGRESS.md](docs/lingosync_v2/PROGRESS.md)
+* سند مشخصات فنی فازهای ۲.۰: [docs/lingosync_v2/SPEC.md](docs/lingosync_v2/SPEC.md)

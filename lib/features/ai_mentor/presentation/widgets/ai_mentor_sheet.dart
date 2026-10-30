@@ -17,7 +17,8 @@ class AiMentorSheet extends ConsumerStatefulWidget {
 
 class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
     with SingleTickerProviderStateMixin {
-  int _selectedTabIndex = 0; // 0: Live Voice, 1: Mentor Chat, 2: Multi-Agent Council
+  int _selectedTabIndex =
+      0; // 0: Live Voice, 1: Mentor Chat, 2: Multi-Agent Council
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
@@ -115,9 +116,7 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
               onTap: () => Navigator.pop(context),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.35),
-                ),
+                child: Container(color: Colors.black.withValues(alpha: 0.35)),
               ),
             ),
           ),
@@ -131,7 +130,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
               padding: EdgeInsets.only(bottom: bottomInset),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface.withValues(alpha: 0.95),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                 boxShadow: [
                   BoxShadow(
@@ -236,12 +237,12 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
         decoration: BoxDecoration(
           color: isSelected
               ? theme.colorScheme.primary.withValues(alpha: 0.2)
-              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              : theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : Colors.transparent,
+            color: isSelected ? theme.colorScheme.primary : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -259,7 +260,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? theme.colorScheme.primary : Colors.grey.shade400,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : Colors.grey.shade400,
               ),
             ),
           ],
@@ -288,13 +291,15 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
     final session = ref.watch(aiMentorControllerProvider);
     final controller = ref.read(aiMentorControllerProvider.notifier);
 
-    final speakingScale = (session.phase == MentorPhase.ready ||
+    final speakingScale =
+        (session.phase == MentorPhase.ready ||
             session.phase == MentorPhase.receivingAudio)
         ? 1.0 + (session.amplitude * 0.4)
         : _pulseAnimation.value;
 
     final orbColor = _orbColor(session.phase);
-    final isRetryPhase = session.phase == MentorPhase.aiDisconnected ||
+    final isRetryPhase =
+        session.phase == MentorPhase.aiDisconnected ||
         session.phase == MentorPhase.disconnected;
 
     return Column(
@@ -348,8 +353,8 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
                   isRetryPhase
                       ? Icons.refresh_rounded
                       : (session.phase == MentorPhase.receivingAudio
-                          ? Icons.volume_up_rounded
-                          : Icons.mic_rounded),
+                            ? Icons.volume_up_rounded
+                            : Icons.mic_rounded),
                   color: Colors.white,
                   size: 45,
                 ),
@@ -369,7 +374,11 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
             ),
             child: Text(
               session.statusMessage!,
-              style: const TextStyle(fontSize: 12, color: Colors.amber, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.amber,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -402,12 +411,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
             itemBuilder: (context, index) {
               final prompt = _quickPrompts[index];
               return ActionChip(
-                label: Text(
-                  prompt,
-                  style: const TextStyle(fontSize: 11.5),
-                ),
-                backgroundColor:
-                    theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                label: Text(prompt, style: const TextStyle(fontSize: 11.5)),
+                backgroundColor: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.5),
                 onPressed: () {
                   HapticFeedback.selectionClick();
                   chatNotifier.sendMessage(prompt);
@@ -449,7 +455,10 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
                 const SizedBox(width: 10),
                 Text(
                   'مربی در حال تایپ و تحلیل داده‌های شماست...',
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -489,7 +498,10 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
                   maxLines: 4,
                   decoration: InputDecoration(
                     hintText: 'از مربی خود بپرسید (مثلاً: برنامم چیه؟)...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                    ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 10,
@@ -548,7 +560,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
         decoration: BoxDecoration(
           color: isUser
               ? theme.colorScheme.primary.withValues(alpha: 0.2)
-              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+              : theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.7,
+                ),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -595,16 +609,26 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.deepPurpleAccent.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: Colors.deepPurpleAccent.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.psychology_alt_rounded, color: Colors.purpleAccent, size: 28),
+                const Icon(
+                  Icons.psychology_alt_rounded,
+                  color: Colors.purpleAccent,
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'شورای ۳ نفره هوش مصنوعی: تحلیل همزمان ساختار گرامری، کاربرد طبیعی و جمع‌بندی نهایی استاد ارشد.',
-                    style: TextStyle(fontSize: 12, color: Colors.purple.shade100, height: 1.4),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.purple.shade100,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -621,10 +645,14 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
               hintText: 'موضوع یا سوال پیچیده گرامری/آزمونی خود را بنویسید...',
               hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
               filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
               ),
             ),
           ),
@@ -644,7 +672,10 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Icon(Icons.gavel_rounded),
             label: Text(
@@ -657,7 +688,9 @@ class _AiMentorSheetState extends ConsumerState<AiMentorSheet>
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
           const SizedBox(height: 16),

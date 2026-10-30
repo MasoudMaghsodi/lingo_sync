@@ -24,12 +24,12 @@ class OutboxItem {
   });
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'action_type': actionType,
-        'payload': payload,
-        'created_at': createdAt.toIso8601String(),
-        'retry_count': retryCount,
-      };
+    'id': id,
+    'action_type': actionType,
+    'payload': payload,
+    'created_at': createdAt.toIso8601String(),
+    'retry_count': retryCount,
+  };
 
   factory OutboxItem.fromMap(Map<String, dynamic> map) {
     return OutboxItem(
@@ -84,7 +84,7 @@ class OutboxSyncService {
   final _pendingCountController = StreamController<int>.broadcast();
 
   OutboxSyncService([Box? box])
-      : _cacheBox = box ?? Hive.box(StorageConstants.hiveBoxCache);
+    : _cacheBox = box ?? Hive.box(StorageConstants.hiveBoxCache);
 
   Stream<int> get pendingCountStream => _pendingCountController.stream;
 
@@ -104,10 +104,7 @@ class OutboxSyncService {
   int get pendingCount => getPendingItems().length;
 
   Future<void> _saveItems(List<OutboxItem> items) async {
-    await _cacheBox.put(
-      _outboxBoxKey,
-      items.map((i) => i.toMap()).toList(),
-    );
+    await _cacheBox.put(_outboxBoxKey, items.map((i) => i.toMap()).toList());
     _pendingCountController.add(items.length);
   }
 
@@ -139,11 +136,7 @@ class OutboxSyncService {
   /// Flushes pending mutations to Supabase with idempotent deduplication.
   Future<SyncResult> flush(SupabaseClient supabase) async {
     if (_isSyncing) {
-      return SyncResult(
-        total: pendingCount,
-        synced: 0,
-        failed: 0,
-      );
+      return SyncResult(total: pendingCount, synced: 0, failed: 0);
     }
 
     final items = getPendingItems();
@@ -160,10 +153,12 @@ class OutboxSyncService {
       final remaining = <OutboxItem>[];
 
       // 1. Process SRS Reviews in batch where possible
-      final srsItems =
-          items.where((i) => i.actionType == 'srs_review').toList();
-      final nonSrsItems =
-          items.where((i) => i.actionType != 'srs_review').toList();
+      final srsItems = items
+          .where((i) => i.actionType == 'srs_review')
+          .toList();
+      final nonSrsItems = items
+          .where((i) => i.actionType != 'srs_review')
+          .toList();
 
       if (srsItems.isNotEmpty) {
         final batch = srsItems.map((item) {
@@ -203,12 +198,15 @@ class OutboxSyncService {
               final userId = supabase.auth.currentUser?.id;
 
               if (userId != null && cardId > 0) {
-                await supabase.from('flashcards').update({
-                  'repetition': p['repetition'],
-                  'interval': p['interval'],
-                  'ease_factor': p['ease_factor'],
-                  'next_review_date': p['next_review_date'],
-                }).eq('id', cardId);
+                await supabase
+                    .from('flashcards')
+                    .update({
+                      'repetition': p['repetition'],
+                      'interval': p['interval'],
+                      'ease_factor': p['ease_factor'],
+                      'next_review_date': p['next_review_date'],
+                    })
+                    .eq('id', cardId);
 
                 await supabase.from('review_logs').insert({
                   'user_id': userId,

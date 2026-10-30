@@ -208,14 +208,19 @@ class _DailyTasksPageState extends ConsumerState<DailyTasksPage> {
           // ماموریت روزانه ۱۰ دقیقه‌ای
           DailySyncMissionCard(
             completedMissionsCount: tasksState.maybeWhen(
-              data: (tasks) => tasks.where((t) => t.isCompleted).length.clamp(0, 3),
+              data: (tasks) =>
+                  tasks.where((t) => t.isCompleted).length.clamp(0, 3),
               orElse: () => 0,
             ),
             onOpenVideo: () {
-              ref.read(mainNavigationTabProvider.notifier).setTab(1); // تب دیکشنری و ویدیو
+              ref
+                  .read(mainNavigationTabProvider.notifier)
+                  .setTab(1); // تب دیکشنری و ویدیو
             },
             onOpenFlashcards: () {
-              ref.read(mainNavigationTabProvider.notifier).setTab(3); // تب فلش‌کارت‌ها
+              ref
+                  .read(mainNavigationTabProvider.notifier)
+                  .setTab(3); // تب فلش‌کارت‌ها
             },
           ),
 

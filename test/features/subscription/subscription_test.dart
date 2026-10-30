@@ -22,10 +22,22 @@ void main() {
     });
 
     test('SubscriptionTier.fromString parses correctly', () {
-      expect(SubscriptionTier.fromString('plus'), equals(SubscriptionTier.plus));
-      expect(SubscriptionTier.fromString('EXAM_PRO'), equals(SubscriptionTier.examPro));
-      expect(SubscriptionTier.fromString('sprint_pass'), equals(SubscriptionTier.sprintPass));
-      expect(SubscriptionTier.fromString('invalid'), equals(SubscriptionTier.free));
+      expect(
+        SubscriptionTier.fromString('plus'),
+        equals(SubscriptionTier.plus),
+      );
+      expect(
+        SubscriptionTier.fromString('EXAM_PRO'),
+        equals(SubscriptionTier.examPro),
+      );
+      expect(
+        SubscriptionTier.fromString('sprint_pass'),
+        equals(SubscriptionTier.sprintPass),
+      );
+      expect(
+        SubscriptionTier.fromString('invalid'),
+        equals(SubscriptionTier.free),
+      );
       expect(SubscriptionTier.fromString(null), equals(SubscriptionTier.free));
     });
 
@@ -34,7 +46,10 @@ void main() {
       final initialized = await provider.initialize();
       expect(initialized, isTrue);
 
-      final result = await provider.purchaseTier('user-123', SubscriptionTier.plus);
+      final result = await provider.purchaseTier(
+        'user-123',
+        SubscriptionTier.plus,
+      );
       expect(result.success, isTrue);
       expect(result.transactionId, isNotNull);
       expect(result.transactionId!.startsWith('mock_tx_'), isTrue);

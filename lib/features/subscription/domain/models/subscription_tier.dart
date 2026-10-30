@@ -6,39 +6,39 @@ enum SubscriptionTier {
   sprintPass;
 
   String get id => switch (this) {
-        SubscriptionTier.free => 'free',
-        SubscriptionTier.plus => 'plus',
-        SubscriptionTier.examPro => 'exam_pro',
-        SubscriptionTier.sprintPass => 'sprint_pass',
-      };
+    SubscriptionTier.free => 'free',
+    SubscriptionTier.plus => 'plus',
+    SubscriptionTier.examPro => 'exam_pro',
+    SubscriptionTier.sprintPass => 'sprint_pass',
+  };
 
   String get titleFa => switch (this) {
-        SubscriptionTier.free => 'رایگان (پایه)',
-        SubscriptionTier.plus => 'پلاس (LingoSync Plus)',
-        SubscriptionTier.examPro => 'پرو آزمون (Exam Pro)',
-        SubscriptionTier.sprintPass => 'اسپرینت ۵۰ روزه آزمون (Sprint Pass)',
-      };
+    SubscriptionTier.free => 'رایگان (پایه)',
+    SubscriptionTier.plus => 'پلاس (LingoSync Plus)',
+    SubscriptionTier.examPro => 'پرو آزمون (Exam Pro)',
+    SubscriptionTier.sprintPass => 'اسپرینت ۵۰ روزه آزمون (Sprint Pass)',
+  };
 
   int get voiceMinutesMonthly => switch (this) {
-        SubscriptionTier.free => 10,
-        SubscriptionTier.plus => 150,
-        SubscriptionTier.examPro => 400,
-        SubscriptionTier.sprintPass => 200,
-      };
+    SubscriptionTier.free => 10,
+    SubscriptionTier.plus => 150,
+    SubscriptionTier.examPro => 400,
+    SubscriptionTier.sprintPass => 200,
+  };
 
   int get videoExtractionsWeekly => switch (this) {
-        SubscriptionTier.free => 1,
-        SubscriptionTier.plus => 10,
-        SubscriptionTier.examPro => 999,
-        SubscriptionTier.sprintPass => 25,
-      };
+    SubscriptionTier.free => 1,
+    SubscriptionTier.plus => 10,
+    SubscriptionTier.examPro => 999,
+    SubscriptionTier.sprintPass => 25,
+  };
 
   int get councilDailyCalls => switch (this) {
-        SubscriptionTier.free => 1,
-        SubscriptionTier.plus => 3,
-        SubscriptionTier.examPro => 20,
-        SubscriptionTier.sprintPass => 5,
-      };
+    SubscriptionTier.free => 1,
+    SubscriptionTier.plus => 3,
+    SubscriptionTier.examPro => 20,
+    SubscriptionTier.sprintPass => 5,
+  };
 
   bool get hasC1Studio => this != SubscriptionTier.free;
 
@@ -46,11 +46,11 @@ enum SubscriptionTier {
       this == SubscriptionTier.examPro || this == SubscriptionTier.sprintPass;
 
   int get priceToman => switch (this) {
-        SubscriptionTier.free => 0,
-        SubscriptionTier.plus => 490000,
-        SubscriptionTier.examPro => 890000,
-        SubscriptionTier.sprintPass => 650000,
-      };
+    SubscriptionTier.free => 0,
+    SubscriptionTier.plus => 490000,
+    SubscriptionTier.examPro => 890000,
+    SubscriptionTier.sprintPass => 650000,
+  };
 
   static SubscriptionTier fromString(String? val) {
     return switch (val?.toLowerCase()) {
@@ -96,10 +96,10 @@ class UserSubscription {
   }
 
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
-        'tier': tier.id,
-        'status': status,
-        'provider': provider,
-        'expires_at': expiresAt?.toIso8601String(),
-      };
+    'user_id': userId,
+    'tier': tier.id,
+    'status': status,
+    'provider': provider,
+    'expires_at': expiresAt?.toIso8601String(),
+  };
 }

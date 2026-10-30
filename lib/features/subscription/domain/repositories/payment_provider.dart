@@ -15,12 +15,14 @@ class PaymentResult {
     this.errorMessage,
   });
 
-  factory PaymentResult.success({String? transactionId, required String message}) =>
-      PaymentResult(
-        success: true,
-        transactionId: transactionId,
-        message: message,
-      );
+  factory PaymentResult.success({
+    String? transactionId,
+    required String message,
+  }) => PaymentResult(
+    success: true,
+    transactionId: transactionId,
+    message: message,
+  );
 
   factory PaymentResult.failure({required String errorMessage}) =>
       PaymentResult(
@@ -46,7 +48,10 @@ class MockPaymentProvider implements IPaymentProvider {
   Future<bool> initialize() async => true;
 
   @override
-  Future<PaymentResult> purchaseTier(String userId, SubscriptionTier tier) async {
+  Future<PaymentResult> purchaseTier(
+    String userId,
+    SubscriptionTier tier,
+  ) async {
     // Simulates successful transaction
     await Future.delayed(const Duration(milliseconds: 600));
     final txId = 'mock_tx_${DateTime.now().millisecondsSinceEpoch}';
@@ -65,8 +70,8 @@ class SubscriptionRepository {
   SubscriptionRepository({
     SupabaseClient? supabase,
     IPaymentProvider? paymentProvider,
-  })  : _supabase = supabase ?? Supabase.instance.client,
-        _paymentProvider = paymentProvider ?? MockPaymentProvider();
+  }) : _supabase = supabase ?? Supabase.instance.client,
+       _paymentProvider = paymentProvider ?? MockPaymentProvider();
 
   Future<UserSubscription> getUserSubscription(String userId) async {
     try {
@@ -87,10 +92,7 @@ class SubscriptionRepository {
     }
 
     // Default to Free Tier
-    return UserSubscription(
-      userId: userId,
-      tier: SubscriptionTier.free,
-    );
+    return UserSubscription(userId: userId, tier: SubscriptionTier.free);
   }
 
   Future<PaymentResult> purchase(SubscriptionTier tier) async {

@@ -155,7 +155,9 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: (_currentIndex + 1) / _kPlacementQuestions.length,
-                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.15,
+                  ),
                   color: theme.colorScheme.primary,
                   minHeight: 6,
                 ),
@@ -168,7 +170,9 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
                 ),
                 child: Text(
                   _kPlacementQuestions[_currentIndex].question,
@@ -192,11 +196,16 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
                       backgroundColor: theme.colorScheme.surface,
                       foregroundColor: theme.colorScheme.onSurface,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       alignment: Alignment.centerLeft,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
                       ),
                     ),
                     onPressed: () => _answerQuestion(i),
@@ -210,7 +219,11 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
               ),
             ] else ...[
               // Test Completion & Level Result Screen
-              Icon(Icons.workspace_premium_rounded, size: 72, color: theme.colorScheme.primary),
+              Icon(
+                Icons.workspace_premium_rounded,
+                size: 72,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(height: 16),
               Text(
                 isPersian ? 'سطح تخمینی شما:' : 'Your Estimated Level:',
@@ -220,11 +233,17 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
               const SizedBox(height: 8),
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.colorScheme.primary, width: 2),
+                    border: Border.all(
+                      color: theme.colorScheme.primary,
+                      width: 2,
+                    ),
                   ),
                   child: Text(
                     _calculatedLevel,
@@ -258,15 +277,22 @@ class _PlacementTestSheetState extends ConsumerState<PlacementTestSheet> {
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onPressed: () {
                   Navigator.pop(context);
                   widget.onLevelSelected(_calculatedLevel);
                 },
                 child: Text(
-                  isPersian ? 'ثبت‌نام و شروع دوره' : 'Sign Up to Start Program',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  isPersian
+                      ? 'ثبت‌نام و شروع دوره'
+                      : 'Sign Up to Start Program',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
