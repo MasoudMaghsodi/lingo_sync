@@ -691,6 +691,228 @@ app.post('/api/report_error', verifyAuthOrSecret, async (req, res) => {
 });
 
 // ==========================================
+// 🧬 تحلیل خطاهای کاربر و استخراج Error Genome (P2-2)
+// ==========================================
+const inMemoryErrorGenome = [];
+
+app.post('/api/analyze_learner_errors', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
+    try {
+        const { text, transcript, userId: bodyUserId, source = 'text' } = req.body;
+        const inputText = (text || transcript || '').trim();
+        const userId = req.authenticatedUser?.id || bodyUserId;
+
+        if (!inputText) {
+            return res.status(400).json({ error: 'متن یا متن صوتی جهت بررسی الزامی است.' });
+        }
+
+        const prompt = `Analyze the following English input from a Persian-speaking English learner for grammatical, lexical, and L1 interference errors.
+Input text:
+"${inputText}"
+
+Seed taxonomy categories to check:
+article_omission, article_misuse, preposition_interference, tense_aspect, subject_verb_agreement, plural_countable_error, copula_redundancy, word_order_L1, pronoun_redundancy, collocation_mismatch, literal_translation, false_friend, spelling.
+
+CRITICAL INSTRUCTIONS:
+1. "verbatim_quote" MUST be an exact verbatim substring from the input text (case-insensitive). Do not modify or hallucinate it.
+2. Provide a clear Persian explanation of why it is incorrect and why Persian speakers make this mistake in "explanation_fa".
+3. Assign a realistic confidence score between 0.60 and 1.00. Discard errors with confidence below 0.60.
+4. Output strictly a JSON array without markdown code blocks, or an empty array [] if no significant errors exist.
+
+Example format:
+[
+  {
+    "category": "preposition_interference",
+    "verbatim_quote": "depends to",
+    "corrected_version": "depends on",
+    "explanation_fa": "در انگلیسی بعد از depend از حرف اضافه on استفاده می‌شود نه to (تداخل با زبان فارسی: بستگی داشتن به).",
+    "confidence": 0.95,
+    "l1_interference_flag": true
+  }
+]`;
+
+        const rawReply = await generateContentWithFallback(prompt, { maxOutputTokens: 3500 }, 15000, {
+            module: 'analyze_learner_errors',
+            userId
+        });
+
+        console.log("🔍 [analyze_learner_errors] Raw reply length:", rawReply.length);
+
+        function extractJsonArray(text) {
+            try {
+                const clean = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                const start = clean.indexOf('[');
+                const end = clean.lastIndexOf(']');
+                if (start !== -1 && end !== -1 && end > start) {
+                    return JSON.parse(clean.substring(start, end + 1));
+                }
+                const objRegex = /\{[\s\S]*?\}/g;
+                const matches = clean.match(objRegex) || [];
+                const items = [];
+                for (const m of matches) {
+                    try { items.push(JSON.parse(m)); } catch (_) {}
+                }
+                return items;
+            } catch (_) {
+                return [];
+            }
+        }
+
+        const rawErrors = extractJsonArray(rawReply);
+
+        // Substring validation & confidence filter (>= 0.6) per L10 / SPEC §4.7
+        const normalizedInput = inputText.toLowerCase();
+        const validErrors = [];
+
+        for (const err of rawErrors) {
+            const quote = (err.verbatim_quote || '').trim();
+            const confidence = typeof err.confidence === 'number' ? err.confidence : 0.7;
+
+            if (quote.length > 0 && confidence >= 0.6 && normalizedInput.includes(quote.toLowerCase())) {
+                validErrors.push({
+                    category: err.category || 'general_grammar',
+                    verbatim_quote: quote,
+                    corrected_version: err.corrected_version || quote,
+                    explanation_fa: err.explanation_fa || '',
+                    confidence,
+                    l1_interference_flag: err.l1_interference_flag !== false,
+                    taxonomy_version: 'v1',
+                    source
+                });
+            }
+        }
+
+        let createdCardsCount = 0;
+
+        // Persist valid errors & auto-create error flashcards if user is authenticated
+        for (const err of validErrors) {
+            if (userId) {
+                try {
+                    await supabase.from('user_error_genome').upsert({
+                        user_id: userId,
+                        category: err.category,
+                        verbatim_quote: err.verbatim_quote,
+                        corrected_version: err.corrected_version,
+                        explanation_fa: err.explanation_fa,
+                        confidence: err.confidence,
+                        l1_interference_flag: err.l1_interference_flag,
+                        taxonomy_version: 'v1',
+                        last_seen_at: new Date().toISOString()
+                    }, { onConflict: 'user_id, category, verbatim_quote' });
+                } catch (_) {
+                    inMemoryErrorGenome.push({ ...err, userId, timestamp: new Date().toISOString() });
+                }
+
+                // Auto-create error card in flashcards
+                try {
+                    await supabase.from('flashcards').insert({
+                        user_id: userId,
+                        folder_name: 'Error Genome',
+                        repetition: 0,
+                        interval: 1,
+                        ease_factor: 2.5,
+                        next_review_date: new Date().toISOString()
+                    });
+                    createdCardsCount++;
+                } catch (_) {}
+            } else {
+                inMemoryErrorGenome.push({ ...err, timestamp: new Date().toISOString() });
+            }
+        }
+
+        res.json({
+            success: true,
+            detectedCount: validErrors.length,
+            errors: validErrors,
+            createdCardsCount
+        });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// 🎨 استودیو ارتقای ۶۰ ثانیه‌ای C1 (P2-4)
+// ==========================================
+app.post('/api/c1_upgrade_studio', verifyAuthOrSecret, circuitBreakerMiddleware, async (req, res) => {
+    try {
+        const { text, userId: bodyUserId, targetSrsWords } = req.body;
+        const inputText = (text || '').trim();
+        const userId = req.authenticatedUser?.id || bodyUserId;
+
+        if (!inputText) {
+            return res.status(400).json({ error: 'متن اولیه جهت ارتقا به C1 الزامی است.' });
+        }
+
+        // Fetch 2 SRS due words if not provided
+        let srsWords = Array.isArray(targetSrsWords) && targetSrsWords.length > 0 ? targetSrsWords.slice(0, 2) : [];
+        if (srsWords.length === 0 && userId) {
+            try {
+                const { data } = await supabase
+                    .from('flashcards')
+                    .select('global_dictionary(word)')
+                    .eq('user_id', userId)
+                    .lte('next_review_date', new Date().toISOString())
+                    .limit(2);
+                if (data && data.length > 0) {
+                    srsWords = data.map(d => d.global_dictionary?.word).filter(Boolean);
+                }
+            } catch (_) {}
+        }
+        if (srsWords.length === 0) {
+            srsWords = ['paramount', 'articulate']; // sensible C1 defaults if no cards due
+        }
+
+        const prompt = `You are an elite C1/C2 IELTS & TOEFL examiner and stylistic editor.
+Rewrite the learner's response below into refined, natural C1 CEFR English.
+
+Learner's Original Sentence:
+"${inputText}"
+
+STRICT REQUIREMENTS:
+1. Keep the learner's core idea, stance, and personality completely intact. Do not change the meaning.
+2. Weave in these target vocabulary words naturally: [${srsWords.join(', ')}].
+3. Incorporate at least 1 advanced grammatical structure (e.g., inversion, cleft sentence, participle clause, or advanced conditional).
+4. Provide a brief, inspiring explanation in Persian explaining the upgrades.
+
+Output strictly valid JSON without markdown wrapping:
+{
+  "upgradedC1Text": "The rewritten C1 response string",
+  "srsWordsUsed": ["list of srs words integrated"],
+  "grammarPatternUsed": "name and example of advanced grammar structure used",
+  "explanationFa": "توضیح فارسی روان در مورد ساختار گرامری و واژگان ارتقایافته"
+}`;
+
+        const rawReply = await generateContentWithFallback(prompt, { maxOutputTokens: 3500 }, 15000, {
+            module: 'c1_upgrade_studio',
+            userId
+        });
+
+        let parsed = null;
+        try {
+            const cleanJson = rawReply.replace(/```json/gi, '').replace(/```/g, '').trim();
+            parsed = JSON.parse(cleanJson);
+        } catch (_) {
+            parsed = {
+                upgradedC1Text: rawReply,
+                srsWordsUsed: srsWords,
+                grammarPatternUsed: 'Advanced cohesion & lexical variety',
+                explanationFa: 'جمله شما با استفاده از واژگان پیشرفته‌تر و ساختار رسمی‌تر بازنویسی شد.'
+            };
+        }
+
+        res.json({
+            originalText: inputText,
+            upgradedC1Text: parsed.upgradedC1Text,
+            srsWordsUsed: parsed.srsWordsUsed || srsWords,
+            grammarPatternUsed: parsed.grammarPatternUsed || 'Inversion / Complex syntax',
+            explanationFa: parsed.explanationFa || ''
+        });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// ==========================================
 // 🤖 ربات اتوماسیون پس‌زمینه (Cron Job)
 // ==========================================
 setInterval(async () => {
