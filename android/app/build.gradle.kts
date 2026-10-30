@@ -9,7 +9,8 @@ plugins {
 // خواندن اطلاعات فایل key.properties
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
+val hasKeystore = keystorePropertiesFile.exists()
+if (hasKeystore) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
@@ -31,20 +32,30 @@ android {
         versionName = flutter.versionName
     }
 
+    val storeFilePath = keystoreProperties.getProperty("storeFile")
+    val hasValidReleaseKeystore = hasKeystore && !storeFilePath.isNullOrEmpty()
+
     // معرفی کلید امضا به اندروید
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            storeFile = file(keystoreProperties.getProperty("storeFile"))
-            storePassword = keystoreProperties.getProperty("storePassword")
+        if (hasValidReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(storeFilePath)
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            // متصل کردن امضا به نسخه ریلیز
-            signingConfig = signingConfigs.getByName("release")
+            if (hasValidReleaseKeystore) {
+                // متصل کردن امضا به نسخه ریلیز
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                // در محیط CI یا سیستم‌های فاقد key.properties از کلید دیباگ استفاده می‌شود
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }
